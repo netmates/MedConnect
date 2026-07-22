@@ -2,6 +2,8 @@
 
 public class Specialization
 {
+    public const int MaxNameLength = 200;
+
     public Guid Id { get; private set; }
     public string Name { get; private set; } = null!;
 

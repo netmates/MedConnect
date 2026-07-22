@@ -2,6 +2,14 @@
 
 public class Doctor
 {
+    public const int MaxKeycloakIdLength = 255;
+    public const int MaxLastNameLength = 100;
+    public const int MaxFirstNameLength = 100;
+    public const int MaxMiddleNameLength = 100;
+    public const int MaxDescriptionLength = 1000;
+    public const int MinExperienceYears = 0;
+    public const int MaxExperienceYears = 70;
+
     public Guid Id { get; private set; }
     public string KeycloakId { get; private set; } = null!;
     public string LastName { get; private set; } = null!;

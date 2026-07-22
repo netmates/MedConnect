@@ -19,10 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="API\Middleware\" />
+	<Folder Include="API\Controllers\" />
+    <Folder Include="API\Grpc\" />
+    <Folder Include="Application\DTOs\Admin\" />
     <Folder Include="Application\Services\" />
-    <Folder Include="Application\DTOs\" />
-    <Folder Include="Controllers\" />
-    <Folder Include="Infrastructure\Repositories\" />
+    <Folder Include="Application\Validators\" />
   </ItemGroup>
 
 </Project>

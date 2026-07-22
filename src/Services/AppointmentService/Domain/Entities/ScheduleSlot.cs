@@ -4,6 +4,9 @@ namespace AppointmentService.Domain.Entities;
 
 public class ScheduleSlot
 {
+    public const int MinDurationMinutes = 15;
+    public const int MaxDurationMinutes = 120;
+
     public Guid Id { get; private set; }
     public Guid DoctorId { get; private set; }
     public DateTime StartTime { get; private set; }

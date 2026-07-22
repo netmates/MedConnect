@@ -1,0 +1,12 @@
+﻿namespace AppointmentService.Application.DTOs.Appointment;
+
+public class AppointmentDto
+{
+    public Guid Id { get; set; }
+    public Guid PatientId { get; set; }
+    public Guid DoctorId { get; set; }
+    public Guid SlotId { get; set; }
+    public string? Reason { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}

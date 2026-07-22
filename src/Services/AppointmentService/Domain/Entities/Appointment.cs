@@ -4,6 +4,8 @@ namespace AppointmentService.Domain.Entities;
 
 public class Appointment
 {
+    public const int MaxReasonLength = 500;
+
     public Guid Id { get; private set; }
     public Guid PatientId { get; private set; }
     public Guid DoctorId { get; private set; }
