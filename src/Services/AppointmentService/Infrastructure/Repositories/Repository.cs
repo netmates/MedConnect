@@ -24,7 +24,7 @@ public class Repository<T>(AppointmentDbContext context) : IRepository<T> where 
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(T entity, CancellationToken ct = default)
+    public virtual Task DeleteAsync(T entity, CancellationToken ct = default)
     {
         _dbSet.Remove(entity);
         return Task.CompletedTask;

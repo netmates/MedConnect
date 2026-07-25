@@ -1,4 +1,5 @@
-﻿using AppointmentService.Application.Interfaces.Repositories;
+﻿using AppointmentService.Application.Exceptions;
+using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -18,12 +19,28 @@ public class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>
                 .ThenInclude(ds => ds.Specialization)
             .FirstOrDefaultAsync(d => d.Id == doctorId, ct);
 
-    //public async Task<Doctor?> GetByKeycloakIdAsync(string keycloakId, CancellationToken ct = default)
-    //    => await _context.Doctors
-    //        .FirstOrDefaultAsync(d => d.KeycloakId == keycloakId, ct);
+    public async Task<Doctor?> GetByKeycloakIdAsync(string keycloakId, CancellationToken ct = default)
+        => await _context.Doctors
+            .FirstOrDefaultAsync(d => d.KeycloakId == keycloakId, ct);
     
     public async Task AddDoctorSpecializationAsync(DoctorSpecialization doctorSpecialization, CancellationToken ct = default)
         => await _context.DoctorSpecializations.AddAsync(doctorSpecialization, ct);
+
+    public async Task RemoveDoctorSpecializationAsync(Guid doctorId, Guid specializationId, CancellationToken ct = default)
+    {   
+        var doctor = await GetWithSpecializationsAsync(doctorId, ct)
+            ?? throw new NotFoundException($"Врач {doctorId} не найден.");
+
+        var remainingCount = doctor.DoctorSpecializations.Count(ds => ds.SpecializationId != specializationId);
+        if (remainingCount == 0)
+            throw new BusinessRuleException("Врач должен иметь хотя бы одну специализацию.");
+
+        var doctorSpecialization = await _context.DoctorSpecializations
+            .FirstOrDefaultAsync(ds => ds.DoctorId == doctorId && ds.SpecializationId == specializationId, ct)
+            ?? throw new NotFoundException("Связь врача со специализацией не найдена.");
+
+        _context.DoctorSpecializations.Remove(doctorSpecialization);
+    }
 
     public async Task<IReadOnlyList<Doctor>> GetAllIncludingInactiveAsync(CancellationToken ct = default)
         => await _context.Doctors
@@ -31,4 +48,10 @@ public class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>
                 .ThenInclude(ds => ds.Specialization)
             .OrderBy(d => d.LastName)
             .ToListAsync(ct);
+
+    public override Task DeleteAsync(Doctor entity, CancellationToken ct = default)
+    {
+        throw new NotSupportedException(
+            "Hard deletion of Doctor is not allowed. Use Deactivate() + UpdateAsync().");
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using AppointmentService.Domain.Enums;
+using AppointmentService.Domain.Exceptions;
 
 namespace AppointmentService.Domain.Entities;
 
@@ -36,7 +37,7 @@ public class ScheduleSlot
     public void Book()
     {
         if (Status != SlotStatus.Available)
-            throw new InvalidOperationException("Слот недоступен для бронирования.");
+            throw new DomainException("Слот недоступен для бронирования.");
         Status = SlotStatus.Booked;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -44,7 +45,7 @@ public class ScheduleSlot
     public void Cancel()
     {   
         if (Status == SlotStatus.Cancelled)
-            throw new InvalidOperationException("Слот уже отменён.");
+            throw new DomainException("Слот уже отменён.");
         Status = SlotStatus.Cancelled;
         UpdatedAt = DateTime.UtcNow;
     }

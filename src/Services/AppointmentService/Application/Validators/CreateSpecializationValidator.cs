@@ -1,0 +1,18 @@
+﻿using AppointmentService.Application.DTOs.Admin;
+using AppointmentService.Domain.Entities;
+using FluentValidation;
+
+namespace AppointmentService.Application.Validators;
+
+public class CreateSpecializationValidator : AbstractValidator<CreateSpecializationDto>
+{
+    public CreateSpecializationValidator()
+    {
+        RuleFor(x => x.Name)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+                .WithMessage("Название специализации обязательно.")
+            .MaximumLength(Specialization.MaxNameLength)
+                .WithMessage($"Название специализации не должно превышать {Specialization.MaxNameLength} символов.");
+    }
+}

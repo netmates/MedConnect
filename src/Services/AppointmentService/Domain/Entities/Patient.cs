@@ -1,4 +1,6 @@
-﻿namespace AppointmentService.Domain.Entities;
+﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace AppointmentService.Domain.Entities;
 
 public class Patient
 {
@@ -8,8 +10,9 @@ public class Patient
     public const int MaxMiddleNameLength = 100;
     public const int MinPhoneLength = 7;
     public const int MaxPhoneLength = 20;
-
     public const string PhoneRegexPattern = @"^\+?[0-9\s\-]{7,20}$";
+
+    public static readonly DateTime MinDateOfBirth = new(1900, 1, 1);
 
     public Guid Id { get; private set; }
     public string KeycloakId { get; private set; } = null!;
@@ -29,7 +32,9 @@ public class Patient
         string keycloakId,
         string lastName,
         string firstName,
-        string? middleName)
+        string? middleName,
+        string? phone,
+        DateTime? dateOfBirth)
     {
         return new Patient
         {
@@ -38,6 +43,8 @@ public class Patient
             LastName = lastName,
             FirstName = firstName,
             MiddleName = middleName,
+            Phone = phone,
+            DateOfBirth = dateOfBirth,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };

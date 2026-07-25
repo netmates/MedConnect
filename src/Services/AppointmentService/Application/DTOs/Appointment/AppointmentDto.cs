@@ -9,4 +9,5 @@ public class AppointmentDto
     public string? Reason { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }

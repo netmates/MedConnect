@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
@@ -22,9 +24,6 @@
     <Folder Include="API\Middleware\" />
 	<Folder Include="API\Controllers\" />
     <Folder Include="API\Grpc\" />
-    <Folder Include="Application\DTOs\Admin\" />
-    <Folder Include="Application\Services\" />
-    <Folder Include="Application\Validators\" />
   </ItemGroup>
 
 </Project>

@@ -12,6 +12,5 @@ public class Specialization
     private Specialization() { }
 
     public static Specialization Create(string name) => new() { Id = Guid.NewGuid(), Name = name };
-        
     public void Update(string name) => Name = name;
 }
