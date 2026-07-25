@@ -1,5 +1,6 @@
 ﻿using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Domain.Entities;
+using AppointmentService.Domain.Enums;
 using AppointmentService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,12 @@ public class AppointmentRepository(AppointmentDbContext context) : Repository<Ap
             """)
         .FirstOrDefaultAsync(ct);
     }
+
+    public async Task<bool> HasConfirmedFutureAppointmentsAsync(Guid patientId, DateTime after, CancellationToken ct = default)
+        => await _context.Appointments
+            .AnyAsync(a => a.PatientId == patientId
+                    && a.Status == AppointmentStatus.Confirmed
+                    && a.Slot.StartTime > after, ct);
 
     public override Task DeleteAsync(Appointment entity, CancellationToken ct = default)
     {

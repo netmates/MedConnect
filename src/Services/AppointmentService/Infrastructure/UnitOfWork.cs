@@ -18,7 +18,6 @@ public class UnitOfWork(AppointmentDbContext context) : IUnitOfWork
 
     public async Task BeginTransactionAsync(CancellationToken ct = default)
     {
-        // Защита от повторного вызова        
         if (_transaction is not null)
             throw new InvalidOperationException(
                 "Транзакция уже активна. Вызовите CommitAsync или RollbackAsync перед началом новой транзакции.");

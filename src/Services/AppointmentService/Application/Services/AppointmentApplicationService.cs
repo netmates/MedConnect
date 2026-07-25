@@ -2,6 +2,7 @@
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
+using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
@@ -14,7 +15,7 @@ public class AppointmentApplicationService(
     IPatientRepository patientRepository,
     IDoctorRepository doctorRepository,
     IUnitOfWork unitOfWork,
-    IValidator<CreateAppointmentDto> createAppointmentValidator)
+    IValidator<CreateAppointmentDto> createAppointmentValidator) : IAppointmentApplicationService
 {
     private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;
     private readonly IScheduleSlotRepository _slotRepository = slotRepository;
@@ -22,10 +23,7 @@ public class AppointmentApplicationService(
     private readonly IDoctorRepository _doctorRepository = doctorRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IValidator<CreateAppointmentDto> _createAppointmentValidator = createAppointmentValidator;
-
-    /// <summary>
-    /// Возвращает пациенту список его записей
-    /// </summary>
+    
     public async Task<IReadOnlyList<AppointmentDto>> GetByPatientAsync(string keycloakId, CancellationToken ct)
     {
         var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
@@ -34,10 +32,7 @@ public class AppointmentApplicationService(
         var appointments = await _appointmentRepository.GetByPatientIdAsync(patient.Id, ct);
         return appointments.Select(MapToDto).ToList();
     }
-
-    /// <summary>
-    /// Создает запись
-    /// </summary>
+    
     public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string keycloakId, CancellationToken ct)
     {
         var validationResult = await _createAppointmentValidator.ValidateAsync(dto, ct);
@@ -63,29 +58,24 @@ public class AppointmentApplicationService(
 
             appointment = Appointment.Create(patient.Id, slot.DoctorId, slot.Id, dto.Reason);
             await _appointmentRepository.AddAsync(appointment, ct);
-
-            // Фиксируем оба изменения одной транзакцией
+            
             await _unitOfWork.CommitAsync(ct);
+
+            return MapToDto(appointment);
         }
         catch
         {
             await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
-
-        return MapToDto(appointment);
     }
 
-    /// <summary>
-    /// Отменяет запись
-    /// </summary>
     public async Task CancelAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
     {
         var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Пациент не найден.");
 
         Appointment appointment;
-        // Отменяем Appointment + освобождаем Slot в одной транзакции
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
@@ -111,10 +101,7 @@ public class AppointmentApplicationService(
             throw;
         }
     }
-
-    /// <summary>
-    /// Отметить запись как завершённую
-    /// </summary>
+    
     public async Task CompleteAsync(Guid appointmentId, Guid doctorId, CancellationToken ct)
     {
         var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, ct)
@@ -137,10 +124,7 @@ public class AppointmentApplicationService(
             throw;
         }
     }
-
-    /// <summary>
-    /// Подтверждение записи
-    /// </summary>
+    
     public async Task ConfirmAsync(Guid appointmentId, Guid doctorId, CancellationToken ct)
     {
         var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, ct)
@@ -151,7 +135,7 @@ public class AppointmentApplicationService(
         
         await _unitOfWork.BeginTransactionAsync(ct);
         try
-        {   
+        {
             appointment.Confirm();
             await _appointmentRepository.UpdateAsync(appointment, ct);
 

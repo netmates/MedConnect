@@ -9,6 +9,10 @@ public interface IDoctorRepository : IRepository<Doctor>
     /// </summary>
     Task<IReadOnlyList<Doctor>> GetBySpecializationAsync(Guid specializationId, CancellationToken ct = default);
     /// <summary>
+    /// Получить список активных врачей
+    /// </summary>
+    Task<IReadOnlyList<Doctor>> GetActiveAsync(CancellationToken ct = default);
+    /// <summary>
     /// Получить врача вместе с его специализациями
     /// </summary>    
     Task<Doctor?> GetWithSpecializationsAsync(Guid doctorId, CancellationToken ct = default);

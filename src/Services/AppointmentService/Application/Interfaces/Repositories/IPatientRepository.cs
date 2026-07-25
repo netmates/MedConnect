@@ -9,7 +9,7 @@ public interface IPatientRepository : IRepository<Patient>
     /// </summary>
     Task<Patient?> GetByKeycloakIdAsync(string keycloakId, CancellationToken ct = default);
     // Проверяет существует ли уже пользователь при регистрации через OAuth
-    //Task<bool> ExistsByKeycloakIdAsync(string keycloakId, CancellationToken ct = default);
+    // Task<bool> ExistsByKeycloakIdAsync(string keycloakId, CancellationToken ct = default);
     /// <summary>
     /// Получить всех пациентов, включая деактивированных
     /// </summary>

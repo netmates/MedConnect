@@ -10,7 +10,22 @@ public class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>
 {
     public async Task<IReadOnlyList<Doctor>> GetBySpecializationAsync(Guid specializationId, CancellationToken ct = default)
         => await _context.Doctors
+            .Include(d => d.DoctorSpecializations)
+                .ThenInclude(ds => ds.Specialization)
             .Where(d => d.DoctorSpecializations.Any(ds => ds.SpecializationId == specializationId) && d.IsActive)
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Doctor>> GetActiveAsync(CancellationToken ct = default)
+        => await _context.Doctors
+            .Include(d => d.DoctorSpecializations)
+                .ThenInclude(ds => ds.Specialization)
+            .Where(d => d.IsActive)
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Doctor>> GetAllIncludingInactiveAsync(CancellationToken ct = default)
+        => await _context.Doctors
+            .Include(d => d.DoctorSpecializations)
+                .ThenInclude(ds => ds.Specialization)
             .ToListAsync(ct);
 
     public async Task<Doctor?> GetWithSpecializationsAsync(Guid doctorId, CancellationToken ct = default)
@@ -40,18 +55,11 @@ public class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>
             ?? throw new NotFoundException("Связь врача со специализацией не найдена.");
 
         _context.DoctorSpecializations.Remove(doctorSpecialization);
-    }
-
-    public async Task<IReadOnlyList<Doctor>> GetAllIncludingInactiveAsync(CancellationToken ct = default)
-        => await _context.Doctors
-            .Include(d => d.DoctorSpecializations)
-                .ThenInclude(ds => ds.Specialization)
-            .OrderBy(d => d.LastName)
-            .ToListAsync(ct);
+    }    
 
     public override Task DeleteAsync(Doctor entity, CancellationToken ct = default)
     {
         throw new NotSupportedException(
-            "Hard deletion of Doctor is not allowed. Use Deactivate() + UpdateAsync().");
+            "Hard deletion of Doctor is not allowed. Use Deactivate().");
     }
 }

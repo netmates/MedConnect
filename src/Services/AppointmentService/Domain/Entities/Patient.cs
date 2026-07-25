@@ -1,6 +1,4 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-
-namespace AppointmentService.Domain.Entities;
+﻿namespace AppointmentService.Domain.Entities;
 
 public class Patient
 {
@@ -50,7 +48,7 @@ public class Patient
         };
     }
 
-    public void UpdateProfile(
+    public void Update(
         string lastName,
         string firstName,
         string? middleName,

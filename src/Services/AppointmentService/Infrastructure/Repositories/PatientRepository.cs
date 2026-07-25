@@ -23,6 +23,6 @@ public class PatientRepository(AppointmentDbContext context) : Repository<Patien
     public override Task DeleteAsync(Patient entity, CancellationToken ct = default)
     {
         throw new NotSupportedException(
-            "Hard deletion of Patient is not allowed. Use Deactivate() + UpdateAsync().");
+            "Hard deletion of Patient is not allowed. Use Deactivate().");
     }
 }

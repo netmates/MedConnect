@@ -22,4 +22,8 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// второй запрос будет ждать, пока первый не завершит транзакцию; вызывается только внутри открытой транзакции    
     /// </summary>
     Task<Appointment?> GetByIdWithLockAsync(Guid id, CancellationToken ct = default);
+    /// <summary>
+    /// Проверка наличия подтвержденных будущих записей пациента
+    /// </summary>
+    Task<bool> HasConfirmedFutureAppointmentsAsync(Guid patientId, DateTime after, CancellationToken ct = default);
 }
