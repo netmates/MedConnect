@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.Admin;
+﻿using AppointmentService.Application.DTOs.Specialization;
 
 namespace AppointmentService.Application.Interfaces.Services;
 

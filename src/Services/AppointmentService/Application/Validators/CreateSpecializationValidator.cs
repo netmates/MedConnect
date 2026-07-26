@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.Admin;
+﻿using AppointmentService.Application.DTOs.Specialization;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 

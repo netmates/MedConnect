@@ -37,7 +37,6 @@ public class ScheduleSlotRepository(AppointmentDbContext context) : Repository<S
         CancellationToken ct = default)
         => await _context.ScheduleSlots
             .AnyAsync(s => s.DoctorId == doctorId
-                        && s.Status != SlotStatus.Cancelled
                         && s.StartTime < endTime
                         && s.EndTime > startTime
                         // excludeSlotId - чтобы не найти самого себя при редактировании

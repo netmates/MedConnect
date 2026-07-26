@@ -1,6 +1,6 @@
-﻿namespace AppointmentService.Application.DTOs.Slot;
+namespace AppointmentService.Application.DTOs.ScheduleSlot;
 
-public class SlotDto
+public class ScheduleSlotDto
 {
     public Guid Id { get; set; }
     public Guid DoctorId { get; set; }

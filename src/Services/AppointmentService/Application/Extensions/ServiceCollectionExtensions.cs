@@ -14,7 +14,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAppointmentApplicationService, AppointmentApplicationService>();
         services.AddScoped<IPatientApplicationService, PatientApplicationService>();
         services.AddScoped<ISpecializationApplicationService, SpecializationApplicationService>();
-        //services.AddScoped<IAdminPatientService, AdminPatientService>();
+        services.AddScoped<IScheduleSlotApplicationService, ScheduleSlotApplicationService>();        
+        services.AddScoped<IAdminPatientApplicationService, AdminPatientApplicationService>();
 
         // Validators
         services.AddValidatorsFromAssemblyContaining<CreateDoctorValidator>();

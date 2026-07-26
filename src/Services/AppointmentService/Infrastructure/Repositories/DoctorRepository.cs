@@ -1,5 +1,4 @@
-﻿using AppointmentService.Application.Exceptions;
-using AppointmentService.Application.Interfaces.Repositories;
+﻿using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -42,17 +41,11 @@ public class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>
         => await _context.DoctorSpecializations.AddAsync(doctorSpecialization, ct);
 
     public async Task RemoveDoctorSpecializationAsync(Guid doctorId, Guid specializationId, CancellationToken ct = default)
-    {   
-        var doctor = await GetWithSpecializationsAsync(doctorId, ct)
-            ?? throw new NotFoundException($"Врач {doctorId} не найден.");
-
-        var remainingCount = doctor.DoctorSpecializations.Count(ds => ds.SpecializationId != specializationId);
-        if (remainingCount == 0)
-            throw new BusinessRuleException("Врач должен иметь хотя бы одну специализацию.");
-
+    {
         var doctorSpecialization = await _context.DoctorSpecializations
-            .FirstOrDefaultAsync(ds => ds.DoctorId == doctorId && ds.SpecializationId == specializationId, ct)
-            ?? throw new NotFoundException("Связь врача со специализацией не найдена.");
+            .FirstOrDefaultAsync(ds => ds.DoctorId == doctorId && ds.SpecializationId == specializationId, ct);
+
+        if (doctorSpecialization is null) return;
 
         _context.DoctorSpecializations.Remove(doctorSpecialization);
     }    

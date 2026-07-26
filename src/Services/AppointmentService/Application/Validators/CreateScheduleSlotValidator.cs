@@ -1,12 +1,12 @@
-﻿using AppointmentService.Application.DTOs.Slot;
+using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
 
-public class UpdateSlotValidator : AbstractValidator<UpdateSlotDto>
+public class CreateScheduleSlotValidator : AbstractValidator<CreateScheduleSlotDto>
 {
-    public UpdateSlotValidator()
+    public CreateScheduleSlotValidator()
     {
         RuleFor(x => x.StartTime)
             .GreaterThan(DateTime.UtcNow)

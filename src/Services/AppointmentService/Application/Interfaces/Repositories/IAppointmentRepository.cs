@@ -25,5 +25,5 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// <summary>
     /// Проверка наличия подтвержденных будущих записей пациента
     /// </summary>
-    Task<bool> HasConfirmedFutureAppointmentsAsync(Guid patientId, DateTime after, CancellationToken ct = default);
+    Task<bool> HasActiveFutureAppointmentsAsync(Guid patientId, DateTime after, CancellationToken ct = default);
 }

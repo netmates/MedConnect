@@ -13,6 +13,10 @@ public interface IAdminPatientApplicationService
     /// </summary>
     Task<PatientDto> GetByIdAsync(Guid id, CancellationToken ct);
     /// <summary>
+    /// Обновить данные пациента
+    /// </summary>
+    Task<PatientDto> UpdateAsync(Guid id, UpdatePatientDto dto, CancellationToken ct);
+    /// <summary>
     /// Деактивация пациента
     /// </summary>
     Task DeactivateAsync(Guid id, CancellationToken ct);

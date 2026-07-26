@@ -15,7 +15,7 @@ public class PatientRepository(AppointmentDbContext context) : Repository<Patien
     //    => await _context.Patients
     //        .AnyAsync(p => p.KeycloakId == keycloakId, ct);
 
-    public async Task<IReadOnlyList<Patient>> GetAllWithInactiveAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<Patient>> GetAllIncludingInactiveAsync(CancellationToken ct = default)
         => await _context.Patients
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync(ct);

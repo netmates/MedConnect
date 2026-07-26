@@ -25,8 +25,7 @@ public interface IDoctorRepository : IRepository<Doctor>
     /// </summary>
     Task AddDoctorSpecializationAsync(DoctorSpecialization doctorSpecialization, CancellationToken ct = default);
     /// <summary>
-    /// Удаляет связь врача со специализацией.
-    /// Проверяет: врач должен иметь ≥1 специализацию после удаления
+    /// Удаляет связь врача со специализацией    
     /// </summary>    
     Task RemoveDoctorSpecializationAsync(Guid doctorId, Guid specializationId, CancellationToken ct = default);
     /// <summary>

@@ -3,10 +3,8 @@ using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
-using AppointmentService.Application.Validators;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
-using System.Numerics;
 
 namespace AppointmentService.Application.Services;
 
@@ -22,7 +20,7 @@ public class AdminPatientApplicationService(
     private readonly IValidator<UpdatePatientDto> _updatePatientValidator = updatePatientValidator;
 
     public async Task<IReadOnlyList<PatientDto>> GetAllIncludingInactiveAsync(CancellationToken ct)
-        => (await _patientRepository.GetAllWithInactiveAsync(ct))
+        => (await _patientRepository.GetAllIncludingInactiveAsync(ct))
             .Select(MapToDto).ToList();
 
     public async Task<PatientDto> GetByIdAsync(Guid id, CancellationToken ct)
@@ -58,7 +56,7 @@ public class AdminPatientApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
@@ -71,7 +69,7 @@ public class AdminPatientApplicationService(
             var patient = await _patientRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Пациент {id} не найден.");
             
-            var hasFuture = await _appointmentRepository.HasConfirmedFutureAppointmentsAsync(patient.Id, DateTime.UtcNow, ct);
+            var hasFuture = await _appointmentRepository.HasActiveFutureAppointmentsAsync(patient.Id, DateTime.UtcNow, ct);
             if (hasFuture)
                 throw new BusinessRuleException(
                     "Невозможно деактивировать пациента: есть активные будущие записи. " +
@@ -84,7 +82,7 @@ public class AdminPatientApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 
@@ -106,7 +104,7 @@ public class AdminPatientApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 

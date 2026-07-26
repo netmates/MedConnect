@@ -7,4 +7,5 @@ public class UpdateDoctorDto
     public string? MiddleName { get; set; }
     public string Description { get; set; } = string.Empty;
     public int ExperienceYears { get; set; }
+    public List<Guid> SpecializationIds { get; set; } = [];
 }

@@ -13,5 +13,5 @@ public interface IPatientRepository : IRepository<Patient>
     /// <summary>
     /// Получить всех пациентов, включая деактивированных
     /// </summary>
-    Task<IReadOnlyList<Patient>> GetAllWithInactiveAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Patient>> GetAllIncludingInactiveAsync(CancellationToken ct = default);
 }

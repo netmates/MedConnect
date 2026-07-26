@@ -16,11 +16,11 @@ public class UpdateDoctorValidator : AbstractValidator<UpdateDoctorDto>
                 .WithMessage($"Фамилия не должна превышать {Doctor.MaxLastNameLength} символов.");
 
         RuleFor(x => x.FirstName)
-           .Cascade(CascadeMode.Stop)
-           .NotEmpty()
-               .WithMessage("Имя обязательно.")
-           .MaximumLength(Doctor.MaxFirstNameLength)
-               .WithMessage($"Имя не должно превышать {Doctor.MaxFirstNameLength} символов.");
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+                .WithMessage("Имя обязательно.")
+            .MaximumLength(Doctor.MaxFirstNameLength)
+                .WithMessage($"Имя не должно превышать {Doctor.MaxFirstNameLength} символов.");
 
         RuleFor(x => x.MiddleName)
             .MaximumLength(Doctor.MaxMiddleNameLength)
@@ -39,5 +39,12 @@ public class UpdateDoctorValidator : AbstractValidator<UpdateDoctorDto>
                 .WithMessage("Описание обязательно.")
             .MaximumLength(Doctor.MaxDescriptionLength)
                 .WithMessage($"Описание не должно превышать {Doctor.MaxDescriptionLength} символов.");
+
+        RuleFor(x => x.SpecializationIds)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+                .WithMessage("Укажите хотя бы одну специализацию.")
+            .Must(ids => ids.Count == ids.Distinct().Count())
+                .WithMessage("Дублирующиеся специализации не допускаются.");
     }
 }

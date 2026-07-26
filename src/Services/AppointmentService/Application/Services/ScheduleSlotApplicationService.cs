@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.Slot;
+﻿using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
@@ -9,20 +9,20 @@ using FluentValidation;
 
 namespace AppointmentService.Application.Services;
 
-public class ScheduleApplicationService(
+public class ScheduleSlotApplicationService(
     IScheduleSlotRepository slotRepository,
     IDoctorRepository doctorRepository,
     IUnitOfWork unitOfWork,
-    IValidator<CreateSlotDto> createSlotValidator,
-    IValidator<UpdateSlotDto> updateSlotValidator) : IScheduleApplicationService
+    IValidator<CreateScheduleSlotDto> createSlotValidator,
+    IValidator<UpdateScheduleSlotDto> updateSlotValidator) : IScheduleSlotApplicationService
 {
     private readonly IScheduleSlotRepository _slotRepository = slotRepository;
     private readonly IDoctorRepository _doctorRepository = doctorRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IValidator<CreateSlotDto> _createSlotValidator = createSlotValidator;
-    private readonly IValidator<UpdateSlotDto> _updateSlotValidator = updateSlotValidator;
+    private readonly IValidator<CreateScheduleSlotDto> _createSlotValidator = createSlotValidator;
+    private readonly IValidator<UpdateScheduleSlotDto> _updateSlotValidator = updateSlotValidator;
 
-    public async Task<SlotDto> CreateAsync(CreateSlotDto dto, string keycloakId, CancellationToken ct)
+    public async Task<ScheduleSlotDto> CreateAsync(CreateScheduleSlotDto dto, string keycloakId, CancellationToken ct)
     {
         var validationResult = await _createSlotValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
@@ -52,7 +52,7 @@ public class ScheduleApplicationService(
         }
     }
 
-    public async Task<SlotDto> UpdateAsync(Guid id, UpdateSlotDto dto, string keycloakId, CancellationToken ct)
+    public async Task<ScheduleSlotDto> UpdateAsync(Guid id, UpdateScheduleSlotDto dto, string keycloakId, CancellationToken ct)
     {
         var validationResult = await _updateSlotValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
@@ -64,14 +64,14 @@ public class ScheduleApplicationService(
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var slot = await _slotRepository.GetByIdAsync(id, ct)
-            ?? throw new NotFoundException($"Слот {id} не найден.");
+            var slot = await _slotRepository.GetByIdWithLockAsync(id, ct)
+                ?? throw new NotFoundException($"Слот {id} не найден.");
 
             if (slot.DoctorId != doctor.Id)
                 throw new ForbiddenException("Нет доступа к этому слоту.");
 
             if (slot.Status != SlotStatus.Available)
-                throw new BusinessRuleException("Нельзя редактировать слот: он уже забронирован или отменён.");
+                throw new BusinessRuleException("Нельзя редактировать слот: он уже забронирован.");
 
             var hasOverlap = await _slotRepository.HasOverlappingSlotAsync(doctor.Id, dto.StartTime, dto.EndTime, slot.Id, ct);
             if (hasOverlap)
@@ -99,8 +99,8 @@ public class ScheduleApplicationService(
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var slot = await _slotRepository.GetByIdAsync(id, ct)
-            ?? throw new NotFoundException($"Слот {id} не найден.");
+            var slot = await _slotRepository.GetByIdWithLockAsync(id, ct)
+                ?? throw new NotFoundException($"Слот {id} не найден.");
 
             if (slot.DoctorId != doctor.Id)
                 throw new ForbiddenException("Нет доступа к этому слоту.");
@@ -119,24 +119,26 @@ public class ScheduleApplicationService(
         }
     }
 
-    public async Task<IReadOnlyList<SlotDto>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct)
+    public async Task<IReadOnlyList<ScheduleSlotDto>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct)
     {
         var slots = await _slotRepository.GetByDoctorIdAsync(doctorId, ct);
         return slots.Select(MapToDto).ToList();
     }
 
-    public async Task<IReadOnlyList<SlotDto>> GetAvailableAsync(Guid doctorId, DateTime date, CancellationToken ct)
+    public async Task<IReadOnlyList<ScheduleSlotDto>> GetAvailableAsync(Guid doctorId, DateTime date, CancellationToken ct)
     {
         var slots = await _slotRepository.GetAvailableByDoctorIdAsync(doctorId, date, ct);
         return slots.Select(MapToDto).ToList();
     }
 
-    private static SlotDto MapToDto(ScheduleSlot s) => new()
+    private static ScheduleSlotDto MapToDto(ScheduleSlot s) => new()
     {
         Id = s.Id,
         DoctorId = s.DoctorId,
         StartTime = s.StartTime,
         EndTime = s.EndTime,
-        Status = s.Status.ToString()
+        Status = s.Status.ToString(),
+        CreatedAt = s.CreatedAt,
+        UpdatedAt = s.UpdatedAt
     };
 }

@@ -1,4 +1,6 @@
-﻿namespace AppointmentService.Domain.Entities;
+﻿using AppointmentService.Domain.Exceptions;
+
+namespace AppointmentService.Domain.Entities;
 
 public class Doctor
 {
@@ -33,14 +35,17 @@ public class Doctor
         string description,
         int experienceYears)
     {
+        EnsureKeycloakId(keycloakId);
+        EnsureProfile(lastName, firstName, middleName, description, experienceYears);
+
         return new Doctor
         {
             Id = Guid.NewGuid(),
-            KeycloakId = keycloakId,
-            LastName = lastName,
-            FirstName = firstName,
-            MiddleName = middleName,
-            Description = description,
+            KeycloakId = keycloakId.Trim(),
+            LastName = lastName.Trim(),
+            FirstName = firstName.Trim(),
+            MiddleName = NormalizeOptional(middleName),
+            Description = description.Trim(),
             ExperienceYears = experienceYears,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
@@ -54,13 +59,60 @@ public class Doctor
         string description,
         int experienceYears)
     {
-        LastName = lastName;
-        FirstName = firstName;
-        MiddleName = middleName;
-        Description = description;
+        EnsureProfile(lastName, firstName, middleName, description, experienceYears);
+
+        LastName = lastName.Trim();
+        FirstName = firstName.Trim();
+        MiddleName = NormalizeOptional(middleName);
+        Description = description.Trim();
         ExperienceYears = experienceYears;
     }
 
     public void Deactivate() => IsActive = false;
     public void Activate() => IsActive = true;
+
+    private static void EnsureKeycloakId(string keycloakId)
+    {
+        if (string.IsNullOrWhiteSpace(keycloakId))
+            throw new DomainException("KeycloakId обязателен.");
+
+        if (keycloakId.Trim().Length > MaxKeycloakIdLength)
+            throw new DomainException($"KeycloakId не должен превышать {MaxKeycloakIdLength} символов.");
+    }
+
+    private static void EnsureProfile(
+        string lastName,
+        string firstName,
+        string? middleName,
+        string description,
+        int experienceYears)
+    {
+        if (string.IsNullOrWhiteSpace(lastName))
+            throw new DomainException("Фамилия обязательна.");
+
+        if (lastName.Trim().Length > MaxLastNameLength)
+            throw new DomainException($"Фамилия не должна превышать {MaxLastNameLength} символов.");
+
+        if (string.IsNullOrWhiteSpace(firstName))
+            throw new DomainException("Имя обязательно.");
+
+        if (firstName.Trim().Length > MaxFirstNameLength)
+            throw new DomainException($"Имя не должно превышать {MaxFirstNameLength} символов.");
+
+        if (!string.IsNullOrWhiteSpace(middleName) && middleName.Trim().Length > MaxMiddleNameLength)
+            throw new DomainException($"Отчество не должно превышать {MaxMiddleNameLength} символов.");
+
+        if (string.IsNullOrWhiteSpace(description))
+            throw new DomainException("Описание обязательно.");
+
+        if (description.Trim().Length > MaxDescriptionLength)
+            throw new DomainException($"Описание не должно превышать {MaxDescriptionLength} символов.");
+
+        if (experienceYears < MinExperienceYears || experienceYears > MaxExperienceYears)
+            throw new DomainException(
+                $"Опыт должен быть от {MinExperienceYears} до {MaxExperienceYears} лет.");
+    }
+
+    private static string? NormalizeOptional(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

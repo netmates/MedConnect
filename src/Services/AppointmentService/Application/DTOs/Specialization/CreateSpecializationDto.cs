@@ -1,4 +1,4 @@
-﻿namespace AppointmentService.Application.DTOs.Admin;
+namespace AppointmentService.Application.DTOs.Specialization;
 
 public class CreateSpecializationDto
 {

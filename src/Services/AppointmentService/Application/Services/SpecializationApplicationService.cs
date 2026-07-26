@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.Admin;
+﻿using AppointmentService.Application.DTOs.Specialization;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
@@ -43,7 +43,7 @@ public class SpecializationApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
@@ -69,7 +69,7 @@ public class SpecializationApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
@@ -92,7 +92,7 @@ public class SpecializationApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }

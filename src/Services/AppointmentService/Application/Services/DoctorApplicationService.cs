@@ -53,7 +53,7 @@ public class DoctorApplicationService(
         //    temporaryPassword: dto.TemporaryPassword,
         //    role: "doctor",
         //    ct: ct);
-        var keycloakId = "IamkeycloakId";
+        var keycloakId = Guid.NewGuid().ToString();
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
@@ -68,16 +68,12 @@ public class DoctorApplicationService(
             await _doctorRepository.AddAsync(doctor, ct);
             
             foreach (var specializationId in dto.SpecializationIds)
-            {   
-                var specialization = await _specializationRepository.GetByIdAsync(specializationId, ct);
-                if (specialization is not null)
-                {
-                    await _doctorRepository.AddDoctorSpecializationAsync(new DoctorSpecialization
-                    {
-                        DoctorId = doctor.Id,
-                        SpecializationId = specialization.Id
-                    }, ct);
-                }
+            {
+                var specialization = await _specializationRepository.GetByIdAsync(specializationId, ct)
+                    ?? throw new NotFoundException($"Специализация {specializationId} не найдена.");
+
+                await _doctorRepository.AddDoctorSpecializationAsync(
+                    DoctorSpecialization.Create(doctor.Id, specialization.Id), ct);
             }
 
             await _unitOfWork.CommitAsync(ct);
@@ -87,7 +83,7 @@ public class DoctorApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             //try { await _keycloakAdminService.DeleteUserAsync(keycloakId, ct); }
             //catch (Exception cleanupEx)
             //{   
@@ -105,8 +101,8 @@ public class DoctorApplicationService(
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var doctor = await _doctorRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Врач {id} не найден.");
+            var doctor = await _doctorRepository.GetWithSpecializationsAsync(id, ct)
+            ?? throw new NotFoundException($"Врач {id} не найден.");
 
             doctor.Update(
                 lastName: dto.LastName,
@@ -115,7 +111,35 @@ public class DoctorApplicationService(
                 description: dto.Description,
                 experienceYears: dto.ExperienceYears);
             await _doctorRepository.UpdateAsync(doctor, ct);
-            
+
+            foreach (var specializationId in dto.SpecializationIds)
+            {
+                _ = await _specializationRepository.GetByIdAsync(specializationId, ct)
+                    ?? throw new NotFoundException($"Специализация {specializationId} не найдена.");
+            }
+
+            var currentIds = doctor.DoctorSpecializations
+                                .Select(ds => ds.SpecializationId)
+                                .ToHashSet();
+            var desiredIds = dto.SpecializationIds.ToHashSet();
+
+            if (desiredIds.Count == 0)
+                throw new BusinessRuleException("Врач должен иметь хотя бы одну специализацию.");
+
+            var toAdd = desiredIds.Except(currentIds);
+            var toRemove = currentIds.Except(desiredIds);
+
+            foreach (var specializationId in toAdd)
+            {
+                await _doctorRepository.AddDoctorSpecializationAsync(
+                    DoctorSpecialization.Create(doctor.Id, specializationId), ct);
+            }
+
+            foreach (var specializationId in toRemove)
+            {
+                await _doctorRepository.RemoveDoctorSpecializationAsync(doctor.Id, specializationId, ct);
+            }
+
             await _unitOfWork.CommitAsync(ct);
 
             var updateDoctor = await _doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
@@ -123,7 +147,7 @@ public class DoctorApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
@@ -143,7 +167,7 @@ public class DoctorApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 
@@ -165,7 +189,7 @@ public class DoctorApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 

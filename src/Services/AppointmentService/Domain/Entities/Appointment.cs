@@ -28,13 +28,25 @@ public class Appointment
         Guid slotId,
         string? reason)
     {
+        if (patientId == Guid.Empty)
+            throw new DomainException("PatientId обязателен.");
+
+        if (doctorId == Guid.Empty)
+            throw new DomainException("DoctorId обязателен.");
+
+        if (slotId == Guid.Empty)
+            throw new DomainException("SlotId обязателен.");
+
+        if (!string.IsNullOrWhiteSpace(reason) && reason.Trim().Length > MaxReasonLength)
+            throw new DomainException($"Причина не должна превышать {MaxReasonLength} символов.");
+
         return new Appointment
         {
             Id = Guid.NewGuid(),
             PatientId = patientId,
             DoctorId = doctorId,
             SlotId = slotId,
-            Reason = reason,
+            Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(),
             Status = AppointmentStatus.Created,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow

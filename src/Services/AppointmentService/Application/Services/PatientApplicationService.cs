@@ -48,7 +48,7 @@ public class PatientApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
@@ -87,7 +87,7 @@ public class PatientApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }

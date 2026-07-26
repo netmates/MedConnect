@@ -19,9 +19,9 @@ public interface IAppointmentApplicationService
     /// <summary>
     /// Отметить запись как завершённую
     /// </summary>
-    Task CompleteAsync(Guid appointmentId, Guid doctorId, CancellationToken ct);
+    Task CompleteAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
     /// <summary>
     /// Подтверждение записи
     /// </summary>
-    Task ConfirmAsync(Guid appointmentId, Guid doctorId, CancellationToken ct);
+    Task ConfirmAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
 }

@@ -52,7 +52,10 @@ public class CreateDoctorValidator : AbstractValidator<CreateDoctorDto>
                 .WithMessage($"Описание не должно превышать {Doctor.MaxDescriptionLength} символов.");
 
         RuleFor(x => x.SpecializationIds)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
-            .WithMessage("Укажите хотя бы одну специализацию.");
+                .WithMessage("Укажите хотя бы одну специализацию.")
+            .Must(ids => ids.Count == ids.Distinct().Count())
+                .WithMessage("Дублирующиеся специализации не допускаются.");
     }
 }

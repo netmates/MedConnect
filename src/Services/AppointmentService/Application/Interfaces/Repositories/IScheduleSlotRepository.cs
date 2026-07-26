@@ -13,7 +13,7 @@ public interface IScheduleSlotRepository : IRepository<ScheduleSlot>
     /// </summary>
     Task<IReadOnlyList<ScheduleSlot>> GetAvailableByDoctorIdAsync(Guid doctorId, DateTime date, CancellationToken ct = default);
     /// <summary>
-    /// Проверяет, есть ли у врача не отменённый слот, пересекающийся по времени с запрошенным
+    /// Проверяет, есть ли у врача слот, пересекающийся по времени с запрошенным
     /// </summary>
     Task<bool> HasOverlappingSlotAsync(Guid doctorId, DateTime startTime, DateTime endTime, Guid? excludeSlotId = null, CancellationToken ct = default);
     /// <summary>
