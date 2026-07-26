@@ -4,6 +4,7 @@ using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
+using AppointmentService.Infrastructure.Repositories;
 using FluentValidation;
 
 namespace AppointmentService.Application.Services;
@@ -11,12 +12,14 @@ namespace AppointmentService.Application.Services;
 public class DoctorApplicationService(
     IDoctorRepository doctorRepository,
     ISpecializationRepository specializationRepository,
+    IAppointmentRepository appointmentRepository,
     IUnitOfWork unitOfWork,
     IValidator<CreateDoctorDto> createDoctorValidator,
     IValidator<UpdateDoctorDto> updateDoctorValidator) : IDoctorApplicationService
 {
     private readonly IDoctorRepository _doctorRepository = doctorRepository;
     private readonly ISpecializationRepository _specializationRepository = specializationRepository;
+    private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IValidator<CreateDoctorDto> _createDoctorValidator = createDoctorValidator;
     private readonly IValidator<UpdateDoctorDto> _updateDoctorValidator = updateDoctorValidator;
@@ -159,6 +162,13 @@ public class DoctorApplicationService(
         {
             var doctor = await _doctorRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Врач {id} не найден.");
+
+            var hasFuture = await _appointmentRepository
+                .HasActiveFutureAppointmentsByDoctorAsync(doctor.Id, DateTime.UtcNow, ct);
+            if (hasFuture)
+                throw new BusinessRuleException(
+                    "Невозможно деактивировать врача: есть активные будущие записи. " +
+                    "Сначала отмените все запланированные приёмы.");
 
             doctor.Deactivate();
             await _doctorRepository.UpdateAsync(doctor, ct);

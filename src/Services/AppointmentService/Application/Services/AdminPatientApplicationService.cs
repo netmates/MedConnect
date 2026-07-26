@@ -69,7 +69,7 @@ public class AdminPatientApplicationService(
             var patient = await _patientRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Пациент {id} не найден.");
             
-            var hasFuture = await _appointmentRepository.HasActiveFutureAppointmentsAsync(patient.Id, DateTime.UtcNow, ct);
+            var hasFuture = await _appointmentRepository.HasActiveFutureAppointmentsByPatienAsync(patient.Id, DateTime.UtcNow, ct);
             if (hasFuture)
                 throw new BusinessRuleException(
                     "Невозможно деактивировать пациента: есть активные будущие записи. " +

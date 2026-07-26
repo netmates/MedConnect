@@ -1,4 +1,5 @@
 ﻿using AppointmentService.Domain.Entities;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace AppointmentService.Application.Interfaces.Repositories;
 
@@ -23,7 +24,11 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// </summary>
     Task<Appointment?> GetByIdWithLockAsync(Guid id, CancellationToken ct = default);
     /// <summary>
-    /// Проверка наличия подтвержденных будущих записей пациента
+    /// Есть ли у пациента будущие активные записи (Created / Confirmed)
     /// </summary>
-    Task<bool> HasActiveFutureAppointmentsAsync(Guid patientId, DateTime after, CancellationToken ct = default);
+    Task<bool> HasActiveFutureAppointmentsByPatienAsync(Guid patientId, DateTime after, CancellationToken ct = default);
+    /// <summary>
+    /// Есть ли у врача будущие активные записи(Created / Confirmed)
+    /// </summary>
+    Task<bool> HasActiveFutureAppointmentsByDoctorAsync(Guid doctorId, DateTime after, CancellationToken ct = default);
 }

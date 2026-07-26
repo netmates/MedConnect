@@ -31,6 +31,9 @@ public class ScheduleSlotApplicationService(
         var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль врача не найден.");
 
+        if (!doctor.IsActive)
+            throw new BusinessRuleException("Нельзя управлять расписанием: профиль врача деактивирован.");
+
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
@@ -59,7 +62,10 @@ public class ScheduleSlotApplicationService(
             throw new ValidationException(validationResult.Errors);
 
         var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
-            ?? throw new NotFoundException("Профиль врача не найден.");        
+            ?? throw new NotFoundException("Профиль врача не найден.");
+
+        if (!doctor.IsActive)
+            throw new BusinessRuleException("Нельзя управлять расписанием: профиль врача деактивирован.");
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
@@ -95,6 +101,9 @@ public class ScheduleSlotApplicationService(
     {
         var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль врача не найден.");
+
+        if (!doctor.IsActive)
+            throw new BusinessRuleException("Нельзя управлять расписанием: профиль врача деактивирован.");
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
