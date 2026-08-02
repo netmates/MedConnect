@@ -1,4 +1,4 @@
-﻿using AppointmentService.Domain.Entities;
+using AppointmentService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -24,7 +24,7 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
 
         builder.Property(p => p.MiddleName)
             .HasMaxLength(Patient.MaxMiddleNameLength);
-        
+
         builder.Property(p => p.Phone)
             .HasMaxLength(Patient.MaxPhoneLength);
 
@@ -38,11 +38,5 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         // Ускоряет GetByKeycloakIdAsync
         builder.HasIndex(p => p.KeycloakId)
             .IsUnique();
-        
-        // Нельзя удалить пациента пока у него есть записи
-        builder.HasMany(p => p.Appointments)
-            .WithOne(a => a.Patient)
-            .HasForeignKey(a => a.PatientId)
-            .OnDelete(DeleteBehavior.Restrict);
     }
 }

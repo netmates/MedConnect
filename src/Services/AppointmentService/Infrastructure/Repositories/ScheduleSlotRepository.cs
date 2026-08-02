@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.Interfaces.Repositories;
+using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using AppointmentService.Infrastructure.Persistence;
@@ -16,7 +16,7 @@ public class ScheduleSlotRepository(AppointmentDbContext context) : Repository<S
 
     public async Task<IReadOnlyList<ScheduleSlot>> GetAvailableByDoctorIdAsync(Guid doctorId, DateTime date, CancellationToken ct = default)
     {
-        // Диапазон вместо StartTime.Date == date.Date        
+        // Диапазон вместо StartTime.Date == date.Date
         // Диапазон >= / < транслируется в простое сравнение и задействует индекс по StartTime
         var startOfDay = date.Date;
         var endOfDay = startOfDay.AddDays(1);
@@ -24,11 +24,12 @@ public class ScheduleSlotRepository(AppointmentDbContext context) : Repository<S
             .Where(s => s.DoctorId == doctorId
                      && s.Status == SlotStatus.Available
                      && s.StartTime >= startOfDay
-                     && s.StartTime < endOfDay)
+                     && s.StartTime < endOfDay
+                     && s.StartTime > DateTime.UtcNow)
             .OrderBy(s => s.StartTime)
             .ToListAsync(ct);
     }
-    
+
     public async Task<bool> HasOverlappingSlotAsync(
         Guid doctorId,
         DateTime startTime,
@@ -41,16 +42,16 @@ public class ScheduleSlotRepository(AppointmentDbContext context) : Repository<S
                         && s.EndTime > startTime
                         // excludeSlotId - чтобы не найти самого себя при редактировании
                         && (excludeSlotId == null || s.Id != excludeSlotId), ct);
-    
+
     public async Task<ScheduleSlot?> GetByIdWithLockAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.ScheduleSlots
-        .FromSqlInterpolated($"""
-            SELECT *
-            FROM "ScheduleSlots"
-            WHERE "Id" = {id}
-            FOR UPDATE
-            """)
-        .FirstOrDefaultAsync(ct);
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM "ScheduleSlots"
+                WHERE "Id" = {id}
+                FOR UPDATE
+                """)
+            .FirstOrDefaultAsync(ct);
     }
 }

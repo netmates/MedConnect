@@ -1,4 +1,4 @@
-﻿namespace AppointmentService.Application.DTOs.Appointment;
+namespace AppointmentService.Application.DTOs.Appointment;
 
 public class AppointmentDto
 {
@@ -10,4 +10,8 @@ public class AppointmentDto
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public string DoctorFullName { get; set; } = string.Empty;
+    public string PatientFullName { get; set; } = string.Empty;
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
 }

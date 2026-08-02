@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.Interfaces.Repositories;
+using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

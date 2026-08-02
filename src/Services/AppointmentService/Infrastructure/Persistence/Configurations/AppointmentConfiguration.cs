@@ -1,4 +1,4 @@
-﻿using AppointmentService.Domain.Entities;
+using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -19,7 +19,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
 
         builder.Property(a => a.SlotId)
             .IsRequired();
-        
+
         builder.Property(a => a.Reason)
             .HasMaxLength(Appointment.MaxReasonLength);
 
@@ -33,9 +33,8 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.Property(a => a.UpdatedAt)
             .IsRequired();
 
-        // Частичный уникальный индекс по SlotId:
-        // Один слот не может иметь две активные записи одновременно
-        // Cancelled исключены из индекса — после отмены слот можно забронировать снова        
+        // Уникальность SlotId для всех статусов, кроме Cancelled —
+        // после отмены слот можно забронировать снова; Completed остаётся в индексе
         builder.HasIndex(a => a.SlotId)
             .IsUnique()
             .HasFilter($"\"Status\" != {(int)AppointmentStatus.Cancelled}");

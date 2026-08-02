@@ -70,7 +70,7 @@ public class Appointment
     }
 
     public void Complete()
-    {   
+    {
         if (Status != AppointmentStatus.Confirmed)
             throw new DomainException($"Завершить можно только подтверждённую запись. Текущий статус: {Status}.");
         Status = AppointmentStatus.Completed;

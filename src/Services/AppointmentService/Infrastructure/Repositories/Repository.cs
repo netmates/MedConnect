@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.Interfaces.Repositories;
+using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +19,7 @@ public class Repository<T>(AppointmentDbContext context) : IRepository<T> where 
         => await _dbSet.AddAsync(entity, ct);
 
     public Task UpdateAsync(T entity, CancellationToken ct = default)
-    {   
+    {
         _dbSet.Update(entity);
         return Task.CompletedTask;
     }

@@ -1,4 +1,4 @@
-﻿using AppointmentService.Domain.Entities;
+using AppointmentService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,6 +26,7 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
             .HasMaxLength(Doctor.MaxMiddleNameLength);
 
         builder.Property(d => d.Description)
+            .IsRequired()
             .HasMaxLength(Doctor.MaxDescriptionLength);
 
         builder.Property(d => d.ExperienceYears)

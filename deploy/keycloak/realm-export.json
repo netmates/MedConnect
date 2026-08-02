@@ -1,0 +1,88 @@
+{
+  "realm": "medconnect",
+  "enabled": true,
+  "registrationAllowed": true,
+  "accessTokenLifespan": 900,
+  "ssoSessionMaxLifespan": 86400,
+  "roles": {
+    "realm": [
+      { "name": "patient", "description": "Пациент — самостоятельная регистрация" },
+      { "name": "doctor",  "description": "Врач — создаётся администратором" },
+      { "name": "admin",   "description": "Администратор системы" }
+    ]
+  },
+  "defaultRoles": ["patient"],
+  "clients": [
+    {
+      "clientId": "medconnect-app",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": [
+		"http://localhost:3000",
+		"http://localhost:5067",
+		"https://localhost:7246"
+	  ],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "audience-medconnect-app",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "medconnect-app",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "medconnect-admin-cli",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "description": "Service account для AppointmentService — управление пользователями через Admin API. Secret задаётся вручную в Console (Credentials) и в User Secrets приложения (Keycloak:AdminClientSecret)."
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-medconnect-admin-cli",
+      "enabled": true,
+      "serviceAccountClientId": "medconnect-admin-cli",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "view-realm"
+        ]
+      }
+    },
+    {
+      "username": "admin1",
+      "email": "admin1@medconnect.ru",
+      "firstName": "Admin",
+      "lastName": "One",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "Admin1Pass!", "temporary": false }],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "admin2",
+      "email": "admin2@medconnect.ru",
+      "firstName": "Admin",
+      "lastName": "Two",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "Admin2Pass!", "temporary": false }],
+      "realmRoles": ["admin"]
+    }
+  ]
+}

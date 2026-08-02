@@ -1,4 +1,4 @@
-﻿using AppointmentService.Domain.Entities;
+using AppointmentService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,13 +10,13 @@ public class DoctorSpecializationConfiguration : IEntityTypeConfiguration<Doctor
     {
         builder.HasKey(ds => new { ds.DoctorId, ds.SpecializationId });
 
-        // Запрет удаления врача
+        // Нельзя удалить врача, пока у него есть специализации
         builder.HasOne(ds => ds.Doctor)
             .WithMany(d => d.DoctorSpecializations)
             .HasForeignKey(ds => ds.DoctorId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Нельзя удалить специализацию пока есть врачи с ней
+        // Нельзя удалить специализацию, пока есть врачи с ней
         builder.HasOne(ds => ds.Specialization)
             .WithMany(s => s.DoctorSpecializations)
             .HasForeignKey(ds => ds.SpecializationId)

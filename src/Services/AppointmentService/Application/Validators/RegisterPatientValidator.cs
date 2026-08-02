@@ -27,13 +27,6 @@ public class RegisterPatientValidator : AbstractValidator<RegisterPatientDto>
                 .WithMessage($"Отчество не должно превышать {Patient.MaxMiddleNameLength} символов.")
             .When(x => !string.IsNullOrEmpty(x.MiddleName));
 
-        RuleFor(x => x.Email)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty()
-                .WithMessage("Email обязателен.")
-            .EmailAddress()
-                .WithMessage("Некорректный email.");
-
         RuleFor(x => x.Phone)
             .Matches(Patient.PhoneRegexPattern)
                 .WithMessage("Некорректный формат номера телефона.")

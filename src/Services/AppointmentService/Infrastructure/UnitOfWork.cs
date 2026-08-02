@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces;
 using AppointmentService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -9,10 +9,7 @@ public class UnitOfWork(AppointmentDbContext context) : IUnitOfWork
     private readonly AppointmentDbContext _context = context;
     private IDbContextTransaction? _transaction;
 
-    /// <summary>
-    /// SaveChangesAsync приватный — вызывается только из CommitAsync.
-    /// Это исключает двойное сохранение и утечку изменений в обход транзакции 
-    /// </summary>
+    // SaveChanges только из CommitAsync — чтобы не сохранять вне транзакции
     private async Task<int> SaveChangesInternalAsync(CancellationToken ct = default)
         => await _context.SaveChangesAsync(ct);
 

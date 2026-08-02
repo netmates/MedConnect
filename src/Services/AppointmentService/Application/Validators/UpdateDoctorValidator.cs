@@ -44,6 +44,8 @@ public class UpdateDoctorValidator : AbstractValidator<UpdateDoctorDto>
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
                 .WithMessage("Укажите хотя бы одну специализацию.")
+            .Must(ids => ids.All(id => id != Guid.Empty))
+                .WithMessage("Идентификатор специализации некорректный.")
             .Must(ids => ids.Count == ids.Distinct().Count())
                 .WithMessage("Дублирующиеся специализации не допускаются.");
     }

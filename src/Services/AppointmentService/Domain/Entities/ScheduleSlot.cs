@@ -1,4 +1,4 @@
-﻿using AppointmentService.Domain.Enums;
+using AppointmentService.Domain.Enums;
 using AppointmentService.Domain.Exceptions;
 
 namespace AppointmentService.Domain.Entities;
@@ -46,7 +46,7 @@ public class ScheduleSlot
 
         Status = SlotStatus.Booked;
         UpdatedAt = DateTime.UtcNow;
-    }    
+    }
 
     public void Free()
     {
@@ -56,7 +56,16 @@ public class ScheduleSlot
         Status = SlotStatus.Available;
         UpdatedAt = DateTime.UtcNow;
     }
-    
+
+    public void Consume()
+    {
+        if (Status != SlotStatus.Booked)
+            throw new DomainException("Отметить израсходованным можно только забронированный слот.");
+
+        Status = SlotStatus.Consumed;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Update(DateTime startTime, DateTime endTime)
     {
         if (Status != SlotStatus.Available)
@@ -73,8 +82,8 @@ public class ScheduleSlot
     {
         if (endTime <= startTime)
             throw new DomainException("Конец слота должен быть позже начала.");
-        var durationMinutes = (endTime - startTime).TotalMinutes;
 
+        var durationMinutes = (endTime - startTime).TotalMinutes;
         if (durationMinutes < MinDurationMinutes || durationMinutes > MaxDurationMinutes)
             throw new DomainException(
                 $"Длительность слота должна быть от {MinDurationMinutes} до {MaxDurationMinutes} минут.");

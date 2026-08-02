@@ -1,9 +1,10 @@
-﻿using AppointmentService.Application.DTOs.Patient;
+using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
+using AppointmentService.Domain.Enums;
 using FluentValidation;
 
 namespace AppointmentService.Application.Services;
@@ -11,12 +12,16 @@ namespace AppointmentService.Application.Services;
 public class AdminPatientApplicationService(
     IPatientRepository patientRepository,
     IAppointmentRepository appointmentRepository,
+    IScheduleSlotRepository slotRepository,
     IUnitOfWork unitOfWork,
+    IKeycloakAdminService keycloakAdminService,
     IValidator<UpdatePatientDto> updatePatientValidator) : IAdminPatientApplicationService
 {
     private readonly IPatientRepository _patientRepository = patientRepository;
-    private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;    
+    private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;
+    private readonly IScheduleSlotRepository _slotRepository = slotRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IKeycloakAdminService _keycloakAdminService = keycloakAdminService;
     private readonly IValidator<UpdatePatientDto> _updatePatientValidator = updatePatientValidator;
 
     public async Task<IReadOnlyList<PatientDto>> GetAllIncludingInactiveAsync(CancellationToken ct)
@@ -63,17 +68,19 @@ public class AdminPatientApplicationService(
 
     public async Task DeactivateAsync(Guid id, CancellationToken ct)
     {
+        string keycloakId;
+
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             var patient = await _patientRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Пациент {id} не найден.");
-            
-            var hasFuture = await _appointmentRepository.HasActiveFutureAppointmentsByPatienAsync(patient.Id, DateTime.UtcNow, ct);
-            if (hasFuture)
-                throw new BusinessRuleException(
-                    "Невозможно деактивировать пациента: есть активные будущие записи. " +
-                    "Сначала отмените все запланированные приёмы.");
+
+            await CancelActiveFutureAppointmentsAsync(
+                await _appointmentRepository.GetActiveFutureByPatientIdAsync(patient.Id, DateTime.UtcNow, ct),
+                ct);
+
+            keycloakId = patient.KeycloakId;
 
             patient.Deactivate();
             await _patientRepository.UpdateAsync(patient, ct);
@@ -86,17 +93,21 @@ public class AdminPatientApplicationService(
             throw;
         }
 
-        //await _keycloakAdminService.DisableUserAsync(patient.KeycloakId, ct);
+        await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
     }
 
     public async Task ActivateAsync(Guid id, CancellationToken ct)
     {
+        string keycloakId;
+
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             var patient = await _patientRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Пациент {id} не найден.");
-            
+
+            keycloakId = patient.KeycloakId;
+
             patient.Activate();
             await _patientRepository.UpdateAsync(patient, ct);
 
@@ -108,7 +119,33 @@ public class AdminPatientApplicationService(
             throw;
         }
 
-        //await _keycloakAdminService.EnableUserAsync(patient.KeycloakId, ct);
+        await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
+    }
+
+    private async Task CancelActiveFutureAppointmentsAsync(
+        IReadOnlyList<Appointment> appointments,
+        CancellationToken ct)
+    {
+        foreach (var item in appointments)
+        {
+            var appointment = await _appointmentRepository.GetByIdWithLockAsync(item.Id, ct);
+            if (appointment is null) continue;
+
+            if (appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.Completed)
+                continue;
+
+            var slot = await _slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
+                ?? throw new NotFoundException("Слот записи не найден.");
+
+            appointment.Cancel();
+            await _appointmentRepository.UpdateAsync(appointment, ct);
+
+            if (slot.Status == SlotStatus.Booked)
+            {
+                slot.Free();
+                await _slotRepository.UpdateAsync(slot, ct);
+            }
+        }
     }
 
     private static PatientDto MapToDto(Patient p) => new()

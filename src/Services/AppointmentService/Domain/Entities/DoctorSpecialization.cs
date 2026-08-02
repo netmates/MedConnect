@@ -25,5 +25,5 @@ public class DoctorSpecialization
             DoctorId = doctorId,
             SpecializationId = specializationId
         };
-    }   
+    }
 }

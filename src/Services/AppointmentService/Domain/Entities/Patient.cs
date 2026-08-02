@@ -1,4 +1,4 @@
-﻿using AppointmentService.Domain.Exceptions;
+using AppointmentService.Domain.Exceptions;
 using System.Text.RegularExpressions;
 
 namespace AppointmentService.Domain.Entities;
@@ -11,7 +11,7 @@ public class Patient
     public const int MaxMiddleNameLength = 100;
     public const int MinPhoneLength = 7;
     public const int MaxPhoneLength = 20;
-    public const string PhoneRegexPattern = @"^\+?[0-9\s\-]{7,20}$";
+    public static readonly string PhoneRegexPattern = $@"^\+?[0-9\s\-]{{{MinPhoneLength},{MaxPhoneLength}}}$";
 
     public static readonly DateTime MinDateOfBirth = new(1900, 1, 1);
 
@@ -106,10 +106,7 @@ public class Patient
 
         if (!string.IsNullOrWhiteSpace(phone))
         {
-            var normalizedPhone = phone.Trim();
-            if (normalizedPhone.Length < MinPhoneLength || normalizedPhone.Length > MaxPhoneLength)
-                throw new DomainException(
-                    $"Телефон должен содержать от {MinPhoneLength} до {MaxPhoneLength} символов.");
+            var normalizedPhone = phone.Trim();            
 
             if (!Regex.IsMatch(normalizedPhone, PhoneRegexPattern))
                 throw new DomainException("Некорректный формат телефона.");

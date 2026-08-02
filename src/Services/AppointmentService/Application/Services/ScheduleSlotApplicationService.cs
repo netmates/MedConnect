@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.ScheduleSlot;
+using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
@@ -114,8 +114,8 @@ public class ScheduleSlotApplicationService(
             if (slot.DoctorId != doctor.Id)
                 throw new ForbiddenException("Нет доступа к этому слоту.");
 
-            if (slot.Status == SlotStatus.Booked)
-                throw new BusinessRuleException("Нельзя удалить забронированный слот.");
+            if (slot.Status != SlotStatus.Available)
+                throw new BusinessRuleException("Удалить можно только свободный слот.");
 
             await _slotRepository.DeleteAsync(slot, ct);
 
@@ -130,12 +130,18 @@ public class ScheduleSlotApplicationService(
 
     public async Task<IReadOnlyList<ScheduleSlotDto>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct)
     {
+        _ = await _doctorRepository.GetByIdAsync(doctorId, ct)
+            ?? throw new NotFoundException("Врач не найден.");
+
         var slots = await _slotRepository.GetByDoctorIdAsync(doctorId, ct);
         return slots.Select(MapToDto).ToList();
     }
 
     public async Task<IReadOnlyList<ScheduleSlotDto>> GetAvailableAsync(Guid doctorId, DateTime date, CancellationToken ct)
     {
+        _ = await _doctorRepository.GetByIdAsync(doctorId, ct)
+            ?? throw new NotFoundException("Врач не найден.");
+
         var slots = await _slotRepository.GetAvailableByDoctorIdAsync(doctorId, date, ct);
         return slots.Select(MapToDto).ToList();
     }
