@@ -225,7 +225,6 @@ public class DoctorApplicationService(
         await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
     }
 
-
     public async Task ResetPasswordAsync(Guid id, ResetPasswordDto dto, CancellationToken ct)
     {
         var validationResult = await _resetPasswordValidator.ValidateAsync(dto, ct);

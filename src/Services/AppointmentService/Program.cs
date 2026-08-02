@@ -54,7 +54,7 @@ if (app.Environment.IsDevelopment())
     {
         var clientId = app.Configuration["Keycloak:Audience"]
             ?? throw new InvalidOperationException("Keycloak:Audience не задан.");
-        
+
         options
             .AddPreferredSecuritySchemes(KeycloakSecuritySchemeTransformer.SchemeId)
             .AddPasswordFlow(KeycloakSecuritySchemeTransformer.SchemeId, flow =>

@@ -32,7 +32,7 @@ internal sealed class BearerSecuritySchemeTransformer(
 
         document.Components ??= new OpenApiComponents();
         document.AddComponent(SchemeId, bearer);
-        
+
         document.Security ??= [];
         document.Security.Add(
             new OpenApiSecurityRequirement
