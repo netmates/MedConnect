@@ -106,7 +106,6 @@ public static class DataSeeder
             }
         };
 
-
         foreach (var dto in doctors)
         {
             var created = await doctorService.CreateAsync(dto, ct);
