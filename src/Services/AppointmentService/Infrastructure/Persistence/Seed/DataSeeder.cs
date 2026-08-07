@@ -136,7 +136,7 @@ public static class DataSeeder
                 Dto = new RegisterPatientDto
                 {
                     LastName = "Сидоров",
-                    FirstName = "Пётр",
+                    FirstName = "Петр",
                     MiddleName = "Алексеевич",
                     Phone = "+79001112233",
                     DateOfBirth = new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Utc)

@@ -60,7 +60,7 @@ public class ScheduleSlot
     public void Consume()
     {
         if (Status != SlotStatus.Booked)
-            throw new DomainException("Отметить израсходованным можно только забронированный слот.");
+            throw new DomainException("Отметить использованным можно только забронированный слот.");
 
         Status = SlotStatus.Consumed;
         UpdatedAt = DateTime.UtcNow;

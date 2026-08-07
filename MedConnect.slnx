@@ -3,4 +3,7 @@
   <Folder Name="/src/Services/">
     <Project Path="src/Services/AppointmentService/AppointmentService.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AppointmentService.UnitTests/AppointmentService.UnitTests.csproj" />
+  </Folder>
 </Solution>
