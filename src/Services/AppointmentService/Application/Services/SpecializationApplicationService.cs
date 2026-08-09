@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.Specialization;
+using AppointmentService.Application.DTOs.Specialization;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
@@ -12,12 +12,15 @@ public class SpecializationApplicationService(
     ISpecializationRepository specializationRepository,
     IUnitOfWork unitOfWork,
     IValidator<CreateSpecializationDto> createSpecializationValidator,
-    IValidator<UpdateSpecializationDto> updateSpecializationValidator) : ISpecializationApplicationService
+    IValidator<UpdateSpecializationDto> updateSpecializationValidator,
+    ILogger<SpecializationApplicationService> logger) : ISpecializationApplicationService
 {
     private readonly ISpecializationRepository _specializationRepository = specializationRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IValidator<CreateSpecializationDto> _createSpecializationValidator = createSpecializationValidator;
     private readonly IValidator<UpdateSpecializationDto> _updateSpecializationValidator = updateSpecializationValidator;
+    private readonly ILogger<SpecializationApplicationService> _logger = logger;
+
 
     public async Task<IReadOnlyList<SpecializationDto>> GetAllAsync(CancellationToken ct)
     {
@@ -38,6 +41,10 @@ public class SpecializationApplicationService(
             await _specializationRepository.AddAsync(specialization, ct);
 
             await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Specialization created: {SpecializationId}, Name={Name}",
+                specialization.Id, specialization.Name);
 
             return MapToDto(specialization);
         }
@@ -64,6 +71,10 @@ public class SpecializationApplicationService(
             await _specializationRepository.UpdateAsync(specialization, ct);
 
             await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Specialization updated: {SpecializationId}, Name={Name}",
+                specialization.Id, specialization.Name);
 
             return MapToDto(specialization);
         }
@@ -95,6 +106,8 @@ public class SpecializationApplicationService(
             await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
+
+        _logger.LogInformation("Specialization deleted: {SpecializationId}", id);
     }
 
     private static SpecializationDto MapToDto(Specialization s) => new()

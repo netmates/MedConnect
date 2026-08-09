@@ -481,7 +481,6 @@ $RECYCLE.BIN/
 ##
 
 # App settings with secrets (IMPORTANT: never commit secrets!)
-appsettings.Development.json
 appsettings.Local.json
 secrets.json
 **/secrets.json

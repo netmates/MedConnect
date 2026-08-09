@@ -6,6 +6,7 @@ using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace AppointmentService.UnitTests.Application;
@@ -32,7 +33,8 @@ public class SpecializationApplicationServiceTests
             _specializations.Object,
             _uow.Object,
             _createValidator.Object,
-            _updateValidator.Object);
+            _updateValidator.Object,
+            NullLogger<SpecializationApplicationService>.Instance);
     }
 
     private static Specialization CreateSpecialization(string name = "Терапия")

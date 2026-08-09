@@ -15,7 +15,8 @@ public class AdminPatientApplicationService(
     IScheduleSlotRepository slotRepository,
     IUnitOfWork unitOfWork,
     IKeycloakAdminService keycloakAdminService,
-    IValidator<UpdatePatientDto> updatePatientValidator) : IAdminPatientApplicationService
+    IValidator<UpdatePatientDto> updatePatientValidator,
+    ILogger<AdminPatientApplicationService> logger) : IAdminPatientApplicationService
 {
     private readonly IPatientRepository _patientRepository = patientRepository;
     private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;
@@ -23,6 +24,7 @@ public class AdminPatientApplicationService(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IKeycloakAdminService _keycloakAdminService = keycloakAdminService;
     private readonly IValidator<UpdatePatientDto> _updatePatientValidator = updatePatientValidator;
+    private readonly ILogger<AdminPatientApplicationService> _logger = logger;
 
     public async Task<IReadOnlyList<PatientDto>> GetAllIncludingInactiveAsync(CancellationToken ct)
         => (await _patientRepository.GetAllIncludingInactiveAsync(ct))
@@ -57,6 +59,8 @@ public class AdminPatientApplicationService(
 
             await _unitOfWork.CommitAsync(ct);
 
+            _logger.LogInformation("Patient updated by admin: {PatientId}", id);
+
             return MapToDto(patient);
         }
         catch
@@ -69,6 +73,7 @@ public class AdminPatientApplicationService(
     public async Task DeactivateAsync(Guid id, CancellationToken ct)
     {
         string keycloakId;
+        int cancelledCount;
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
@@ -76,9 +81,9 @@ public class AdminPatientApplicationService(
             var patient = await _patientRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Пациент {id} не найден.");
 
-            await CancelActiveFutureAppointmentsAsync(
-                await _appointmentRepository.GetActiveFutureByPatientIdAsync(patient.Id, DateTime.UtcNow, ct),
-                ct);
+            var active = await _appointmentRepository.GetActiveFutureByPatientIdAsync(patient.Id, DateTime.UtcNow, ct);
+
+            cancelledCount = await CancelActiveFutureAppointmentsAsync(active, ct);
 
             keycloakId = patient.KeycloakId;
 
@@ -94,6 +99,10 @@ public class AdminPatientApplicationService(
         }
 
         await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+
+        _logger.LogInformation(
+            "Patient deactivated: {PatientId}, KeycloakId={KeycloakId}, CancelledAppointments={Count}",
+            id, keycloakId, cancelledCount);
     }
 
     public async Task ActivateAsync(Guid id, CancellationToken ct)
@@ -120,12 +129,18 @@ public class AdminPatientApplicationService(
         }
 
         await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
+
+        _logger.LogInformation(
+            "Patient activated: {PatientId}, KeycloakId={KeycloakId}",
+            id, keycloakId);
     }
 
-    private async Task CancelActiveFutureAppointmentsAsync(
+    private async Task<int> CancelActiveFutureAppointmentsAsync(
         IReadOnlyList<Appointment> appointments,
         CancellationToken ct)
     {
+        var cancelled = 0;
+
         foreach (var item in appointments)
         {
             var appointment = await _appointmentRepository.GetByIdWithLockAsync(item.Id, ct);
@@ -139,6 +154,7 @@ public class AdminPatientApplicationService(
 
             appointment.Cancel();
             await _appointmentRepository.UpdateAsync(appointment, ct);
+            cancelled++;
 
             if (slot.Status == SlotStatus.Booked)
             {
@@ -146,6 +162,8 @@ public class AdminPatientApplicationService(
                 await _slotRepository.UpdateAsync(slot, ct);
             }
         }
+
+        return cancelled;
     }
 
     private static PatientDto MapToDto(Patient p) => new()

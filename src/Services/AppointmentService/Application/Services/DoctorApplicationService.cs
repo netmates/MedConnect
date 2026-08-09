@@ -18,7 +18,8 @@ public class DoctorApplicationService(
     IKeycloakAdminService keycloakAdminService,
     IValidator<CreateDoctorDto> createDoctorValidator,
     IValidator<UpdateDoctorDto> updateDoctorValidator,
-    IValidator<ResetPasswordDto> resetPasswordValidator) : IDoctorApplicationService
+    IValidator<ResetPasswordDto> resetPasswordValidator,
+    ILogger<DoctorApplicationService> logger) : IDoctorApplicationService
 {
     private readonly IDoctorRepository _doctorRepository = doctorRepository;
     private readonly ISpecializationRepository _specializationRepository = specializationRepository;
@@ -29,6 +30,7 @@ public class DoctorApplicationService(
     private readonly IValidator<CreateDoctorDto> _createDoctorValidator = createDoctorValidator;
     private readonly IValidator<UpdateDoctorDto> _updateDoctorValidator = updateDoctorValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator = resetPasswordValidator;
+    private readonly ILogger<DoctorApplicationService> _logger = logger;
 
     public async Task<IReadOnlyList<DoctorDto>> GetAllAsync(Guid? specializationId, CancellationToken ct)
     {
@@ -93,16 +95,27 @@ public class DoctorApplicationService(
             await _unitOfWork.CommitAsync(ct);
 
             var createdDoctor = await _doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
+
+            _logger.LogInformation(
+                "Doctor created: {DoctorId}, KeycloakId={KeycloakId}",
+                doctor.Id, keycloakId);
+
             return MapToDto(createdDoctor!);
         }
         catch
         {
             await _unitOfWork.RollbackAsync(CancellationToken.None);
 
-            try { await _keycloakAdminService.DeleteUserAsync(keycloakId, CancellationToken.None); }
-            catch
+            try
             {
-               // логирование
+                await _keycloakAdminService.DeleteUserAsync(keycloakId, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to rollback Keycloak user {KeycloakId} after doctor create failure",
+                    keycloakId);
             }
 
             throw;
@@ -160,6 +173,9 @@ public class DoctorApplicationService(
             await _unitOfWork.CommitAsync(ct);
 
             var updateDoctor = await _doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
+
+            _logger.LogInformation("Doctor updated: {DoctorId}", id);
+
             return MapToDto(updateDoctor!);
         }
         catch
@@ -172,6 +188,7 @@ public class DoctorApplicationService(
     public async Task DeactivateAsync(Guid id, CancellationToken ct)
     {
         string keycloakId;
+        int cancelledCount;
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
@@ -179,9 +196,9 @@ public class DoctorApplicationService(
             var doctor = await _doctorRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Врач {id} не найден.");
 
-            await CancelActiveFutureAppointmentsAsync(
-                await _appointmentRepository.GetActiveFutureByDoctorIdAsync(doctor.Id, DateTime.UtcNow, ct),
-                ct);
+            var active = await _appointmentRepository.GetActiveFutureByDoctorIdAsync(doctor.Id, DateTime.UtcNow, ct);
+
+            cancelledCount = await CancelActiveFutureAppointmentsAsync(active, ct);
 
             keycloakId = doctor.KeycloakId;
 
@@ -197,6 +214,10 @@ public class DoctorApplicationService(
         }
 
         await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+
+        _logger.LogInformation(
+            "Doctor deactivated: {DoctorId}, KeycloakId={KeycloakId}, CancelledAppointments={Count}",
+            id, keycloakId, cancelledCount);
     }
     
     public async Task ActivateAsync(Guid id, CancellationToken ct)
@@ -223,6 +244,10 @@ public class DoctorApplicationService(
         }
 
         await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
+
+        _logger.LogInformation(
+            "Doctor activated: {DoctorId}, KeycloakId={KeycloakId}",
+            id, keycloakId);
     }
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordDto dto, CancellationToken ct)
@@ -235,12 +260,18 @@ public class DoctorApplicationService(
             ?? throw new NotFoundException($"Врач {id} не найден.");
 
         await _keycloakAdminService.ResetPasswordAsync(doctor.KeycloakId, dto.NewPassword, ct);
+
+        _logger.LogInformation(
+            "Doctor password reset: {DoctorId}, KeycloakId={KeycloakId}",
+            id, doctor.KeycloakId);
     }
 
-    private async Task CancelActiveFutureAppointmentsAsync(
+    private async Task<int> CancelActiveFutureAppointmentsAsync(
         IReadOnlyList<Appointment> appointments,
         CancellationToken ct)
     {
+        var cancelled = 0;
+
         foreach (var item in appointments)
         {
             var appointment = await _appointmentRepository.GetByIdWithLockAsync(item.Id, ct);
@@ -254,6 +285,7 @@ public class DoctorApplicationService(
 
             appointment.Cancel();
             await _appointmentRepository.UpdateAsync(appointment, ct);
+            cancelled++;
 
             if (slot.Status == SlotStatus.Booked)
             {
@@ -261,6 +293,8 @@ public class DoctorApplicationService(
                 await _slotRepository.UpdateAsync(slot, ct);
             }
         }
+
+        return cancelled;
     }
 
     private static DoctorDto MapToDto(Doctor d) => new()

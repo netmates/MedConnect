@@ -56,6 +56,9 @@ try
     // Включает перехват исключений в pipeline (использует GlobalExceptionHandler)
     app.UseExceptionHandler();
 
+    // Сквозной id запроса (X-Correlation-ID) в LogContext — связывает HTTP и бизнес-логи
+    app.UseCorrelationId();
+
     // Структурные логи HTTP: метод, путь, статус, длительность
     app.UseSerilogRequestLogging();
 
@@ -96,7 +99,12 @@ try
     }
 
     app.UseAuthentication();
+
+    // UserId (JWT sub) в LogContext, для бизнес-логов
+    app.UseUserIdLogContext();
+
     app.UseAuthorization();
+
     app.MapControllers();
 
     app.Run();

@@ -6,6 +6,7 @@ using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace AppointmentService.UnitTests.Application;
@@ -32,7 +33,8 @@ public class PatientApplicationServiceTests
             _patients.Object,
             _uow.Object,
             _registerValidator.Object,
-            _updateValidator.Object);
+            _updateValidator.Object,
+            NullLogger<PatientApplicationService>.Instance);
     }
 
     private static Patient CreatePatient(string keycloakId = "patient-kc")

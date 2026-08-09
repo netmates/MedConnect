@@ -7,6 +7,7 @@ using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace AppointmentService.UnitTests.Application;
@@ -38,7 +39,8 @@ public class ScheduleSlotApplicationServiceTests
             _doctors.Object,
             _uow.Object,
             _createValidator.Object,
-            _updateValidator.Object);
+            _updateValidator.Object,
+            NullLogger<ScheduleSlotApplicationService>.Instance);
     }
 
     private static Doctor CreateDoctor(string keycloakId = "doctor-kc")

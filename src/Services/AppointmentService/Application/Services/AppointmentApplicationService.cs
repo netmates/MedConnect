@@ -15,7 +15,8 @@ public class AppointmentApplicationService(
     IPatientRepository patientRepository,
     IDoctorRepository doctorRepository,
     IUnitOfWork unitOfWork,
-    IValidator<CreateAppointmentDto> createAppointmentValidator) : IAppointmentApplicationService
+    IValidator<CreateAppointmentDto> createAppointmentValidator,
+    ILogger<AppointmentApplicationService> logger) : IAppointmentApplicationService
 {
     private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;
     private readonly IScheduleSlotRepository _slotRepository = slotRepository;
@@ -23,6 +24,7 @@ public class AppointmentApplicationService(
     private readonly IDoctorRepository _doctorRepository = doctorRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IValidator<CreateAppointmentDto> _createAppointmentValidator = createAppointmentValidator;
+    private readonly ILogger<AppointmentApplicationService> _logger = logger;
 
     public async Task<IReadOnlyList<AppointmentDto>> GetByPatientAsync(
         string keycloakId,
@@ -120,11 +122,18 @@ public class AppointmentApplicationService(
 
         var created = await _appointmentRepository.GetByIdWithDetailsAsync(appointment.Id, ct)
             ?? throw new NotFoundException("Запись не найдена.");
+
+        _logger.LogInformation(
+            "Appointment created: {AppointmentId}, PatientId={PatientId}, DoctorId={DoctorId}, SlotId={SlotId}",
+            created.Id, created.PatientId, created.DoctorId, created.SlotId);
+
         return MapToDto(created);
     }
 
     public async Task CancelAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
     {
+        string cancelledBy;
+
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
@@ -139,6 +148,8 @@ public class AppointmentApplicationService(
 
             if (!isPatientOwner && !isDoctorOwner)
                 throw new ForbiddenException("Нет доступа к этой записи.");
+
+            cancelledBy = isPatientOwner ? "patient" : "doctor";
 
             var slot = await _slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
                 ?? throw new NotFoundException("Слот записи не найден.");
@@ -159,6 +170,10 @@ public class AppointmentApplicationService(
             await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
+
+        _logger.LogInformation(
+            "Appointment cancelled: {AppointmentId}, CancelledBy={CancelledBy}",
+            appointmentId, cancelledBy);
     }
 
     public async Task CompleteAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
@@ -191,6 +206,10 @@ public class AppointmentApplicationService(
             await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
+
+        _logger.LogInformation(
+            "Appointment completed: {AppointmentId}, DoctorId={DoctorId}",
+            appointmentId, doctor.Id);
     }
     
     public async Task ConfirmAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
@@ -217,6 +236,10 @@ public class AppointmentApplicationService(
             await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
+
+        _logger.LogInformation(
+            "Appointment confirmed: {AppointmentId}, DoctorId={DoctorId}",
+            appointmentId, doctor.Id);
     }
 
     private static AppointmentDto MapToDto(Appointment a) => new()

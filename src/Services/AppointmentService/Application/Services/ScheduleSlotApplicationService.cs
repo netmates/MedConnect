@@ -14,13 +14,15 @@ public class ScheduleSlotApplicationService(
     IDoctorRepository doctorRepository,
     IUnitOfWork unitOfWork,
     IValidator<CreateScheduleSlotDto> createSlotValidator,
-    IValidator<UpdateScheduleSlotDto> updateSlotValidator) : IScheduleSlotApplicationService
+    IValidator<UpdateScheduleSlotDto> updateSlotValidator,
+    ILogger<ScheduleSlotApplicationService> logger) : IScheduleSlotApplicationService
 {
     private readonly IScheduleSlotRepository _slotRepository = slotRepository;
     private readonly IDoctorRepository _doctorRepository = doctorRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IValidator<CreateScheduleSlotDto> _createSlotValidator = createSlotValidator;
     private readonly IValidator<UpdateScheduleSlotDto> _updateSlotValidator = updateSlotValidator;
+    private readonly ILogger<ScheduleSlotApplicationService> _logger = logger;
 
     public async Task<ScheduleSlotDto> CreateAsync(CreateScheduleSlotDto dto, string keycloakId, CancellationToken ct)
     {
@@ -45,6 +47,10 @@ public class ScheduleSlotApplicationService(
             await _slotRepository.AddAsync(slot, ct);
 
             await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Schedule slot created: {SlotId}, DoctorId={DoctorId}, Start={StartTime:o}, End={EndTime:o}",
+                slot.Id, doctor.Id, slot.StartTime, slot.EndTime);
 
             return MapToDto(slot);
         }
@@ -88,6 +94,10 @@ public class ScheduleSlotApplicationService(
 
             await _unitOfWork.CommitAsync(ct);
 
+            _logger.LogInformation(
+                "Schedule slot updated: {SlotId}, DoctorId={DoctorId}, Start={StartTime:o}, End={EndTime:o}",
+                slot.Id, doctor.Id, slot.StartTime, slot.EndTime);
+
             return MapToDto(slot);
         }
         catch
@@ -126,6 +136,10 @@ public class ScheduleSlotApplicationService(
             await _unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
+
+        _logger.LogInformation(
+            "Schedule slot deleted: {SlotId}, DoctorId={DoctorId}",
+            id, doctor.Id);
     }
 
     public async Task<IReadOnlyList<ScheduleSlotDto>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct)

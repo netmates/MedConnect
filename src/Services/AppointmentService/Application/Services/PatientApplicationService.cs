@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.Patient;
+using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
@@ -12,14 +12,16 @@ public class PatientApplicationService(
     IPatientRepository patientRepository,
     IUnitOfWork unitOfWork,
     IValidator<RegisterPatientDto> registerPatientValidator,
-    IValidator<UpdatePatientDto> updatePatientValidator) : IPatientApplicationService
+    IValidator<UpdatePatientDto> updatePatientValidator,
+    ILogger<PatientApplicationService> logger) : IPatientApplicationService
 {
     private readonly IPatientRepository _patientRepository = patientRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IValidator<RegisterPatientDto> _registerPatientValidator = registerPatientValidator;
     private readonly IValidator<UpdatePatientDto> _updatePatientValidator = updatePatientValidator;
+    private readonly ILogger<PatientApplicationService> _logger = logger;
 
-   public async Task<PatientDto> RegisterOrGetAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct)
+    public async Task<PatientDto> RegisterOrGetAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct)
     {
         var validationResult = await _registerPatientValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
@@ -43,6 +45,10 @@ public class PatientApplicationService(
             await _patientRepository.AddAsync(patient, ct);
 
             await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Patient registered: {PatientId}, KeycloakId={KeycloakId}",
+                patient.Id, keycloakId);
 
             return MapToDto(patient);
         }
@@ -82,6 +88,10 @@ public class PatientApplicationService(
             await _patientRepository.UpdateAsync(patient, ct);
 
             await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Patient updated: {PatientId}, KeycloakId={KeycloakId}",
+                patient.Id, keycloakId);
 
             return MapToDto(patient);
         }

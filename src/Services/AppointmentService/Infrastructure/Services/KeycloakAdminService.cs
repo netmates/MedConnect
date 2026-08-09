@@ -64,13 +64,18 @@ public class KeycloakAdminService(
         }
         catch
         {
-            try { await DeleteUserAsync(keycloakId, CancellationToken.None); }
-            catch
+            try
             {
-                _logger.LogWarning(
-                    "Не удалось откатить создание пользователя Keycloak {KeycloakId} после ошибки назначения роли",
+                await DeleteUserAsync(keycloakId, CancellationToken.None);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogError(
+                    rollbackEx,
+                    "Failed to rollback Keycloak user {KeycloakId} after role assignment failure",
                     keycloakId);
             }
+
             throw;
         }
 
@@ -93,6 +98,8 @@ public class KeycloakAdminService(
 
         var response = await _httpClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
+
+        _logger.LogInformation("Keycloak user deleted: {KeycloakId}", keycloakId);
     }
 
     public async Task DisableUserAsync(string keycloakId, CancellationToken ct = default)
