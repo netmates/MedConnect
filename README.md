@@ -6,6 +6,7 @@
 
 - Docker Desktop (или совместимый Docker Engine + Compose)
 - .NET SDK 10
+- Node.js 24 LTS (для админ-фронта)
 - Git
 
 ## 1. Клонирование и инфраструктура
@@ -77,14 +78,30 @@ dotnet run
 
 Заголовок запроса/ответа: `X-Correlation-ID`.
 
-## 5. Тесты
+## 5. Админ-фронт (`src/Web/admin`)
+
+Vite + React + TypeScript. Вход через Keycloak (**Authorization Code + PKCE**), клиент `medconnect-app`.
+
+```powershell
+cd src/Web/admin
+npm install
+npm run dev
+```
+
+UI: http://localhost:3000 (порт задан в `vite.config.ts`, совпадает с `redirectUris` / `webOrigins` в realm).
+
+Нужны запущенные Keycloak и (для API позже) AppointmentService. Логин тестового админа из realm-export: `admin1` / `Admin1Pass!` (роль `admin`).
+
+Маршруты сейчас: `/login`, `/auth/callback`, `/` (после входа), `/access-denied`.
+
+## 6. Тесты
 
 ```powershell
 cd tests/AppointmentService.UnitTests
 dotnet test
 ```
 
-## 6. Что не коммитить
+## 7. Что не коммитить
 
 | Файл / место                         | Почему                          |
 |--------------------------------------|---------------------------------|
@@ -94,12 +111,13 @@ dotnet test
 
 `appsettings.Development.json` **в репозитории** — общие Dev-настройки (уровни логов, DemoUsers), без секретов.
 
-## 7. Чеклист для нового ПК
+## 8. Чеклист для нового ПК
 
-1. [ ] Установлены Docker и .NET 10  
+1. [ ] Установлены Docker, .NET 10 и Node.js 24  
 2. [ ] `docker compose up -d`  
 3. [ ] Keycloak доступен на :8080, realm `medconnect`  
 4. [ ] Скопирован Client secret `medconnect-admin-cli`  
 5. [ ] `dotnet user-secrets set "Keycloak:AdminClientSecret" "..."`  
 6. [ ] `dotnet run` в `AppointmentService`  
-7. [ ] (опционально) Seq UI на :5341  
+7. [ ] `npm install` + `npm run dev` в `src/Web/admin`  
+8. [ ] (опционально) Seq UI на :5341  
