@@ -4,9 +4,7 @@ using AppointmentService.Application.Extensions;
 using AppointmentService.Infrastructure.Extensions;
 using AppointmentService.Infrastructure.Persistence;
 using AppointmentService.Infrastructure.Persistence.Seed;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -62,40 +60,13 @@ try
     // Структурные логи HTTP: метод, путь, статус, длительность
     app.UseSerilogRequestLogging();
 
-    // Liveness: процесс
-    app.MapHealthChecks("/health/live", new HealthCheckOptions
-    {
-        Predicate = check => check.Tags.Contains("live"),
-        ResponseWriter = HealthChecksExtensions.WriteHealthJson
-    }).AllowAnonymous();
-
-    // Readiness: Postgres + Keycloak
-    app.MapHealthChecks("/health/ready", new HealthCheckOptions
-    {
-        Predicate = check => check.Tags.Contains("ready"),
-        ResponseWriter = HealthChecksExtensions.WriteHealthJson
-    }).AllowAnonymous();
+    // Эндпоинты /health/live (процесс) и /health/ready (Postgres + Keycloak), ответ JSON
+    app.MapAppointmentHealthChecks();
 
     // OpenAPI-документ и UI Scalar
     if (app.Environment.IsDevelopment())
     {
-        app.MapOpenApi();
-        app.MapScalarApiReference(options =>
-        {
-            var clientId = app.Configuration["Keycloak:Audience"]
-                ?? throw new InvalidOperationException("Keycloak:Audience не задан.");
-
-            options
-                .AddPreferredSecuritySchemes(KeycloakSecuritySchemeTransformer.SchemeId)
-                .AddPasswordFlow(KeycloakSecuritySchemeTransformer.SchemeId, flow =>
-                {
-                    flow.ClientId = clientId;
-                    flow.Username = "admin1";
-                    flow.SelectedScopes = ["openid"];
-
-                    flow.WithCredentialsLocation(CredentialsLocation.Body);
-                });
-        });
+        app.MapCommunicationScalar();
     }
 
     app.UseAuthentication();

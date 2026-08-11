@@ -23,7 +23,9 @@
       "webOrigins": [
 		"http://localhost:3000",
 		"http://localhost:5067",
-		"https://localhost:7246"
+		"https://localhost:7246",
+		"http://localhost:5080",
+		"https://localhost:7280"
 	  ],
       "protocol": "openid-connect",
       "protocolMappers": [

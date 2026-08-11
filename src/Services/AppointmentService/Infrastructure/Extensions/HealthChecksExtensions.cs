@@ -1,4 +1,5 @@
 using AppointmentService.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace AppointmentService.Infrastructure.Extensions;
@@ -60,5 +61,20 @@ public static class HealthChecksExtensions
             })
         };
         return context.Response.WriteAsJsonAsync(payload);
+    }
+
+    public static void MapAppointmentHealthChecks(this WebApplication app)
+    {
+        app.MapHealthChecks("/health/live", new HealthCheckOptions
+        {
+            Predicate = check => check.Tags.Contains("live"),
+            ResponseWriter = WriteHealthJson
+        }).AllowAnonymous();
+
+        app.MapHealthChecks("/health/ready", new HealthCheckOptions
+        {
+            Predicate = check => check.Tags.Contains("ready"),
+            ResponseWriter = WriteHealthJson
+        }).AllowAnonymous();
     }
 }

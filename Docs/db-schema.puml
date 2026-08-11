@@ -1,0 +1,211 @@
+@startuml MedConnect Database Schema
+
+title MedConnect — Схема базы данных\nPostgreSQL (AppointmentService) + MongoDB (CommunicationService)
+
+!define TABLE(name, desc) class name as "desc" << (T, #FFAAAA) >>
+!define MONGO(name, desc) class name as "desc" << (M, #AAFFAA) >>
+!define PK(field) <b><u>field</u></b>
+!define FK(field) <i>field</i>
+!define IDX(field) <color:blue>field</color>
+
+skinparam class {
+    BackgroundColor<<T>> #FFF8F0
+    BorderColor<<T>> #CC6600
+    BackgroundColor<<M>> #F0FFF0
+    BorderColor<<M>> #006600
+    ArrowColor #333333
+    FontSize 12
+}
+
+skinparam packageStyle rectangle
+skinparam padding 5
+
+' ─────────────────────────────────────────
+'  PostgreSQL — AppointmentService
+' ─────────────────────────────────────────
+
+package "PostgreSQL — AppointmentService" #FFF0E0 {
+
+    TABLE(patients, "Patients") {
+        PK(Id) : uuid
+        IDX(KeycloakId) : varchar(255) UNIQUE NOT NULL
+        LastName : varchar(100) NOT NULL
+        FirstName : varchar(100) NOT NULL
+        MiddleName : varchar(100) NULL
+        Phone : varchar(20) NULL
+        DateOfBirth : timestamptz NULL
+        IsActive : boolean NOT NULL DEFAULT true
+        CreatedAt : timestamptz NOT NULL
+        --
+        INDEX: KeycloakId (UNIQUE)
+    }
+
+    TABLE(specializations, "Specializations") {
+        PK(Id) : uuid
+        Name : varchar(200) NOT NULL UNIQUE
+        --
+        INDEX: Name (UNIQUE)
+    }
+
+    TABLE(doctors, "Doctors") {
+        PK(Id) : uuid
+        IDX(KeycloakId) : varchar(255) UNIQUE NOT NULL
+        LastName : varchar(100) NOT NULL
+        FirstName : varchar(100) NOT NULL
+        MiddleName : varchar(100) NULL
+        Description : varchar(1000) NOT NULL
+        ExperienceYears : int NOT NULL
+        IsActive : boolean NOT NULL DEFAULT true
+        CreatedAt : timestamptz NOT NULL
+        --
+        INDEX: KeycloakId (UNIQUE)
+    }
+
+    TABLE(doctor_specializations, "DoctorSpecializations") {
+        PK(FK(DoctorId)) : uuid
+        PK(FK(SpecializationId)) : uuid
+        --
+        PK: (DoctorId, SpecializationId)
+    }
+
+    TABLE(schedule_slots, "ScheduleSlots") {
+        PK(Id) : uuid
+        FK(DoctorId) : uuid NOT NULL
+        StartTime : timestamptz NOT NULL
+        EndTime : timestamptz NOT NULL
+        Status : int NOT NULL
+        CreatedAt : timestamptz NOT NULL
+        UpdatedAt : timestamptz NOT NULL
+        --
+        INDEX: (DoctorId, StartTime)
+        .. Status values ..
+        1 = Available
+        2 = Booked
+        3 = Consumed
+    }
+
+    TABLE(appointments, "Appointments") {
+        PK(Id) : uuid
+        FK(PatientId) : uuid NOT NULL
+        FK(DoctorId) : uuid NOT NULL
+        FK(SlotId) : uuid NOT NULL
+        Reason : varchar(500) NULL
+        Status : int NOT NULL
+        CreatedAt : timestamptz NOT NULL
+        UpdatedAt : timestamptz NOT NULL
+        --
+        INDEX: (PatientId)
+        INDEX: (DoctorId)
+        UNIQUE: SlotId WHERE "Status" != 3
+        .. Status values ..
+        1 = Created
+        2 = Confirmed
+        3 = Cancelled
+        4 = Completed
+    }
+}
+
+' ─────────────────────────────────────────
+'  MongoDB — CommunicationService
+' ─────────────────────────────────────────
+
+package "MongoDB — CommunicationService" #F0FFF4 {
+
+    MONGO(chats, "chats collection") {
+        PK(_id) : UUID (string)
+        appointment_id : UUID (string) UNIQUE
+        patient_id : UUID (string)
+        doctor_id : UUID (string)
+        patient_keycloak_id : string
+        doctor_keycloak_id : string
+        patient_name : string
+        doctor_name : string
+        created_at : ISODate
+        --
+        INDEX: appointment_id (UNIQUE)
+    }
+
+    MONGO(messages, "messages collection") {
+        PK(_id) : UUID (string)
+        chat_id : UUID (string)
+        sender_id : UUID (string)
+        sender_role : string
+        text : string
+        created_at : ISODate
+        --
+        INDEX: (chat_id, created_at)
+        .. sender_role values ..
+        "patient" | "doctor"
+    }
+}
+
+' ─────────────────────────────────────────
+'  Связи PostgreSQL
+' ─────────────────────────────────────────
+
+doctors "1" --o{ "0..*" doctor_specializations : DoctorId
+specializations "1" --o{ "0..*" doctor_specializations : SpecializationId
+
+doctors "1" --o{ "0..*" schedule_slots : DoctorId
+doctors "1" --o{ "0..*" appointments : DoctorId
+
+patients "1" --o{ "0..*" appointments : PatientId
+
+schedule_slots "1" --|| "0..1" appointments : SlotId\n(UNIQUE WHERE "Status" != 3)
+
+' ─────────────────────────────────────────
+'  Связи MongoDB
+' ─────────────────────────────────────────
+
+chats "1" --o{ "0..*" messages : chat_id
+
+' ─────────────────────────────────────────
+'  Логическая связь между БД (не FK)
+' ─────────────────────────────────────────
+
+appointments .. chats : appointment_id\n(логическая связь,\nне FK)
+
+note top of patients
+  KeycloakId = sub из JWT-токена
+  Keycloak хранит: email, пароль, роль
+  PostgreSQL хранит: профильные данные
+  ФИО разбито на 3 поля: LastName, FirstName, MiddleName
+end note
+
+note top of doctors
+  KeycloakId создаётся администратором
+  через Keycloak Admin API при добавлении врача.
+  Врач не может зарегистрироваться самостоятельно.
+  ФИО разбито на 3 поля: LastName, FirstName, MiddleName
+end note
+
+note top of appointments
+  Защита от двойного бронирования:
+  UNIQUE INDEX на SlotId
+  с фильтром WHERE "Status" != 3 (Cancelled)
+end note
+
+note top of chats
+  Чат создаётся автоматически
+  при получении события
+  AppointmentCreated из RabbitMQ
+  (CommunicationService consumer)
+end note
+
+note bottom of messages
+  Индекс (chat_id, created_at)
+  обеспечивает быструю загрузку
+  истории сообщений в хронологическом
+  порядке
+end note
+
+legend right
+  |= Цвет |= Тип |
+  |<#FFF8F0> Оранжевый | PostgreSQL таблица |
+  |<#F0FFF0> Зелёный   | MongoDB коллекция  |
+  | <b><u>Поле</u></b> | Primary Key        |
+  | <i>Поле</i>        | Foreign Key        |
+  | <color:blue>Поле</color> | Indexed field |
+endlegend
+
+@enduml

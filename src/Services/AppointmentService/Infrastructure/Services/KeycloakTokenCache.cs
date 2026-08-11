@@ -9,7 +9,7 @@ public interface IKeycloakTokenCache
 
 public sealed class KeycloakTokenCache : IKeycloakTokenCache
 {
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private string? _token;
     private DateTime _expiresAt = DateTime.MinValue;
 

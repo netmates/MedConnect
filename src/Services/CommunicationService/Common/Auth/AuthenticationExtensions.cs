@@ -3,7 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
-namespace AppointmentService.Infrastructure.Extensions;
+namespace CommunicationService.Common.Auth;
 
 public static class AuthenticationExtensions
 {
@@ -19,12 +19,12 @@ public static class AuthenticationExtensions
             .AddJwtBearer(options =>
             {
                 options.Authority = configuration["Keycloak:Authority"];
-                options.Audience = configuration["Keycloak:Audience"];                
-                options.RequireHttpsMetadata = false;                
+                options.Audience = configuration["Keycloak:Audience"];
+                options.RequireHttpsMetadata = false;
                 options.MapInboundClaims = false;
 
                 options.TokenValidationParameters = new TokenValidationParameters
-                {   
+                {
                     RoleClaimType = "role",
                     NameClaimType = "preferred_username"
                 };
