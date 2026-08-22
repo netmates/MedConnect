@@ -1,8 +1,10 @@
 using AppointmentService.Application.Interfaces.Services;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
-namespace AppointmentService.Infrastructure.Services;
+namespace AppointmentService.Infrastructure.Keycloak;
 
 public class KeycloakAdminService(
     HttpClient httpClient,
@@ -16,6 +18,15 @@ public class KeycloakAdminService(
     private readonly IKeycloakTokenCache _tokenCache = tokenCache;
     private const int TokenExpiryBufferSeconds = 30;
 
+    private string Realm =>
+        KeycloakConfiguration.GetRequired(_configuration, nameof(KeycloakOptions.Realm));
+
+    private string AdminClientId =>
+        KeycloakConfiguration.GetRequired(_configuration, KeycloakOptions.AdminClientIdKey);
+
+    private string AdminClientSecret =>
+        KeycloakConfiguration.GetRequired(_configuration, KeycloakOptions.AdminClientSecretKey);
+
     public async Task<string> CreateUserAsync(
         string email,
         string temporaryPassword,
@@ -25,7 +36,6 @@ public class KeycloakAdminService(
         CancellationToken ct = default)
     {
         var adminToken = await GetAdminTokenAsync(ct);
-        var realm = _configuration["Keycloak:Realm"]!;
 
         var payload = new
         {
@@ -42,7 +52,7 @@ public class KeycloakAdminService(
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $"/admin/realms/{realm}/users")
+            $"/admin/realms/{Realm}/users")
         {
             Content = JsonContent.Create(payload)
         };
@@ -89,11 +99,10 @@ public class KeycloakAdminService(
     public async Task DeleteUserAsync(string keycloakId, CancellationToken ct = default)
     {
         var adminToken = await GetAdminTokenAsync(ct);
-        var realm = _configuration["Keycloak:Realm"]!;
 
         using var request = new HttpRequestMessage(
             HttpMethod.Delete,
-            $"/admin/realms/{realm}/users/{keycloakId}");
+            $"/admin/realms/{Realm}/users/{keycloakId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var response = await _httpClient.SendAsync(request, ct);
@@ -104,47 +113,49 @@ public class KeycloakAdminService(
 
     public async Task DisableUserAsync(string keycloakId, CancellationToken ct = default)
     {
-        var adminToken = await GetAdminTokenAsync(ct);
-        var realm = _configuration["Keycloak:Realm"]!;
-
-        using var request = new HttpRequestMessage(
-            HttpMethod.Put,
-            $"/admin/realms/{realm}/users/{keycloakId}")
-        {
-            Content = JsonContent.Create(new { enabled = false })
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-
-        var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        await SetUserEnabledAsync(keycloakId, enabled: false, ct);
     }
 
     public async Task EnableUserAsync(string keycloakId, CancellationToken ct = default)
     {
+        await SetUserEnabledAsync(keycloakId, enabled: true, ct);
+    }
+    
+    private async Task SetUserEnabledAsync(string keycloakId, bool enabled, CancellationToken ct)
+    {
         var adminToken = await GetAdminTokenAsync(ct);
-        var realm = _configuration["Keycloak:Realm"]!;
+        var userPath = $"/admin/realms/{Realm}/users/{keycloakId}";
 
-        using var request = new HttpRequestMessage(
-            HttpMethod.Put,
-            $"/admin/realms/{realm}/users/{keycloakId}")
+        using var getRequest = new HttpRequestMessage(HttpMethod.Get, userPath);
+        getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var getResponse = await _httpClient.SendAsync(getRequest, ct);
+        getResponse.EnsureSuccessStatusCode();
+
+        await using var stream = await getResponse.Content.ReadAsStreamAsync(ct);
+        var user = await JsonNode.ParseAsync(stream, cancellationToken: ct)
+            ?? throw new InvalidOperationException($"Keycloak user {keycloakId} returned empty body.");
+
+        user["enabled"] = enabled;
+
+        using var putRequest = new HttpRequestMessage(HttpMethod.Put, userPath)
         {
-            Content = JsonContent.Create(new { enabled = true })
+            Content = new StringContent(user.ToJsonString(), Encoding.UTF8, "application/json")
         };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        putRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        var putResponse = await _httpClient.SendAsync(putRequest, ct);
+        putResponse.EnsureSuccessStatusCode();
     }
 
     public async Task ResetPasswordAsync(string keycloakId, string newPassword, CancellationToken ct = default)
     {
         var adminToken = await GetAdminTokenAsync(ct);
-        var realm = _configuration["Keycloak:Realm"]!;
         var payload = new { type = "password", value = newPassword, temporary = false };
 
         using var request = new HttpRequestMessage(
             HttpMethod.Put,
-            $"/admin/realms/{realm}/users/{keycloakId}/reset-password")
+            $"/admin/realms/{Realm}/users/{keycloakId}/reset-password")
         {
             Content = JsonContent.Create(payload)
         };
@@ -159,21 +170,19 @@ public class KeycloakAdminService(
     /// </summary>
     private async Task<string> GetAdminTokenAsync(CancellationToken ct)
     {
-        if (_tokenCache.Token is not null && DateTime.UtcNow < _tokenCache.ExpiresAt)
-            return _tokenCache.Token;
+        if (_tokenCache.TryGetValid(out var cachedToken))
+            return cachedToken;
 
         var tokenRequest = new FormUrlEncodedContent(
         [
             new KeyValuePair<string, string>("grant_type", "client_credentials"),
-            new KeyValuePair<string, string>("client_id", _configuration["Keycloak:AdminClientId"]!),
-            new KeyValuePair<string, string>("client_secret", _configuration["Keycloak:AdminClientSecret"]!)
+            new KeyValuePair<string, string>("client_id", AdminClientId),
+            new KeyValuePair<string, string>("client_secret", AdminClientSecret)
         ]);
-
-        var realm = _configuration["Keycloak:Realm"]!;
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $"/realms/{realm}/protocol/openid-connect/token")
+            $"/realms/{Realm}/protocol/openid-connect/token")
         {
             Content = tokenRequest
         };
@@ -196,12 +205,11 @@ public class KeycloakAdminService(
     private async Task AssignRealmRoleAsync(string keycloakId, string roleName, CancellationToken ct = default)
     {
         var adminToken = await GetAdminTokenAsync(ct);
-        var realm = _configuration["Keycloak:Realm"]!;
-        var role = await GetRealmRoleAsync(adminToken, realm, roleName, ct);
+        var role = await GetRealmRoleAsync(adminToken, roleName, ct);
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $"/admin/realms/{realm}/users/{keycloakId}/role-mappings/realm")
+            $"/admin/realms/{Realm}/users/{keycloakId}/role-mappings/realm")
         {
             Content = JsonContent.Create(new[] { role })
         };
@@ -217,12 +225,11 @@ public class KeycloakAdminService(
     private async Task RemoveRealmRoleAsync(string keycloakId, string roleName, CancellationToken ct = default)
     {
         var adminToken = await GetAdminTokenAsync(ct);
-        var realm = _configuration["Keycloak:Realm"]!;
-        var role = await GetRealmRoleAsync(adminToken, realm, roleName, ct);
+        var role = await GetRealmRoleAsync(adminToken, roleName, ct);
 
         using var request = new HttpRequestMessage(
             HttpMethod.Delete,
-            $"/admin/realms/{realm}/users/{keycloakId}/role-mappings/realm")
+            $"/admin/realms/{Realm}/users/{keycloakId}/role-mappings/realm")
         {
             Content = JsonContent.Create(new[] { role })
         };
@@ -238,11 +245,11 @@ public class KeycloakAdminService(
     /// Получает представление realm-роли из Keycloak (нужно для role-mappings API).
     /// </summary>
     private async Task<JsonElement> GetRealmRoleAsync(
-        string adminToken, string realm, string roleName, CancellationToken ct)
+        string adminToken, string roleName, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $"/admin/realms/{realm}/roles/{roleName}");
+            $"/admin/realms/{Realm}/roles/{roleName}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var response = await _httpClient.SendAsync(request, ct);

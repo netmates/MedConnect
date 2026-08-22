@@ -5,6 +5,7 @@ using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
+using AppointmentService.Infrastructure.Repositories;
 using FluentValidation;
 
 namespace AppointmentService.Application.Services;
@@ -98,7 +99,20 @@ public class AdminPatientApplicationService(
             throw;
         }
 
-        await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+        try
+        {
+            await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Keycloak disable failed after DB deactivate. Compensating IsActive. PatientId={PatientId}, KeycloakId={KeycloakId}",
+                id, keycloakId);
+
+            await CompensatePatientActiveAsync(id, activate: true, ct);
+            throw;
+        }
 
         _logger.LogInformation(
             "Patient deactivated: {PatientId}, KeycloakId={KeycloakId}, CancelledAppointments={Count}",
@@ -128,11 +142,56 @@ public class AdminPatientApplicationService(
             throw;
         }
 
-        await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
+        try
+        {
+            await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Keycloak enable failed after DB activate. Compensating IsActive. PatientId={PatientId}, KeycloakId={KeycloakId}",
+                id, keycloakId);
+
+            await CompensatePatientActiveAsync(id, activate: false, ct);
+            throw;
+        }
 
         _logger.LogInformation(
             "Patient activated: {PatientId}, KeycloakId={KeycloakId}",
             id, keycloakId);
+    }
+
+    /// <summary>
+    /// Откат IsActive в Postgres, если Keycloak не подтвердил enable/disable.
+    /// Отменённые при deactivate записи не восстанавливаются.
+    /// </summary>
+    private async Task CompensatePatientActiveAsync(Guid id, bool activate, CancellationToken ct)
+    {
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var patient = await _patientRepository.GetByIdAsync(id, ct)
+                ?? throw new NotFoundException($"Пациент {id} не найден при компенсации.");
+
+            if (activate)
+                patient.Activate();
+            else
+                patient.Deactivate();
+
+            await _patientRepository.UpdateAsync(patient, ct);
+            await _unitOfWork.CommitAsync(ct);
+        }
+        catch (Exception compensateEx)
+        {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+
+            _logger.LogError(
+                compensateEx,
+                "Compensation failed for patient {PatientId}. Manual fix may be required.",
+                id);
+            throw;
+        }
     }
 
     private async Task<int> CancelActiveFutureAppointmentsAsync(

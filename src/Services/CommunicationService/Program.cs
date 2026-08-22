@@ -16,19 +16,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Serilog вместо стандартного провайдера логирования (конфиг из appsettings + enrichers)
 builder.Host.AddCommunicationSerilog();
 
+builder.Services.AddAuthorization();
+
+// JWT через Keycloak (Authority, Audience, MapInboundClaims=false, роли из realm_access → claim role)
+builder.Services.AddKeycloakJwtAuthentication(builder.Configuration);
+
+// OpenAPI: Bearer (ручной JWT) + OAuth2 Password (логин/пароль → Keycloak)
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
     options.AddDocumentTransformer<KeycloakSecuritySchemeTransformer>();
 });
 
-builder.Services.AddProblemDetails();
-
-// JWT через Keycloak (Authority, Audience, MapInboundClaims=false, роли из realm_access → claim role)
-builder.Services.AddKeycloakJwtAuthentication(builder.Configuration);
-builder.Services.AddAuthorization();
-
-// FluentValidation
+// FluentValidation: IValidator<> из сборки
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 // CreateChat: создать чат по appointment (идемпотентно)
@@ -44,18 +44,22 @@ builder.Services.AddMongo(builder.Configuration);
 // Health checks: self (live) + MongoDB (ready)
 builder.Services.AddCommunicationHealthChecks();
 
+// ProblemDetails + маппинг необработанных исключений → HTTP-статусы (404/403/400/500)
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 var app = builder.Build();
 
 try
 {
-    // Индексы Mongo при старте
+    // Индексы Mongo при старте: unique AppointmentId (chats), (ChatId, CreatedAt) у messages
     using (var scope = app.Services.CreateScope())
     {
         var mongo = scope.ServiceProvider.GetRequiredService<IMongoDatabase>();
         await MongoIndexInitializer.EnsureIndexesAsync(mongo);
     }
 
-    // Перехват необработанных исключений → ProblemDetails
+    // Включает перехват исключений в pipeline (использует GlobalExceptionHandler)
     app.UseExceptionHandler();
 
     // Сквозной id запроса (X-Correlation-ID) в LogContext — связывает HTTP и бизнес-логи
@@ -74,6 +78,10 @@ try
     }
 
     app.UseAuthentication();
+
+    // UserId (JWT sub) в LogContext, для бизнес-логов
+    app.UseUserIdLogContext();
+
     app.UseAuthorization();
 
     // API чатов: create / history / send (роли patient, doctor)

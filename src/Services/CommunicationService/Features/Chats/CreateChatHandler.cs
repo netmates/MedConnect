@@ -1,3 +1,4 @@
+using CommunicationService.Common.Exceptions;
 using CommunicationService.Common.Persistence;
 using MongoDB.Driver;
 
@@ -16,7 +17,7 @@ public sealed class CreateChatHandler(IMongoDatabase db)
         if (currentKeycloakId != request.PatientKeycloakId
             && currentKeycloakId != request.DoctorKeycloakId)
         {
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "Создать чат может только пациент или врач этой записи.");
         }
 

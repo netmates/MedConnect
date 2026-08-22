@@ -9,15 +9,45 @@ public sealed class CreateChatValidator : AbstractValidator<CreateChatRequest>
 
     public CreateChatValidator()
     {
-        RuleFor(x => x.AppointmentId).NotEmpty();
-        RuleFor(x => x.PatientId).NotEmpty();
-        RuleFor(x => x.DoctorId).NotEmpty();
+        RuleFor(x => x.AppointmentId)
+            .NotEmpty()
+            .WithMessage("AppointmentId обязателен.");
 
-        RuleFor(x => x.PatientKeycloakId).NotEmpty().MaximumLength(MaxKeycloakIdLength);
-        RuleFor(x => x.DoctorKeycloakId).NotEmpty().MaximumLength(MaxKeycloakIdLength);
+        RuleFor(x => x.PatientId)
+            .NotEmpty()
+            .WithMessage("PatientId обязателен.");
 
-        RuleFor(x => x.PatientName).NotEmpty().MaximumLength(MaxNameLength);
-        RuleFor(x => x.DoctorName).NotEmpty().MaximumLength(MaxNameLength);
+        RuleFor(x => x.DoctorId)
+            .NotEmpty()
+            .WithMessage("DoctorId обязателен.");
+
+        RuleFor(x => x.PatientKeycloakId)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+                .WithMessage("PatientKeycloakId обязателен.")
+            .MaximumLength(MaxKeycloakIdLength)
+                .WithMessage($"PatientKeycloakId не должен превышать {MaxKeycloakIdLength} символов.");
+
+        RuleFor(x => x.DoctorKeycloakId)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+                .WithMessage("DoctorKeycloakId обязателен.")
+            .MaximumLength(MaxKeycloakIdLength)
+                .WithMessage($"DoctorKeycloakId не должен превышать {MaxKeycloakIdLength} символов.");
+
+        RuleFor(x => x.PatientName)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+                .WithMessage("Имя пациента обязательно.")
+            .MaximumLength(MaxNameLength)
+                .WithMessage($"Имя пациента не должно превышать {MaxNameLength} символов.");
+
+        RuleFor(x => x.DoctorName)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+                .WithMessage("Имя врача обязательно.")
+            .MaximumLength(MaxNameLength)
+                .WithMessage($"Имя врача не должно превышать {MaxNameLength} символов.");
 
         RuleFor(x => x)
             .Must(x => x.PatientKeycloakId != x.DoctorKeycloakId)

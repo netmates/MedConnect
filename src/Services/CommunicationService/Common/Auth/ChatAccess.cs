@@ -1,3 +1,4 @@
+using CommunicationService.Common.Exceptions;
 using CommunicationService.Common.Persistence;
 
 namespace CommunicationService.Common.Auth;
@@ -9,7 +10,7 @@ public static class ChatAccess
         if (currentKeycloakId != chat.PatientKeycloakId
             && currentKeycloakId != chat.DoctorKeycloakId)
         {
-            throw new UnauthorizedAccessException("Нет доступа к этому чату.");
+            throw new ForbiddenException("Нет доступа к этому чату.");
         }
     }
 }

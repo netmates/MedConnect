@@ -1,3 +1,4 @@
+using CommunicationService.Common.Exceptions;
 using System.Security.Claims;
 
 namespace CommunicationService.Common.Auth;
@@ -8,7 +9,7 @@ public static class CurrentUser
     {
         var sub = user.FindFirstValue("sub");
         if (string.IsNullOrWhiteSpace(sub))
-            throw new InvalidOperationException("В токене нет claim sub.");
+            throw new ForbiddenException("В токене нет claim sub.");
 
         return sub;
     }
@@ -21,6 +22,6 @@ public static class CurrentUser
         if (user.IsInRole("patient"))
             return "patient";
 
-        throw new InvalidOperationException("Нужна роль patient или doctor.");
+        throw new ForbiddenException("Нужна роль patient или doctor.");
     }
 }

@@ -1,4 +1,5 @@
 using CommunicationService.Common.Auth;
+using CommunicationService.Common.Exceptions;
 using CommunicationService.Common.Persistence;
 using MongoDB.Driver;
 
@@ -12,7 +13,7 @@ public sealed class SendMessageHandler(IMongoDatabase db)
     private readonly IMongoCollection<MessageDocument> _messages =
         db.GetCollection<MessageDocument>(MongoCollections.Messages);
 
-    public async Task<MessageDocument?> HandleAsync(
+    public async Task<MessageDocument> HandleAsync(
         Guid chatId,
         SendMessageRequest request,
         string currentKeycloakId,
@@ -21,24 +22,16 @@ public sealed class SendMessageHandler(IMongoDatabase db)
     {
         var chat = await _chats.Find(x => x.Id == chatId).FirstOrDefaultAsync(ct);
         if (chat is null)
-            return null;
+            throw new NotFoundException($"Чат {chatId} не найден.");
 
         ChatAccess.EnsureParticipant(chat, currentKeycloakId);
 
         if (senderRole == "patient" && currentKeycloakId != chat.PatientKeycloakId)
-            throw new UnauthorizedAccessException("Роль patient не совпадает с участником чата.");
+            throw new ForbiddenException("Роль patient не совпадает с участником чата.");
         if (senderRole == "doctor" && currentKeycloakId != chat.DoctorKeycloakId)
-            throw new UnauthorizedAccessException("Роль doctor не совпадает с участником чата.");
+            throw new ForbiddenException("Роль doctor не совпадает с участником чата.");
 
-        var message = new MessageDocument
-        {
-            Id = Guid.NewGuid(),
-            ChatId = chat.Id,
-            SenderId = currentKeycloakId,
-            SenderRole = senderRole,
-            Text = request.Text.Trim(),
-            CreatedAt = DateTime.UtcNow
-        };
+        var message = MessageDocument.Create(chat.Id, currentKeycloakId, senderRole, request.Text);
 
         await _messages.InsertOneAsync(message, cancellationToken: ct);
         return message;

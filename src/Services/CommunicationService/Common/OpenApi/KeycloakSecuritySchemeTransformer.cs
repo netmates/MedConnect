@@ -1,3 +1,4 @@
+using CommunicationService.Common.Auth;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -18,14 +19,7 @@ internal sealed class KeycloakSecuritySchemeTransformer(
         OpenApiDocumentTransformerContext context,
         CancellationToken cancellationToken)
     {
-        var adminApiUrl = configuration["Keycloak:AdminApiUrl"]
-            ?? throw new InvalidOperationException("Keycloak:AdminApiUrl не задан.");
-
-        var realm = configuration["Keycloak:Realm"]
-            ?? throw new InvalidOperationException("Keycloak:Realm не задан.");
-
-        var tokenUrl = new Uri(
-            $"{adminApiUrl.TrimEnd('/')}/realms/{realm}/protocol/openid-connect/token");
+        var tokenUrl = KeycloakConfiguration.GetTokenEndpoint(configuration);
 
         var oauth2 = new OpenApiSecurityScheme
         {

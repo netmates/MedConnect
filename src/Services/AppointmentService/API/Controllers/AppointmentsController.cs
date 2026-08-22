@@ -1,3 +1,4 @@
+using AppointmentService.API.Auth;
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Enums;
@@ -25,7 +26,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
         [FromQuery] DateTime? to,
         CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.GetByPatientAsync(keycloakId, status, from, to, ct);
         return Ok(result);
     }
@@ -43,7 +44,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
         [FromQuery] DateTime? to,
         CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.GetByDoctorAsync(keycloakId, status, from, to, ct);
         return Ok(result);
     }
@@ -57,7 +58,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AppointmentDto>> GetById(Guid id, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.GetByIdAsync(id, keycloakId, ct);
         return Ok(result);
     }
@@ -72,7 +73,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AppointmentDto>> Create([FromBody] CreateAppointmentDto dto, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.CreateAsync(dto, keycloakId, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
@@ -87,7 +88,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Cancel(Guid id, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         await _service.CancelAsync(id, keycloakId, ct);
         return NoContent();
     }
@@ -102,7 +103,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Confirm(Guid id, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         await _service.ConfirmAsync(id, keycloakId, ct);
         return NoContent();
     }
@@ -117,7 +118,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Complete(Guid id, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         await _service.CompleteAsync(id, keycloakId, ct);
         return NoContent();
     }

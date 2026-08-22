@@ -14,7 +14,7 @@ builder.Host.AddAppointmentSerilog();
 
 builder.Services.AddControllers();
 
-// JWT через Keycloak (Authority, Audience, MapInboundClaims=false, роли из realm_access)
+// JWT через Keycloak (Authority, Audience, MapInboundClaims=false, роли из realm_access → claim role)
 builder.Services.AddKeycloakJwtAuthentication(builder.Configuration);
 
 // OpenAPI: Bearer (ручной JWT) + OAuth2 Password (логин/пароль → Keycloak)
@@ -66,7 +66,7 @@ try
     // OpenAPI-документ и UI Scalar
     if (app.Environment.IsDevelopment())
     {
-        app.MapCommunicationScalar();
+        app.MapAppointmentScalar();
     }
 
     app.UseAuthentication();
@@ -76,9 +76,10 @@ try
 
     app.UseAuthorization();
 
+    // HTTP API: контроллеры appointments / slots / patients / doctors / admin
     app.MapControllers();
 
-    app.Run();
+    await app.RunAsync();
 }
 catch (Exception ex)
 {

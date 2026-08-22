@@ -17,32 +17,15 @@ public static class SendMessageEndpoint
         {
             var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
-                return Results.ValidationProblem(validation.ToDictionary());
+                throw new ValidationException(validation.Errors);
 
-            try
-            {
-                var keycloakId = CurrentUser.GetKeycloakId(http.User);
-                var role = CurrentUser.GetSenderRole(http.User);
-                var message = await handler.HandleAsync(chatId, request, keycloakId, role, ct);
-                if (message is null)
-                    return Results.NotFound();
+            var keycloakId = CurrentUser.GetKeycloakId(http.User);
+            var role = CurrentUser.GetSenderRole(http.User);
+            var message = await handler.HandleAsync(chatId, request, keycloakId, role, ct);
 
-                var body = new
-                {
-                    id = message.Id,
-                    chatId = message.ChatId,
-                    senderId = message.SenderId,
-                    senderRole = message.SenderRole,
-                    text = message.Text,
-                    createdAt = message.CreatedAt
-                };
+            var body = MessageResponse.From(message);
 
-                return Results.Created($"/api/chats/{chatId}/messages", body);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Results.Problem(ex.Message, statusCode: StatusCodes.Status403Forbidden);
-            }
+            return Results.Created($"/api/chats/{chatId}/messages", body);
         })
             .WithName("SendMessage")
             .WithSummary("Отправить сообщение в чат")

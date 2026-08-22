@@ -213,7 +213,20 @@ public class DoctorApplicationService(
             throw;
         }
 
-        await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+        try
+        {
+            await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Keycloak disable failed after DB deactivate. Compensating IsActive. DoctorId={DoctorId}, KeycloakId={KeycloakId}",
+                id, keycloakId);
+
+            await CompensateDoctorActiveAsync(id, activate: true, ct);
+            throw;
+        }
 
         _logger.LogInformation(
             "Doctor deactivated: {DoctorId}, KeycloakId={KeycloakId}, CancelledAppointments={Count}",
@@ -243,11 +256,56 @@ public class DoctorApplicationService(
             throw;
         }
 
-        await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
+        try
+        {
+            await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Keycloak enable failed after DB activate. Compensating IsActive. DoctorId={DoctorId}, KeycloakId={KeycloakId}",
+                id, keycloakId);
+
+            await CompensateDoctorActiveAsync(id, activate: false, ct);
+            throw;
+        }
 
         _logger.LogInformation(
             "Doctor activated: {DoctorId}, KeycloakId={KeycloakId}",
             id, keycloakId);
+    }
+
+    /// <summary>
+    /// Откат IsActive в Postgres, если Keycloak не подтвердил enable/disable.
+    /// Отменённые при deactivate записи не восстанавливаются.
+    /// </summary>
+    private async Task CompensateDoctorActiveAsync(Guid id, bool activate, CancellationToken ct)
+    {
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var doctor = await _doctorRepository.GetByIdAsync(id, ct)
+                ?? throw new NotFoundException($"Врач {id} не найден при компенсации.");
+
+            if (activate)
+                doctor.Activate();
+            else
+                doctor.Deactivate();
+
+            await _doctorRepository.UpdateAsync(doctor, ct);
+            await _unitOfWork.CommitAsync(ct);
+        }
+        catch (Exception compensateEx)
+        {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+
+            _logger.LogError(
+                compensateEx,
+                "Compensation failed for doctor {DoctorId}. Manual fix may be required.",
+                id);
+            throw;
+        }
     }
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordDto dto, CancellationToken ct)

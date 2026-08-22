@@ -16,22 +16,16 @@ public static class CreateChatEndpoint
         {
             var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
-                return Results.ValidationProblem(validation.ToDictionary());
+                throw new ValidationException(validation.Errors);
 
-            try
-            {
-                var keycloakId = CurrentUser.GetKeycloakId(http.User);
-                var (chat, created) = await handler.HandleAsync(request, keycloakId, ct);
+            var keycloakId = CurrentUser.GetKeycloakId(http.User);
+            var (chat, created) = await handler.HandleAsync(request, keycloakId, ct);
 
-                var body = ToResponse(chat);
-                return created
-                    ? Results.Created($"/api/chats/{chat.Id}", body)
-                    : Results.Ok(body);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Results.Problem(ex.Message, statusCode: StatusCodes.Status403Forbidden);
-            }
+            var body = CreateChatResponse.From(chat);
+
+            return created
+                ? Results.Created($"/api/chats/{chat.Id}", body)
+                : Results.Ok(body);
         })
             .WithName("CreateChat")
             .WithSummary("Создать чат по appointment")
@@ -42,15 +36,4 @@ public static class CreateChatEndpoint
 
         return group;
     }
-
-    private static object ToResponse(Common.Persistence.ChatDocument chat) => new
-    {
-        id = chat.Id,
-        appointmentId = chat.AppointmentId,
-        patientId = chat.PatientId,
-        doctorId = chat.DoctorId,
-        patientName = chat.PatientName,
-        doctorName = chat.DoctorName,
-        createdAt = chat.CreatedAt
-    };
 }

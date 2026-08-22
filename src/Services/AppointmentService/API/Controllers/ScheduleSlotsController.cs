@@ -1,3 +1,4 @@
+using AppointmentService.API.Auth;
 using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -53,7 +54,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ScheduleSlotDto>> Create([FromBody] CreateScheduleSlotDto dto, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.CreateAsync(dto, keycloakId, ct);
         return CreatedAtAction(nameof(GetByDoctor), new { doctorId = result.DoctorId }, result);
     }
@@ -68,7 +69,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ScheduleSlotDto>> Update(Guid id, [FromBody] UpdateScheduleSlotDto dto, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.UpdateAsync(id, dto, keycloakId, ct);
         return Ok(result);
     }
@@ -83,7 +84,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         await _service.DeleteAsync(id, keycloakId, ct);
         return NoContent();
     }

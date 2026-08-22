@@ -1,16 +1,16 @@
+using AppointmentService.Infrastructure.Keycloak;
 using Scalar.AspNetCore;
 
 namespace AppointmentService.API.OpenApi;
 
 public static class ScalarExtensions
 {
-    public static void MapCommunicationScalar(this WebApplication app)
+    public static void MapAppointmentScalar(this WebApplication app)
     {
         app.MapOpenApi();
         app.MapScalarApiReference(options =>
         {
-            var clientId = app.Configuration["Keycloak:Audience"]
-                ?? throw new InvalidOperationException("Keycloak:Audience не задан.");
+            var clientId = KeycloakConfiguration.GetRequired(app.Configuration, nameof(KeycloakOptions.Audience));
 
             options
                 .AddPreferredSecuritySchemes(KeycloakSecuritySchemeTransformer.SchemeId)

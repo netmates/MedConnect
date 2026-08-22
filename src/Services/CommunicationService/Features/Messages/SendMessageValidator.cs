@@ -9,7 +9,10 @@ public sealed class SendMessageValidator : AbstractValidator<SendMessageRequest>
     public SendMessageValidator()
     {
         RuleFor(x => x.Text)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
-            .MaximumLength(MaxTextLength);
+                .WithMessage("Текст сообщения обязателен.")
+            .MaximumLength(MaxTextLength)
+                .WithMessage($"Текст сообщения не должен превышать {MaxTextLength} символов.");
     }
 }

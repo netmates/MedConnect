@@ -1,4 +1,5 @@
 using CommunicationService.Common.Auth;
+using CommunicationService.Features.Messages;
 
 namespace CommunicationService.Features.Chats;
 
@@ -12,27 +13,12 @@ public static class GetChatHistoryEndpoint
                 HttpContext http,
                 CancellationToken ct) =>
         {
-            try
-            {
-                var keycloakId = CurrentUser.GetKeycloakId(http.User);
-                var messages = await handler.HandleAsync(chatId, keycloakId, ct);
-                if (messages is null)
-                    return Results.NotFound();
+            var keycloakId = CurrentUser.GetKeycloakId(http.User);
+            var messages = await handler.HandleAsync(chatId, keycloakId, ct);
 
-                return Results.Ok(messages.Select(m => new
-                {
-                    id = m.Id,
-                    chatId = m.ChatId,
-                    senderId = m.SenderId,
-                    senderRole = m.SenderRole,
-                    text = m.Text,
-                    createdAt = m.CreatedAt
-                }));
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Results.Problem(ex.Message, statusCode: StatusCodes.Status403Forbidden);
-            }
+            var body = messages.Select(m => MessageResponse.From(m));
+
+            return Results.Ok(body);
         })
             .WithName("GetChatHistory")
             .WithSummary("История сообщений чата")

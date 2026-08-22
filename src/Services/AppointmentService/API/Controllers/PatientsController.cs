@@ -1,3 +1,4 @@
+using AppointmentService.API.Auth;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -20,7 +21,7 @@ public class PatientsController(IPatientApplicationService service) : Controller
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PatientDto>> Register([FromBody] RegisterPatientDto dto, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.RegisterOrGetAsync(keycloakId, dto, ct);
         return Ok(result);
     }
@@ -33,7 +34,7 @@ public class PatientsController(IPatientApplicationService service) : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PatientDto>> GetMe(CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.GetByKeycloakIdAsync(keycloakId, ct);
         return Ok(result);
     }
@@ -47,7 +48,7 @@ public class PatientsController(IPatientApplicationService service) : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PatientDto>> UpdateMe([FromBody] UpdatePatientDto dto, CancellationToken ct)
     {
-        var keycloakId = User.FindFirst("sub")!.Value;
+        var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.UpdateAsync(keycloakId, dto, ct);
         return Ok(result);
     }

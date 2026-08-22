@@ -1,7 +1,8 @@
-using System.Security.Claims;
-using System.Text.Json;
+using AppointmentService.Infrastructure.Keycloak;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace AppointmentService.Infrastructure.Extensions;
 
@@ -18,8 +19,8 @@ public static class AuthenticationExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                options.Authority = configuration["Keycloak:Authority"];
-                options.Audience = configuration["Keycloak:Audience"];                
+                options.Authority = KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Authority));
+                options.Audience = KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Audience));
                 options.RequireHttpsMetadata = false;                
                 options.MapInboundClaims = false;
 

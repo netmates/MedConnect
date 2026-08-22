@@ -1,3 +1,4 @@
+using CommunicationService.Common.Auth;
 using Scalar.AspNetCore;
 
 namespace CommunicationService.Common.OpenApi;
@@ -9,8 +10,7 @@ public static class ScalarExtensions
         app.MapOpenApi();
         app.MapScalarApiReference(options =>
         {
-            var clientId = app.Configuration["Keycloak:Audience"]
-                ?? throw new InvalidOperationException("Keycloak:Audience не задан.");
+            var clientId = KeycloakConfiguration.GetRequired(app.Configuration, nameof(KeycloakOptions.Audience));
 
             options
                 .AddPreferredSecuritySchemes(KeycloakSecuritySchemeTransformer.SchemeId)
