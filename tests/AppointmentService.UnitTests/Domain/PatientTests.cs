@@ -83,6 +83,35 @@ public class PatientTests
     }
 
     [Fact]
+    public void Create_WithUnspecifiedDateOfBirth_StoresUtcMidnight()
+    {
+        // Arrange
+        var unspecified = new DateTime(1990, 5, 15);
+
+        // Act
+        var patient = CreateValid(dateOfBirth: unspecified);
+
+        // Assert
+        Assert.Equal(DateTimeKind.Utc, patient.DateOfBirth!.Value.Kind);
+        Assert.Equal(new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Utc), patient.DateOfBirth);
+    }
+
+    [Fact]
+    public void Update_WithUnspecifiedDateOfBirth_StoresUtcMidnight()
+    {
+        // Arrange
+        var patient = CreateValid();
+        var unspecified = new DateTime(1985, 3, 10);
+
+        // Act
+        patient.Update("Козлов", "Игорь", null, "+79998887766", unspecified);
+
+        // Assert
+        Assert.Equal(DateTimeKind.Utc, patient.DateOfBirth!.Value.Kind);
+        Assert.Equal(new DateTime(1985, 3, 10, 0, 0, 0, DateTimeKind.Utc), patient.DateOfBirth);
+    }
+
+    [Fact]
     public void Update_WithValidData_ChangesProfile()
     {
         // Arrange

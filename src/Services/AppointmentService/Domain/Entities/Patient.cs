@@ -13,7 +13,7 @@ public class Patient
     public const int MaxPhoneLength = 20;
     public static readonly string PhoneRegexPattern = $@"^\+?[0-9\s\-]{{{MinPhoneLength},{MaxPhoneLength}}}$";
 
-    public static readonly DateTime MinDateOfBirth = new(1900, 1, 1);
+    public static readonly DateTime MinDateOfBirth = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     public Guid Id { get; private set; }
     public string KeycloakId { get; private set; } = null!;
@@ -38,7 +38,9 @@ public class Patient
         DateTime? dateOfBirth)
     {
         EnsureKeycloakId(keycloakId);
-        EnsureProfile(lastName, firstName, middleName, phone, dateOfBirth);
+
+        var utcDateOfBirth = ToUtcDate(dateOfBirth);
+        EnsureProfile(lastName, firstName, middleName, phone, utcDateOfBirth);
 
         return new Patient
         {
@@ -48,7 +50,7 @@ public class Patient
             FirstName = firstName.Trim(),
             MiddleName = NormalizeOptional(middleName),
             Phone = NormalizeOptional(phone),
-            DateOfBirth = dateOfBirth,
+            DateOfBirth = utcDateOfBirth,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -61,13 +63,14 @@ public class Patient
         string? phone,
         DateTime? dateOfBirth)
     {
-        EnsureProfile(lastName, firstName, middleName, phone, dateOfBirth);
+        var utcDateOfBirth = ToUtcDate(dateOfBirth);
+        EnsureProfile(lastName, firstName, middleName, phone, utcDateOfBirth);
 
         LastName = lastName.Trim();
         FirstName = firstName.Trim();
         MiddleName = NormalizeOptional(middleName);
         Phone = NormalizeOptional(phone);
-        DateOfBirth = dateOfBirth;
+        DateOfBirth = utcDateOfBirth;
     }
 
     public void Deactivate() => IsActive = false;
@@ -123,4 +126,12 @@ public class Patient
 
     private static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    
+    private static DateTime? ToUtcDate(DateTime? value)
+    {
+        if (!value.HasValue)
+            return null;
+
+        return DateTime.SpecifyKind(value.Value.Date, DateTimeKind.Utc);
+    }
 }
