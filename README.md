@@ -49,11 +49,6 @@ cd src/Services/AppointmentService
 dotnet user-secrets set "Keycloak:AdminClientSecret" "<вставьте_secret_сюда>"
 ```
 
-В `appsettings.json` поле `Keycloak:AdminClientSecret` пустое — это нормально.  
-Значение подставляется из user secrets в Development.
-
-Без этого шага: JWT и чтение API могут работать, но **Admin API** (создание врача, activate/deactivate, seed демо-пользователей в Keycloak) — нет.
-
 ## 3. Запуск AppointmentService
 
 ```powershell
@@ -101,17 +96,7 @@ cd tests/AppointmentService.UnitTests
 dotnet test
 ```
 
-## 7. Что не коммитить
-
-| Файл / место                         | Почему                          |
-|--------------------------------------|---------------------------------|
-| User Secrets (локально у пользователя) | `AdminClientSecret`             |
-| `appsettings.Local.json` (если появится) | личные переопределения          |
-| `.env`                               | секреты окружения               |
-
-`appsettings.Development.json` **в репозитории** — общие Dev-настройки (уровни логов, DemoUsers), без секретов.
-
-## 8. Чеклист для нового ПК
+## 7. Чеклист для нового ПК
 
 1. [ ] Установлены Docker, .NET 10 и Node.js 24  
 2. [ ] `docker compose up -d`  
