@@ -25,7 +25,7 @@ public class UnitOfWork(AppointmentDbContext context) : IUnitOfWork
     {
         if (_transaction is null)
             throw new InvalidOperationException("Транзакция не была начата.");
-        
+
         await SaveChangesInternalAsync(ct);
         await _transaction.CommitAsync(ct);
         await _transaction.DisposeAsync();

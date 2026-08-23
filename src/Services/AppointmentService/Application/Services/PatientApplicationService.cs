@@ -77,7 +77,7 @@ public class PatientApplicationService(
         try
         {
             var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
-            ?? throw new NotFoundException("Профиль пациента не найден.");
+                ?? throw new NotFoundException("Профиль пациента не найден.");
 
             patient.Update(
                 lastName: dto.LastName,

@@ -14,7 +14,7 @@ public static class LoggingExtensions
                 .Enrich.FromLogContext()
                 .Enrich.WithProperty("ServiceName", "AppointmentService")
                 .Enrich.WithProperty("EnvironmentName", context.HostingEnvironment.EnvironmentName);
-            
+
             if (context.HostingEnvironment.IsDevelopment())
                 configuration.WriteTo.Seq("http://localhost:5341");
         });

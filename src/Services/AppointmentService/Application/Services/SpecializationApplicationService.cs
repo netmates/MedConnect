@@ -21,7 +21,6 @@ public class SpecializationApplicationService(
     private readonly IValidator<UpdateSpecializationDto> _updateSpecializationValidator = updateSpecializationValidator;
     private readonly ILogger<SpecializationApplicationService> _logger = logger;
 
-
     public async Task<IReadOnlyList<SpecializationDto>> GetAllAsync(CancellationToken ct)
     {
         var specializations = await _specializationRepository.GetAllAsync(ct);

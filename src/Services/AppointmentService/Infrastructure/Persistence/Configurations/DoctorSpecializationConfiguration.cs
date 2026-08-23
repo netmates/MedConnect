@@ -23,4 +23,3 @@ public class DoctorSpecializationConfiguration : IEntityTypeConfiguration<Doctor
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
-

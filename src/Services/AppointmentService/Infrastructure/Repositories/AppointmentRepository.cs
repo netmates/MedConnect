@@ -93,8 +93,8 @@ public class AppointmentRepository(AppointmentDbContext context) : Repository<Ap
         CancellationToken ct = default)
         => await _context.Appointments
             .Where(a => a.DoctorId == doctorId
-                     && (a.Status == AppointmentStatus.Created || a.Status == AppointmentStatus.Confirmed)
-                     && a.Slot.StartTime > after)
+                    && (a.Status == AppointmentStatus.Created || a.Status == AppointmentStatus.Confirmed)
+                    && a.Slot.StartTime > after)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<Appointment>> GetActiveFutureByPatientIdAsync(
@@ -103,8 +103,8 @@ public class AppointmentRepository(AppointmentDbContext context) : Repository<Ap
         CancellationToken ct = default)
         => await _context.Appointments
             .Where(a => a.PatientId == patientId
-                     && (a.Status == AppointmentStatus.Created || a.Status == AppointmentStatus.Confirmed)
-                     && a.Slot.StartTime > after)
+                    && (a.Status == AppointmentStatus.Created || a.Status == AppointmentStatus.Confirmed)
+                    && a.Slot.StartTime > after)
             .ToListAsync(ct);
 
     public override Task DeleteAsync(Appointment entity, CancellationToken ct = default)

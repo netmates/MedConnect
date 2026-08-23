@@ -22,10 +22,10 @@ public class ScheduleSlotRepository(AppointmentDbContext context) : Repository<S
         var endOfDay = startOfDay.AddDays(1);
         return await _context.ScheduleSlots
             .Where(s => s.DoctorId == doctorId
-                     && s.Status == SlotStatus.Available
-                     && s.StartTime >= startOfDay
-                     && s.StartTime < endOfDay
-                     && s.StartTime > DateTime.UtcNow)
+                    && s.Status == SlotStatus.Available
+                    && s.StartTime >= startOfDay
+                    && s.StartTime < endOfDay
+                    && s.StartTime > DateTime.UtcNow)
             .OrderBy(s => s.StartTime)
             .ToListAsync(ct);
     }
@@ -40,7 +40,6 @@ public class ScheduleSlotRepository(AppointmentDbContext context) : Repository<S
             .AnyAsync(s => s.DoctorId == doctorId
                         && s.StartTime < endTime
                         && s.EndTime > startTime
-                        // excludeSlotId - чтобы не найти самого себя при редактировании
                         && (excludeSlotId == null || s.Id != excludeSlotId), ct);
 
     public async Task<ScheduleSlot?> GetByIdWithLockAsync(Guid id, CancellationToken ct = default)

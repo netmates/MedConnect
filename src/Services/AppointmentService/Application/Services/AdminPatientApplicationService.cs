@@ -90,7 +90,7 @@ public class AdminPatientApplicationService(
 
             patient.Deactivate();
             await _patientRepository.UpdateAsync(patient, ct);
-            
+
             await _unitOfWork.CommitAsync(ct);
         }
         catch

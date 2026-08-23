@@ -34,7 +34,7 @@ public interface IAppointmentApplicationService
     /// <summary>
     /// Отменить запись (пациент или врач).
     /// </summary>
-    Task CancelAsync(Guid appointmentId, string keycloakId, CancellationToken ct);    
+    Task CancelAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
     /// <summary>
     /// Завершить приём.
     /// </summary>

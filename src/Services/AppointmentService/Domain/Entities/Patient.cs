@@ -109,7 +109,7 @@ public class Patient
 
         if (!string.IsNullOrWhiteSpace(phone))
         {
-            var normalizedPhone = phone.Trim();            
+            var normalizedPhone = phone.Trim();
 
             if (!Regex.IsMatch(normalizedPhone, PhoneRegexPattern))
                 throw new DomainException("Некорректный формат телефона.");
@@ -126,7 +126,7 @@ public class Patient
 
     private static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    
+
     private static DateTime? ToUtcDate(DateTime? value)
     {
         if (!value.HasValue)

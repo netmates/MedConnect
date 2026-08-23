@@ -12,7 +12,7 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
         var correlationId = GetOrCreateCorrelationId(context);
 
         context.Items[ItemKey] = correlationId;
-        
+
         context.Response.OnStarting(() =>
         {
             if (!context.Response.Headers.ContainsKey(HeaderName))

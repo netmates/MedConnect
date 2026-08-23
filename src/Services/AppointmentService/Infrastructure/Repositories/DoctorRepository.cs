@@ -36,7 +36,7 @@ public class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>
     public async Task<Doctor?> GetByKeycloakIdAsync(string keycloakId, CancellationToken ct = default)
         => await _context.Doctors
             .FirstOrDefaultAsync(d => d.KeycloakId == keycloakId, ct);
-    
+
     public async Task AddDoctorSpecializationAsync(DoctorSpecialization doctorSpecialization, CancellationToken ct = default)
         => await _context.DoctorSpecializations.AddAsync(doctorSpecialization, ct);
 
@@ -48,7 +48,7 @@ public class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>
         if (doctorSpecialization is null) return;
 
         _context.DoctorSpecializations.Remove(doctorSpecialization);
-    }    
+    }
 
     public override Task DeleteAsync(Doctor entity, CancellationToken ct = default)
     {

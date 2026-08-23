@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
         // EF Core + PostgreSQL
         services.AddDbContext<AppointmentDbContext>(options => options.UseNpgsql(postgres));
 
-        // Unit of Work        
+        // Unit of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Repositories

@@ -47,7 +47,7 @@ public class KeycloakAdminService(
             credentials = new[]
             {
                 new { type = "password", value = temporaryPassword, temporary = true }
-            }            
+            }
         };
 
         using var request = new HttpRequestMessage(
@@ -120,7 +120,7 @@ public class KeycloakAdminService(
     {
         await SetUserEnabledAsync(keycloakId, enabled: true, ct);
     }
-    
+
     private async Task SetUserEnabledAsync(string keycloakId, bool enabled, CancellationToken ct)
     {
         var adminToken = await GetAdminTokenAsync(ct);

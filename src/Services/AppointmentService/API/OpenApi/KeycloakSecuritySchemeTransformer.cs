@@ -43,7 +43,7 @@ internal sealed class KeycloakSecuritySchemeTransformer(
 
         document.Components ??= new OpenApiComponents();
         document.AddComponent(SchemeId, oauth2);
-        
+
         document.Security ??= [];
         document.Security.Add(
             new OpenApiSecurityRequirement

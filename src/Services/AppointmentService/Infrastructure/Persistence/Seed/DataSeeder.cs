@@ -32,7 +32,7 @@ public static class DataSeeder
 
         if (seedSpecializations)
             await SeedSpecializationsIfEmptyAsync(db, logger, ct);
-        
+
         if (env.IsDevelopment() && seedDemoUsers)
         {
             var keycloak = sp.GetRequiredService<IKeycloakAdminService>();
@@ -40,7 +40,7 @@ public static class DataSeeder
             var doctorService = sp.GetRequiredService<IDoctorApplicationService>();
             await SeedDemoDoctorsAsync(db, doctorService, keycloak, logger, ct);
 
-            var patientService = sp.GetRequiredService<IPatientApplicationService>();            
+            var patientService = sp.GetRequiredService<IPatientApplicationService>();
             await SeedDemoPatientsAsync(db, patientService, keycloak, logger, ct);
         }
     }

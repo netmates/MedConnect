@@ -39,7 +39,7 @@ public class DoctorApplicationService(
             : await _doctorRepository.GetActiveAsync(ct);
         return doctors.Select(MapToDto).ToList();
     }
-    
+
     public async Task<DoctorDto> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var doctor = await _doctorRepository.GetWithSpecializationsAsync(id, ct)
@@ -50,13 +50,13 @@ public class DoctorApplicationService(
 
         return MapToDto(doctor);
     }
-    
+
     public async Task<IReadOnlyList<DoctorDto>> GetAllIncludingInactiveAsync(CancellationToken ct)
     {
         var doctors = await _doctorRepository.GetAllIncludingInactiveAsync(ct);
         return doctors.Select(MapToDto).ToList();
     }
-    
+
     public async Task<DoctorDto> CreateAsync(CreateDoctorDto dto, CancellationToken ct)
     {
         var validationResult = await _createDoctorValidator.ValidateAsync(dto, ct);
@@ -82,7 +82,7 @@ public class DoctorApplicationService(
                 description: dto.Description,
                 experienceYears: dto.ExperienceYears);
             await _doctorRepository.AddAsync(doctor, ct);
-            
+
             foreach (var specializationId in dto.SpecializationIds)
             {
                 var specialization = await _specializationRepository.GetByIdAsync(specializationId, ct)
@@ -121,7 +121,7 @@ public class DoctorApplicationService(
             throw;
         }
     }
-    
+
     public async Task<DoctorDto> UpdateAsync(Guid id, UpdateDoctorDto dto, CancellationToken ct)
     {
         var validationResult = await _updateDoctorValidator.ValidateAsync(dto, ct);
@@ -184,7 +184,7 @@ public class DoctorApplicationService(
             throw;
         }
     }
-    
+
     public async Task DeactivateAsync(Guid id, CancellationToken ct)
     {
         string keycloakId;
@@ -232,7 +232,7 @@ public class DoctorApplicationService(
             "Doctor deactivated: {DoctorId}, KeycloakId={KeycloakId}, CancelledAppointments={Count}",
             id, keycloakId, cancelledCount);
     }
-    
+
     public async Task ActivateAsync(Guid id, CancellationToken ct)
     {
         string keycloakId;

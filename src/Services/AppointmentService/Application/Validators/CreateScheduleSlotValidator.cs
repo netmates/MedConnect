@@ -21,8 +21,8 @@ public class CreateScheduleSlotValidator : AbstractValidator<CreateScheduleSlotD
                 is >= ScheduleSlot.MinDurationMinutes
                 and <= ScheduleSlot.MaxDurationMinutes)
             .WithMessage($"Длительность слота должна быть " +
-                 $"от {ScheduleSlot.MinDurationMinutes} " +
-                 $"до {ScheduleSlot.MaxDurationMinutes} минут.")
+                $"от {ScheduleSlot.MinDurationMinutes} " +
+                $"до {ScheduleSlot.MaxDurationMinutes} минут.")
             .When(x => x.EndTime > x.StartTime);
     }
 }

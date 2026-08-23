@@ -20,7 +20,7 @@ public class AppointmentApplicationService(
 {
     private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;
     private readonly IScheduleSlotRepository _slotRepository = slotRepository;
-    private readonly IPatientRepository _patientRepository = patientRepository;    
+    private readonly IPatientRepository _patientRepository = patientRepository;
     private readonly IDoctorRepository _doctorRepository = doctorRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IValidator<CreateAppointmentDto> _createAppointmentValidator = createAppointmentValidator;
@@ -102,7 +102,7 @@ public class AppointmentApplicationService(
 
             var doctor = await _doctorRepository.GetByIdAsync(slot.DoctorId, ct)
                 ?? throw new NotFoundException("Врач не найден.");
-            
+
             if (!doctor.IsActive)
                 throw new BusinessRuleException("Нельзя записаться: врач деактивирован.");
 
@@ -111,7 +111,7 @@ public class AppointmentApplicationService(
 
             appointment = Appointment.Create(patient.Id, slot.DoctorId, slot.Id, dto.Reason);
             await _appointmentRepository.AddAsync(appointment, ct);
-            
+
             await _unitOfWork.CommitAsync(ct);
         }
         catch
@@ -161,7 +161,7 @@ public class AppointmentApplicationService(
             await _appointmentRepository.UpdateAsync(appointment, ct);
 
             slot.Free();
-            await _slotRepository.UpdateAsync(slot, ct);            
+            await _slotRepository.UpdateAsync(slot, ct);
 
             await _unitOfWork.CommitAsync(ct);
         }
@@ -211,7 +211,7 @@ public class AppointmentApplicationService(
             "Appointment completed: {AppointmentId}, DoctorId={DoctorId}",
             appointmentId, doctor.Id);
     }
-    
+
     public async Task ConfirmAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
     {
         var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)

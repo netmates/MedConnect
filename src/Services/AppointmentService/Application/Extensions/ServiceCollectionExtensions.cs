@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.Interfaces.Services;
+using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Application.Services;
 using AppointmentService.Application.Validators;
 using FluentValidation;
@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAppointmentApplicationService, AppointmentApplicationService>();
         services.AddScoped<IPatientApplicationService, PatientApplicationService>();
         services.AddScoped<ISpecializationApplicationService, SpecializationApplicationService>();
-        services.AddScoped<IScheduleSlotApplicationService, ScheduleSlotApplicationService>();        
+        services.AddScoped<IScheduleSlotApplicationService, ScheduleSlotApplicationService>();
         services.AddScoped<IAdminPatientApplicationService, AdminPatientApplicationService>();
 
         // Validators

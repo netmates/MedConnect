@@ -21,11 +21,11 @@ public static class AuthenticationExtensions
             {
                 options.Authority = KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Authority));
                 options.Audience = KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Audience));
-                options.RequireHttpsMetadata = false;                
+                options.RequireHttpsMetadata = false;
                 options.MapInboundClaims = false;
 
                 options.TokenValidationParameters = new TokenValidationParameters
-                {   
+                {
                     RoleClaimType = "role",
                     NameClaimType = "preferred_username"
                 };
