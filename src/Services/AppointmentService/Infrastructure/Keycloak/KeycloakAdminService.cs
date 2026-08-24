@@ -1,3 +1,4 @@
+using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces.Services;
 using System.Net.Http.Headers;
 using System.Text;
@@ -59,10 +60,10 @@ public class KeycloakAdminService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(response, ct);
 
         var location = response.Headers.Location?.ToString()
-            ?? throw new InvalidOperationException("Keycloak не вернул Location header.");
+            ?? throw new InvalidOperationException("Сервер не вернул идентификатор созданного пользователя.");
 
         var keycloakId = location.Split('/').Last();
 
@@ -106,7 +107,7 @@ public class KeycloakAdminService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(response, ct);
 
         _logger.LogInformation("Keycloak user deleted: {KeycloakId}", keycloakId);
     }
@@ -130,11 +131,11 @@ public class KeycloakAdminService(
         getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var getResponse = await _httpClient.SendAsync(getRequest, ct);
-        getResponse.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(getResponse, ct);
 
         await using var stream = await getResponse.Content.ReadAsStreamAsync(ct);
         var user = await JsonNode.ParseAsync(stream, cancellationToken: ct)
-            ?? throw new InvalidOperationException($"Keycloak user {keycloakId} returned empty body.");
+            ?? throw new InvalidOperationException($"Пустой ответ при загрузке пользователя {keycloakId}.");
 
         user["enabled"] = enabled;
 
@@ -145,7 +146,7 @@ public class KeycloakAdminService(
         putRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var putResponse = await _httpClient.SendAsync(putRequest, ct);
-        putResponse.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(putResponse, ct);
     }
 
     public async Task ResetPasswordAsync(string keycloakId, string newPassword, CancellationToken ct = default)
@@ -162,7 +163,7 @@ public class KeycloakAdminService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(response, ct);
     }
 
     /// <summary>
@@ -188,7 +189,7 @@ public class KeycloakAdminService(
         };
 
         var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(response, ct);
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
         var token = json.GetProperty("access_token").GetString()!;
@@ -216,7 +217,7 @@ public class KeycloakAdminService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(response, ct);
     }
 
     /// <summary>
@@ -238,7 +239,7 @@ public class KeycloakAdminService(
         var response = await _httpClient.SendAsync(request, ct);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return;
-        response.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(response, ct);
     }
 
     /// <summary>
@@ -253,7 +254,34 @@ public class KeycloakAdminService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureKeycloakSuccessAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
+    }
+
+    private async Task EnsureKeycloakSuccessAsync(
+        HttpResponseMessage response,
+        CancellationToken ct)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        var status = (int)response.StatusCode;
+
+        _logger.LogWarning(
+            "Keycloak request failed. StatusCode={StatusCode}, Body={Body}",
+            status,
+            body);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            throw new ConflictException("Операция конфликтует с текущим состоянием данных.");
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            throw new NotFoundException("Запрашиваемый объект не найден.");
+
+        if (status >= 400 && status < 500)
+            throw new BusinessRuleException($"Ошибка выполнения операции ({status}).");
+
+        response.EnsureSuccessStatusCode();
     }
 }

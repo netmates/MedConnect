@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.Exceptions;
+using AppointmentService.Application.Exceptions;
 using AppointmentService.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
@@ -17,6 +17,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         {
             NotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
             ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden"),
+            ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
             BusinessRuleException => (StatusCodes.Status400BadRequest, "Business Rule Violation"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Error"),
             ValidationException => (StatusCodes.Status400BadRequest, "Validation Error"),
