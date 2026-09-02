@@ -111,6 +111,9 @@ public class Patient
         {
             var normalizedPhone = phone.Trim();
 
+            if (normalizedPhone.Length > MaxPhoneLength)
+                throw new DomainException($"Телефон не должен превышать {MaxPhoneLength} символов.");
+
             if (!Regex.IsMatch(normalizedPhone, PhoneRegexPattern))
                 throw new DomainException("Некорректный формат телефона.");
         }

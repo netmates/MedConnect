@@ -70,6 +70,19 @@ public class PatientTests
     }
 
     [Fact]
+    public void Create_WithPhoneLongerThanMax_Throws()
+    {
+        // Arrange
+        var phone = "+" + new string('9', Patient.MaxPhoneLength);
+
+        // Act
+        var ex = Assert.Throws<DomainException>(() => CreateValid(phone: phone));
+
+        // Assert
+        Assert.Equal($"Телефон не должен превышать {Patient.MaxPhoneLength} символов.", ex.Message);
+    }
+
+    [Fact]
     public void Create_WithDateOfBirthInFuture_Throws()
     {
         // Arrange

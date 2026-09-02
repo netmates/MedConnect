@@ -190,6 +190,24 @@ public class RegisterPatientValidatorTests
     }
 
     [Fact]
+    public void Validate_WithPhoneTooLong_Fails()
+    {
+        // Arrange
+        var dto = ValidDto();
+        dto.Phone = new string('9', Patient.MaxPhoneLength + 1);
+
+        // Act
+        ValidationResult result = _validator.Validate(dto);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(
+            result.Errors,
+            e => e.PropertyName == nameof(RegisterPatientDto.Phone)
+                 && e.ErrorMessage == $"Телефон не должен превышать {Patient.MaxPhoneLength} символов.");
+    }
+
+    [Fact]
     public void Validate_WithFutureDateOfBirth_Fails()
     {
         // Arrange

@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.Patient;
+using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 
@@ -28,6 +28,9 @@ public class RegisterPatientValidator : AbstractValidator<RegisterPatientDto>
             .When(x => !string.IsNullOrEmpty(x.MiddleName));
 
         RuleFor(x => x.Phone)
+            .Cascade(CascadeMode.Stop)
+            .MaximumLength(Patient.MaxPhoneLength)
+                .WithMessage($"Телефон не должен превышать {Patient.MaxPhoneLength} символов.")
             .Matches(Patient.PhoneRegexPattern)
                 .WithMessage("Некорректный формат номера телефона.")
             .When(x => !string.IsNullOrEmpty(x.Phone));
