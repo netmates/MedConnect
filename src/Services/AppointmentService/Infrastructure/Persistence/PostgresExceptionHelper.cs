@@ -16,7 +16,4 @@ public static class PostgresExceptionHelper
 
         return false;
     }
-
-    public static bool IsUniqueViolation(DbUpdateException exception)
-        => IsUniqueViolation((Exception)exception);
 }
