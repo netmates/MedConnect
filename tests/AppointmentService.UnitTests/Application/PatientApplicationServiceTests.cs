@@ -6,8 +6,10 @@ using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Npgsql;
 
 namespace AppointmentService.UnitTests.Application;
 
@@ -147,6 +149,40 @@ public class PatientApplicationServiceTests
         // Assert
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RegisterOrGetAsync_WhenUniqueViolationOnCommit_RollsBackAndThrows()
+    {
+        // Arrange
+        const string keycloakId = "race-patient-kc";
+        var dto = ValidRegisterDto();
+
+        _patients.Setup(r => r.GetByKeycloakIdAsync(keycloakId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Patient?)null);
+
+        var postgresEx = new PostgresException(
+            messageText: "duplicate key value violates unique constraint",
+            severity: "ERROR",
+            invariantSeverity: "ERROR",
+            sqlState: PostgresErrorCodes.UniqueViolation);
+
+        _uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DbUpdateException("unique violation", postgresEx));
+
+        // Act
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() =>
+            _sut.RegisterOrGetAsync(keycloakId, dto, CancellationToken.None));
+
+        // Assert
+        Assert.Same(postgresEx, ex.InnerException);
+        _patients.Verify(
+            r => r.AddAsync(It.IsAny<Patient>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _patients.Verify(
+            r => r.GetByKeycloakIdAsync(keycloakId, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     // GetByKeycloakId

@@ -1,8 +1,10 @@
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Domain.Exceptions;
+using AppointmentService.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentService.API.Middleware;
 
@@ -21,6 +23,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             BusinessRuleException => (StatusCodes.Status400BadRequest, "Business Rule Violation"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Error"),
             ValidationException => (StatusCodes.Status400BadRequest, "Validation Error"),
+            DbUpdateException ex when PostgresExceptionHelper.IsUniqueViolation(ex) => (StatusCodes.Status409Conflict, "Conflict"),
             _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
         };
 
@@ -36,8 +39,10 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             Detail = status == StatusCodes.Status500InternalServerError
                 ? "Произошла внутренняя ошибка."
                 : exception is ValidationException
-                    ? "One or more validation errors occurred."
-                    : exception.Message
+                    ? "Одна или несколько ошибок валидации."
+                    : exception is DbUpdateException dbEx && PostgresExceptionHelper.IsUniqueViolation(dbEx)
+                        ? "Операция конфликтует с текущим состоянием данных."
+                        : exception.Message
         };
 
         if (exception is ValidationException validationException)
