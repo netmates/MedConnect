@@ -142,15 +142,15 @@ public class ScheduleSlotApplicationService(
             id, doctor.Id);
     }
 
-    public async Task<IReadOnlyList<ScheduleSlotDto>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct)
+    public async Task<IReadOnlyList<ScheduleSlotDto>> GetScheduleAsync(string keycloakId, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByIdAsync(doctorId, ct)
-            ?? throw new NotFoundException("Врач не найден.");
+        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
+            ?? throw new NotFoundException("Профиль врача не найден.");
 
         if (!doctor.IsActive)
-            throw new NotFoundException("Врач не найден.");
+            throw new BusinessRuleException("Нельзя управлять расписанием: профиль врача деактивирован.");
 
-        var slots = await _slotRepository.GetByDoctorIdAsync(doctorId, ct);
+        var slots = await _slotRepository.GetByDoctorIdAsync(doctor.Id, ct);
         return slots.Select(MapToDto).ToList();
     }
 

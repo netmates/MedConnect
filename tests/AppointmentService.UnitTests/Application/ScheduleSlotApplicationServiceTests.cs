@@ -436,37 +436,36 @@ public class ScheduleSlotApplicationServiceTests
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // GetByDoctorId
+    // GetSchedule
 
     [Fact]
-    public async Task GetByDoctorIdAsync_WhenDoctorNotFound_ThrowsNotFound()
+    public async Task GetScheduleAsync_WhenDoctorNotFound_ThrowsNotFound()
     {
         // Arrange
-        var doctorId = Guid.NewGuid();
-        _doctors.Setup(r => r.GetByIdAsync(doctorId, It.IsAny<CancellationToken>()))
+        _doctors.Setup(r => r.GetByKeycloakIdAsync("missing", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Doctor?)null);
 
         // Act
         var ex = await Assert.ThrowsAsync<NotFoundException>(() =>
-            _sut.GetByDoctorIdAsync(doctorId, CancellationToken.None));
+            _sut.GetScheduleAsync("missing", CancellationToken.None));
 
         // Assert
-        Assert.Equal("Врач не найден.", ex.Message);
+        Assert.Equal("Профиль врача не найден.", ex.Message);
     }
 
     [Fact]
-    public async Task GetByDoctorIdAsync_WhenExists_ReturnsMappedList()
+    public async Task GetScheduleAsync_WhenExists_ReturnsMappedList()
     {
         // Arrange
         var doctor = CreateDoctor();
         var slot = CreateFutureSlot(doctor.Id);
-        _doctors.Setup(r => r.GetByIdAsync(doctor.Id, It.IsAny<CancellationToken>()))
+        _doctors.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doctor);
         _slots.Setup(r => r.GetByDoctorIdAsync(doctor.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([slot]);
 
         // Act
-        var result = await _sut.GetByDoctorIdAsync(doctor.Id, CancellationToken.None);
+        var result = await _sut.GetScheduleAsync(doctor.KeycloakId, CancellationToken.None);
 
         // Assert
         Assert.Single(result);
@@ -475,20 +474,20 @@ public class ScheduleSlotApplicationServiceTests
     }
 
     [Fact]
-    public async Task GetByDoctorIdAsync_WhenDoctorInactive_ThrowsNotFound()
+    public async Task GetScheduleAsync_WhenDoctorInactive_ThrowsBusinessRule()
     {
         // Arrange
         var doctor = CreateDoctor();
         doctor.Deactivate();
-        _doctors.Setup(r => r.GetByIdAsync(doctor.Id, It.IsAny<CancellationToken>()))
+        _doctors.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doctor);
 
         // Act
-        var ex = await Assert.ThrowsAsync<NotFoundException>(() =>
-            _sut.GetByDoctorIdAsync(doctor.Id, CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            _sut.GetScheduleAsync(doctor.KeycloakId, CancellationToken.None));
 
         // Assert
-        Assert.Equal("Врач не найден.", ex.Message);
+        Assert.Equal("Нельзя управлять расписанием: профиль врача деактивирован.", ex.Message);
         _slots.Verify(
             r => r.GetByDoctorIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);

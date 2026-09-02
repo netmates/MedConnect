@@ -1,4 +1,4 @@
-﻿using AppointmentService.Application.DTOs.ScheduleSlot;
+using AppointmentService.Application.DTOs.ScheduleSlot;
 
 namespace AppointmentService.Application.Interfaces.Services;
 
@@ -17,9 +17,9 @@ public interface IScheduleSlotApplicationService
     /// </summary>
     Task DeleteAsync(Guid id, string keycloakId, CancellationToken ct);
     /// <summary>
-    /// Получить список слотов врача.
+    /// Получить полное расписание текущего врача (все статусы слотов).
     /// </summary>
-    Task<IReadOnlyList<ScheduleSlotDto>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct);
+    Task<IReadOnlyList<ScheduleSlotDto>> GetScheduleAsync(string keycloakId, CancellationToken ct);
     /// <summary>
     /// Получить свободные слоты врача на указанную дату.
     /// </summary>

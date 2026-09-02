@@ -13,17 +13,18 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
 {
     private readonly IScheduleSlotApplicationService _service = service;
 
-    /// <summary>GET /api/slots — список слотов врача по doctorId.</summary>
+    /// <summary>GET /api/slots — полное расписание текущего врача.</summary>
     [HttpGet]
-    [Authorize(Roles = "patient,doctor")]
+    [Authorize(Roles = "doctor")]
     [ProducesResponseType(typeof(IReadOnlyList<ScheduleSlotDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<ScheduleSlotDto>>> GetByDoctor([FromQuery, BindRequired] Guid doctorId, CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<ScheduleSlotDto>>> GetSchedule(CancellationToken ct)
     {
-        var result = await _service.GetByDoctorIdAsync(doctorId, ct);
+        var keycloakId = CurrentUser.GetKeycloakId(User);
+        var result = await _service.GetScheduleAsync(keycloakId, ct);
         return Ok(result);
     }
 
@@ -56,7 +57,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await _service.CreateAsync(dto, keycloakId, ct);
-        return CreatedAtAction(nameof(GetByDoctor), new { doctorId = result.DoctorId }, result);
+        return CreatedAtAction(nameof(GetSchedule), result);
     }
 
     /// <summary>PUT /api/slots/{id} — обновить слот расписания (врач).</summary>
