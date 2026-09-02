@@ -1,11 +1,10 @@
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace AppointmentService.Infrastructure.Persistence;
 
 public static class PostgresExceptionHelper
 {
-    /// <summary>Postgres unique_violation (SQLSTATE 23505).</summary>
+    /// <summary>Является ли исключение нарушением unique-ограничения PostgreSQL.</summary>
     public static bool IsUniqueViolation(Exception exception)
     {
         for (var ex = exception; ex is not null; ex = ex.InnerException)
