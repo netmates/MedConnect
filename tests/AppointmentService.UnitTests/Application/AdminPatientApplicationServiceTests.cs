@@ -47,7 +47,7 @@ public class AdminPatientApplicationServiceTests
         => Patient.Create(keycloakId, "Иванов", "Иван", "Иванович", "+79001234567", new DateTime(1990, 1, 1));
 
     private static Doctor CreateDoctor(string keycloakId = "doctor-kc")
-        => Doctor.Create(keycloakId, "Петров", "Петр", "Петрович", "Терапевт", 10);    
+        => Doctor.Create(keycloakId, "Петров", "Петр", "Петрович", "Терапевт", 10);
 
     private static ScheduleSlot CreateFutureSlot(Guid doctorId)
         => ScheduleSlot.Create(doctorId, FutureStart, FutureStart.AddMinutes(30));

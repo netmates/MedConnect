@@ -8,7 +8,7 @@ namespace AppointmentService.UnitTests.Validators;
 public class CreateScheduleSlotValidatorTests
 {
     private readonly CreateScheduleSlotValidator _validator = new();
-    
+
     private static readonly DateTime FutureStart =
         new(2030, 6, 15, 10, 0, 0, DateTimeKind.Utc);
 

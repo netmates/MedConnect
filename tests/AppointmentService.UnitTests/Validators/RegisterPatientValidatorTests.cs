@@ -227,7 +227,7 @@ public class RegisterPatientValidatorTests
 
     [Fact]
     public void Validate_WithDateOfBirthTooOld_Fails()
-    {   
+    {
         var dto = ValidDto();
         dto.DateOfBirth = Patient.MinDateOfBirth;
 

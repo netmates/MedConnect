@@ -102,7 +102,7 @@ public class AdminPatientApplicationService(
 
             _logger.LogError(
                 ex,
-             "DB deactivate failed after Keycloak disable. Compensating Keycloak enable. PatientId={PatientId}, KeycloakId={KeycloakId}",
+                "DB deactivate failed after Keycloak disable. Compensating Keycloak enable. PatientId={PatientId}, KeycloakId={KeycloakId}",
                 id, keycloakId);
 
             try
