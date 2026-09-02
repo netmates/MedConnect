@@ -5,7 +5,6 @@ using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
-using AppointmentService.Infrastructure.Repositories;
 using FluentValidation;
 
 namespace AppointmentService.Application.Services;
