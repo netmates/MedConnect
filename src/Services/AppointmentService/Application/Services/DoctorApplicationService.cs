@@ -187,51 +187,51 @@ public class DoctorApplicationService(
 
     public async Task DeactivateAsync(Guid id, CancellationToken ct)
     {
-        string keycloakId;
-        int cancelledCount;
+        var doctor = await _doctorRepository.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException($"Врач {id} не найден.");
 
+        if (!doctor.IsActive)
+        {
+            _logger.LogInformation("Doctor already inactive: {DoctorId}", id);
+            return;
+        }
+
+        var keycloakId = doctor.KeycloakId;
+        await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+
+        int cancelledCount;
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var doctor = await _doctorRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Врач {id} не найден.");
-
-            if (!doctor.IsActive)
-            {
-                await _unitOfWork.RollbackAsync(CancellationToken.None);
-                _logger.LogInformation("Doctor already inactive: {DoctorId}", id);
-                return;
-            }
-
             var activeAppointments = await _appointmentRepository.GetActiveByDoctorIdAsync(doctor.Id, ct);
-
             cancelledCount = await CancelActiveAppointmentsAsync(activeAppointments, ct);
-
-            keycloakId = doctor.KeycloakId;
 
             doctor.Deactivate();
             await _doctorRepository.UpdateAsync(doctor, ct);
 
             await _unitOfWork.CommitAsync(ct);
         }
-        catch
-        {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
-            throw;
-        }
-
-        try
-        {
-            await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
-        }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+
             _logger.LogError(
                 ex,
-                "Keycloak disable failed after DB deactivate. Compensating IsActive. DoctorId={DoctorId}, KeycloakId={KeycloakId}",
+                "DB deactivate failed after Keycloak disable. Compensating Keycloak enable. DoctorId={DoctorId}, KeycloakId={KeycloakId}",
                 id, keycloakId);
 
-            await CompensateDoctorActiveAsync(id, activate: true, ct);
+            try
+            {
+                await _keycloakAdminService.EnableUserAsync(keycloakId, CancellationToken.None);
+            }
+            catch (Exception compensateEx)
+            {
+                _logger.LogError(
+                    compensateEx,
+                    "Keycloak enable compensation failed for doctor {DoctorId}. Manual fix may be required.",
+                    id);
+            }
+
             throw;
         }
 
@@ -242,77 +242,47 @@ public class DoctorApplicationService(
 
     public async Task ActivateAsync(Guid id, CancellationToken ct)
     {
-        string keycloakId;
+        var doctor = await _doctorRepository.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException($"Врач {id} не найден.");
+
+        var keycloakId = doctor.KeycloakId;
+        await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var doctor = await _doctorRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Врач {id} не найден.");
-
-            keycloakId = doctor.KeycloakId;
-
             doctor.Activate();
             await _doctorRepository.UpdateAsync(doctor, ct);
 
             await _unitOfWork.CommitAsync(ct);
         }
-        catch
-        {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
-            throw;
-        }
-
-        try
-        {
-            await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
-        }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+
             _logger.LogError(
                 ex,
-                "Keycloak enable failed after DB activate. Compensating IsActive. DoctorId={DoctorId}, KeycloakId={KeycloakId}",
+                "DB activate failed after Keycloak enable. Compensating Keycloak disable. DoctorId={DoctorId}, KeycloakId={KeycloakId}",
                 id, keycloakId);
 
-            await CompensateDoctorActiveAsync(id, activate: false, ct);
+            try
+            {
+                await _keycloakAdminService.DisableUserAsync(keycloakId, CancellationToken.None);
+            }
+            catch (Exception compensateEx)
+            {
+                _logger.LogError(
+                    compensateEx,
+                    "Keycloak disable compensation failed for doctor {DoctorId}. Manual fix may be required.",
+                    id);
+            }
+
             throw;
         }
 
         _logger.LogInformation(
             "Doctor activated: {DoctorId}, KeycloakId={KeycloakId}",
             id, keycloakId);
-    }
-
-    /// <summary>
-    /// Откат IsActive в Postgres, если Keycloak не подтвердил enable/disable.
-    /// Отменённые при deactivate записи не восстанавливаются.
-    /// </summary>
-    private async Task CompensateDoctorActiveAsync(Guid id, bool activate, CancellationToken ct)
-    {
-        await _unitOfWork.BeginTransactionAsync(ct);
-        try
-        {
-            var doctor = await _doctorRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Врач {id} не найден при компенсации.");
-
-            if (activate)
-                doctor.Activate();
-            else
-                doctor.Deactivate();
-
-            await _doctorRepository.UpdateAsync(doctor, ct);
-            await _unitOfWork.CommitAsync(ct);
-        }
-        catch (Exception compensateEx)
-        {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
-
-            _logger.LogError(
-                compensateEx,
-                "Compensation failed for doctor {DoctorId}. Manual fix may be required.",
-                id);
-            throw;
-        }
     }
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordDto dto, CancellationToken ct)

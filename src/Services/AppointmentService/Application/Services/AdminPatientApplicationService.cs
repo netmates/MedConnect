@@ -73,51 +73,51 @@ public class AdminPatientApplicationService(
 
     public async Task DeactivateAsync(Guid id, CancellationToken ct)
     {
-        string keycloakId;
-        int cancelledCount;
+        var patient = await _patientRepository.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException($"Пациент {id} не найден.");
 
+        if (!patient.IsActive)
+        {
+            _logger.LogInformation("Patient already inactive: {PatientId}", id);
+            return;
+        }
+
+        var keycloakId = patient.KeycloakId;
+        await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+
+        int cancelledCount;
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var patient = await _patientRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Пациент {id} не найден.");
-
-            if (!patient.IsActive)
-            {
-                await _unitOfWork.RollbackAsync(CancellationToken.None);
-                _logger.LogInformation("Patient already inactive: {PatientId}", id);
-                return;
-            }
-
             var activeAppointments = await _appointmentRepository.GetActiveByPatientIdAsync(patient.Id, ct);
-
             cancelledCount = await CancelActiveAppointmentsAsync(activeAppointments, ct);
-
-            keycloakId = patient.KeycloakId;
 
             patient.Deactivate();
             await _patientRepository.UpdateAsync(patient, ct);
 
             await _unitOfWork.CommitAsync(ct);
         }
-        catch
-        {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
-            throw;
-        }
-
-        try
-        {
-            await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
-        }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+
             _logger.LogError(
                 ex,
-                "Keycloak disable failed after DB deactivate. Compensating IsActive. PatientId={PatientId}, KeycloakId={KeycloakId}",
+             "DB deactivate failed after Keycloak disable. Compensating Keycloak enable. PatientId={PatientId}, KeycloakId={KeycloakId}",
                 id, keycloakId);
 
-            await CompensatePatientActiveAsync(id, activate: true, ct);
+            try
+            {
+                await _keycloakAdminService.EnableUserAsync(keycloakId, CancellationToken.None);
+            }
+            catch (Exception compensateEx)
+            {
+                _logger.LogError(
+                    compensateEx,
+                    "Keycloak enable compensation failed for patient {PatientId}. Manual fix may be required.",
+                    id);
+            }
+
             throw;
         }
 
@@ -128,77 +128,47 @@ public class AdminPatientApplicationService(
 
     public async Task ActivateAsync(Guid id, CancellationToken ct)
     {
-        string keycloakId;
+        var patient = await _patientRepository.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException($"Пациент {id} не найден.");
+
+        var keycloakId = patient.KeycloakId;
+        await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var patient = await _patientRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Пациент {id} не найден.");
-
-            keycloakId = patient.KeycloakId;
-
             patient.Activate();
             await _patientRepository.UpdateAsync(patient, ct);
 
             await _unitOfWork.CommitAsync(ct);
         }
-        catch
-        {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
-            throw;
-        }
-
-        try
-        {
-            await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
-        }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+
             _logger.LogError(
                 ex,
-                "Keycloak enable failed after DB activate. Compensating IsActive. PatientId={PatientId}, KeycloakId={KeycloakId}",
+                "DB activate failed after Keycloak enable. Compensating Keycloak disable. PatientId={PatientId}, KeycloakId={KeycloakId}",
                 id, keycloakId);
 
-            await CompensatePatientActiveAsync(id, activate: false, ct);
+            try
+            {
+                await _keycloakAdminService.DisableUserAsync(keycloakId, CancellationToken.None);
+            }
+            catch (Exception compensateEx)
+            {
+                _logger.LogError(
+                    compensateEx,
+                    "Keycloak disable compensation failed for patient {PatientId}. Manual fix may be required.",
+                    id);
+            }
+
             throw;
         }
 
         _logger.LogInformation(
             "Patient activated: {PatientId}, KeycloakId={KeycloakId}",
             id, keycloakId);
-    }
-
-    /// <summary>
-    /// Откат IsActive в Postgres, если Keycloak не подтвердил enable/disable.
-    /// Отменённые при deactivate записи не восстанавливаются.
-    /// </summary>
-    private async Task CompensatePatientActiveAsync(Guid id, bool activate, CancellationToken ct)
-    {
-        await _unitOfWork.BeginTransactionAsync(ct);
-        try
-        {
-            var patient = await _patientRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Пациент {id} не найден при компенсации.");
-
-            if (activate)
-                patient.Activate();
-            else
-                patient.Deactivate();
-
-            await _patientRepository.UpdateAsync(patient, ct);
-            await _unitOfWork.CommitAsync(ct);
-        }
-        catch (Exception compensateEx)
-        {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
-
-            _logger.LogError(
-                compensateEx,
-                "Compensation failed for patient {PatientId}. Manual fix may be required.",
-                id);
-            throw;
-        }
     }
 
     /// <summary>

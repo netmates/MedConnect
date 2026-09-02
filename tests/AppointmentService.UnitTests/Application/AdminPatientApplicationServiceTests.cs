@@ -182,7 +182,7 @@ public class AdminPatientApplicationServiceTests
     // Deactivate
 
     [Fact]
-    public async Task DeactivateAsync_WhenPatientNotFound_ThrowsNotFoundAndRollsBack()
+    public async Task DeactivateAsync_WhenPatientNotFound_ThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -195,7 +195,8 @@ public class AdminPatientApplicationServiceTests
 
         // Assert
         Assert.Equal($"Пациент {id} не найден.", ex.Message);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
         _keycloak.Verify(
             k => k.DisableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -256,7 +257,7 @@ public class AdminPatientApplicationServiceTests
     }
 
     [Fact]
-    public async Task DeactivateAsync_WhenSlotNotFound_ThrowsNotFoundAndRollsBack()
+    public async Task DeactivateAsync_WhenSlotNotFound_ThrowsNotFoundAndCompensatesKeycloak()
     {
         // Arrange
         var patient = CreatePatient();
@@ -280,10 +281,14 @@ public class AdminPatientApplicationServiceTests
 
         // Assert
         Assert.Equal("Слот записи не найден.", ex.Message);
+        Assert.True(patient.IsActive);
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _keycloak.Verify(
-            k => k.DisableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+            k => k.DisableUserAsync(patient.KeycloakId, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _keycloak.Verify(
+            k => k.EnableUserAsync(patient.KeycloakId, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -306,8 +311,9 @@ public class AdminPatientApplicationServiceTests
         _keycloak.Verify(
             k => k.DisableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -347,7 +353,7 @@ public class AdminPatientApplicationServiceTests
     // Activate
 
     [Fact]
-    public async Task ActivateAsync_WhenPatientNotFound_ThrowsNotFoundAndRollsBack()
+    public async Task ActivateAsync_WhenPatientNotFound_ThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -360,7 +366,8 @@ public class AdminPatientApplicationServiceTests
 
         // Assert
         Assert.Equal($"Пациент {id} не найден.", ex.Message);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
         _keycloak.Verify(
             k => k.EnableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);

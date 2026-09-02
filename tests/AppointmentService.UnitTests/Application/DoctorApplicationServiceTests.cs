@@ -422,7 +422,7 @@ public class DoctorApplicationServiceTests
     // Deactivate
 
     [Fact]
-    public async Task DeactivateAsync_WhenDoctorNotFound_ThrowsNotFoundAndRollsBack()
+    public async Task DeactivateAsync_WhenDoctorNotFound_ThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -435,7 +435,8 @@ public class DoctorApplicationServiceTests
 
         // Assert
         Assert.Equal($"Врач {id} не найден.", ex.Message);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
         _keycloak.Verify(
             k => k.DisableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -513,8 +514,9 @@ public class DoctorApplicationServiceTests
         _keycloak.Verify(
             k => k.DisableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -554,7 +556,7 @@ public class DoctorApplicationServiceTests
     // Activate
 
     [Fact]
-    public async Task ActivateAsync_WhenDoctorNotFound_ThrowsNotFoundAndRollsBack()
+    public async Task ActivateAsync_WhenDoctorNotFound_ThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -567,7 +569,8 @@ public class DoctorApplicationServiceTests
 
         // Assert
         Assert.Equal($"Врач {id} не найден.", ex.Message);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
         _keycloak.Verify(
             k => k.EnableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
