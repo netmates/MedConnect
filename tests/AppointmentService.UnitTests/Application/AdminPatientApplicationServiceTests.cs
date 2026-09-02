@@ -47,10 +47,16 @@ public class AdminPatientApplicationServiceTests
         => Patient.Create(keycloakId, "Иванов", "Иван", "Иванович", "+79001234567", new DateTime(1990, 1, 1));
 
     private static Doctor CreateDoctor(string keycloakId = "doctor-kc")
-        => Doctor.Create(keycloakId, "Петров", "Петр", "Петрович", "Терапевт", 10);
+        => Doctor.Create(keycloakId, "Петров", "Петр", "Петрович", "Терапевт", 10);    
 
     private static ScheduleSlot CreateFutureSlot(Guid doctorId)
         => ScheduleSlot.Create(doctorId, FutureStart, FutureStart.AddMinutes(30));
+
+    private static ScheduleSlot CreatePastSlot(Guid doctorId)
+    {
+        var start = DateTime.UtcNow.AddHours(-2);
+        return ScheduleSlot.Create(doctorId, start, start.AddMinutes(30));
+    }
 
     private static UpdatePatientDto ValidUpdateDto()
         => new()
@@ -202,8 +208,7 @@ public class AdminPatientApplicationServiceTests
         var patient = CreatePatient();
         _patients.Setup(r => r.GetByIdAsync(patient.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(patient);
-        _appointments.Setup(r => r.GetActiveFutureByPatientIdAsync(
-                patient.Id, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        _appointments.Setup(r => r.GetActiveByPatientIdAsync(patient.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         // Act
@@ -229,8 +234,7 @@ public class AdminPatientApplicationServiceTests
 
         _patients.Setup(r => r.GetByIdAsync(patient.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(patient);
-        _appointments.Setup(r => r.GetActiveFutureByPatientIdAsync(
-                patient.Id, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        _appointments.Setup(r => r.GetActiveByPatientIdAsync(patient.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([appointment]);
         _appointments.Setup(r => r.GetByIdWithLockAsync(appointment.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(appointment);
@@ -263,8 +267,7 @@ public class AdminPatientApplicationServiceTests
 
         _patients.Setup(r => r.GetByIdAsync(patient.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(patient);
-        _appointments.Setup(r => r.GetActiveFutureByPatientIdAsync(
-                patient.Id, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+        _appointments.Setup(r => r.GetActiveByPatientIdAsync(patient.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([appointment]);
         _appointments.Setup(r => r.GetByIdWithLockAsync(appointment.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(appointment);
@@ -281,6 +284,64 @@ public class AdminPatientApplicationServiceTests
         _keycloak.Verify(
             k => k.DisableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task DeactivateAsync_WhenAlreadyInactive_ReturnsWithoutKeycloak()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        patient.Deactivate();
+        _patients.Setup(r => r.GetByIdAsync(patient.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(patient);
+
+        // Act
+        await _sut.DeactivateAsync(patient.Id, CancellationToken.None);
+
+        // Assert
+        Assert.False(patient.IsActive);
+        _appointments.Verify(
+            r => r.GetActiveByPatientIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _keycloak.Verify(
+            k => k.DisableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeactivateAsync_WhenHasPastActiveAppointment_CancelsAndConsumesSlot()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var doctor = CreateDoctor();
+        var slot = CreatePastSlot(doctor.Id);
+        slot.Book();
+        var appointment = Appointment.Create(patient.Id, doctor.Id, slot.Id, "Осмотр");
+
+        _patients.Setup(r => r.GetByIdAsync(patient.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(patient);
+        _appointments.Setup(r => r.GetActiveByPatientIdAsync(
+                patient.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([appointment]);
+        _appointments.Setup(r => r.GetByIdWithLockAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
+        _slots.Setup(r => r.GetByIdWithLockAsync(appointment.SlotId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(slot);
+
+        // Act
+        await _sut.DeactivateAsync(patient.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(AppointmentStatus.Cancelled, appointment.Status);
+        Assert.Equal(SlotStatus.Consumed, slot.Status);
+        Assert.False(patient.IsActive);
+        _appointments.Verify(r => r.UpdateAsync(appointment, It.IsAny<CancellationToken>()), Times.Once);
+        _slots.Verify(r => r.UpdateAsync(slot, It.IsAny<CancellationToken>()), Times.Once);
+        _keycloak.Verify(
+            k => k.DisableUserAsync(patient.KeycloakId, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     // Activate

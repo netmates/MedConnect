@@ -474,6 +474,26 @@ public class ScheduleSlotApplicationServiceTests
         Assert.Equal(SlotStatus.Available.ToString(), result[0].Status);
     }
 
+    [Fact]
+    public async Task GetByDoctorIdAsync_WhenDoctorInactive_ThrowsNotFound()
+    {
+        // Arrange
+        var doctor = CreateDoctor();
+        doctor.Deactivate();
+        _doctors.Setup(r => r.GetByIdAsync(doctor.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor);
+
+        // Act
+        var ex = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _sut.GetByDoctorIdAsync(doctor.Id, CancellationToken.None));
+
+        // Assert
+        Assert.Equal("Врач не найден.", ex.Message);
+        _slots.Verify(
+            r => r.GetByDoctorIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
     // GetAvailable
 
     [Fact]
@@ -512,5 +532,27 @@ public class ScheduleSlotApplicationServiceTests
         Assert.Single(result);
         Assert.Equal(slot.Id, result[0].Id);
         Assert.Equal(doctor.Id, result[0].DoctorId);
+    }
+
+    [Fact]
+    public async Task GetAvailableAsync_WhenDoctorInactive_ThrowsNotFound()
+    {
+        // Arrange
+        var doctor = CreateDoctor();
+        doctor.Deactivate();
+        var date = FutureStart.Date;
+        _doctors.Setup(r => r.GetByIdAsync(doctor.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor);
+
+        // Act
+        var ex = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _sut.GetAvailableAsync(doctor.Id, date, CancellationToken.None));
+
+        // Assert
+        Assert.Equal("Врач не найден.", ex.Message);
+        _slots.Verify(
+            r => r.GetAvailableByDoctorIdAsync(
+                It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }

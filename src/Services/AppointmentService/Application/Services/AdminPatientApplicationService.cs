@@ -82,9 +82,16 @@ public class AdminPatientApplicationService(
             var patient = await _patientRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Пациент {id} не найден.");
 
-            var active = await _appointmentRepository.GetActiveFutureByPatientIdAsync(patient.Id, DateTime.UtcNow, ct);
+            if (!patient.IsActive)
+            {
+                await _unitOfWork.RollbackAsync(CancellationToken.None);
+                _logger.LogInformation("Patient already inactive: {PatientId}", id);
+                return;
+            }
 
-            cancelledCount = await CancelActiveFutureAppointmentsAsync(active, ct);
+            var activeAppointments = await _appointmentRepository.GetActiveByPatientIdAsync(patient.Id, ct);
+
+            cancelledCount = await CancelActiveAppointmentsAsync(activeAppointments, ct);
 
             keycloakId = patient.KeycloakId;
 
@@ -194,11 +201,15 @@ public class AdminPatientApplicationService(
         }
     }
 
-    private async Task<int> CancelActiveFutureAppointmentsAsync(
+    /// <summary>
+    /// Отменяет Created/Confirmed. Слот: будущий Booked → Free, прошлый/идущий Booked → Consume.
+    /// </summary>
+    private async Task<int> CancelActiveAppointmentsAsync(
         IReadOnlyList<Appointment> appointments,
         CancellationToken ct)
     {
         var cancelled = 0;
+        var now = DateTime.UtcNow;
 
         foreach (var item in appointments)
         {
@@ -217,7 +228,11 @@ public class AdminPatientApplicationService(
 
             if (slot.Status == SlotStatus.Booked)
             {
-                slot.Free();
+                if (slot.StartTime > now)
+                    slot.Free();
+                else
+                    slot.Consume();
+
                 await _slotRepository.UpdateAsync(slot, ct);
             }
         }

@@ -38,17 +38,15 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// </summary>
     Task<Appointment?> GetByIdWithLockAsync(Guid id, CancellationToken ct = default);
     /// <summary>
-    /// Будущие активные записи врача (Created / Confirmed), с Slot.
+    /// Активные записи врача (Created / Confirmed), без фильтра по времени слота.
     /// </summary>
-    Task<IReadOnlyList<Appointment>> GetActiveFutureByDoctorIdAsync(
+    Task<IReadOnlyList<Appointment>> GetActiveByDoctorIdAsync(
         Guid doctorId,
-        DateTime after,
         CancellationToken ct = default);
     /// <summary>
-    /// Будущие активные записи пациента (Created / Confirmed), с Slot.
+    /// Активные записи пациента (Created / Confirmed), без фильтра по времени слота.
     /// </summary>
-    Task<IReadOnlyList<Appointment>> GetActiveFutureByPatientIdAsync(
+    Task<IReadOnlyList<Appointment>> GetActiveByPatientIdAsync(
         Guid patientId,
-        DateTime after,
         CancellationToken ct = default);
 }

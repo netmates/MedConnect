@@ -144,8 +144,11 @@ public class ScheduleSlotApplicationService(
 
     public async Task<IReadOnlyList<ScheduleSlotDto>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct)
     {
-        _ = await _doctorRepository.GetByIdAsync(doctorId, ct)
+        var doctor = await _doctorRepository.GetByIdAsync(doctorId, ct)
             ?? throw new NotFoundException("Врач не найден.");
+
+        if (!doctor.IsActive)
+            throw new NotFoundException("Врач не найден.");
 
         var slots = await _slotRepository.GetByDoctorIdAsync(doctorId, ct);
         return slots.Select(MapToDto).ToList();
@@ -153,8 +156,11 @@ public class ScheduleSlotApplicationService(
 
     public async Task<IReadOnlyList<ScheduleSlotDto>> GetAvailableAsync(Guid doctorId, DateTime date, CancellationToken ct)
     {
-        _ = await _doctorRepository.GetByIdAsync(doctorId, ct)
+        var doctor = await _doctorRepository.GetByIdAsync(doctorId, ct)
             ?? throw new NotFoundException("Врач не найден.");
+
+        if (!doctor.IsActive)
+            throw new NotFoundException("Врач не найден.");
 
         var slots = await _slotRepository.GetAvailableByDoctorIdAsync(doctorId, date, ct);
         return slots.Select(MapToDto).ToList();
