@@ -28,4 +28,8 @@ public interface IKeycloakAdminService
     /// Сбрасывает пароль пользователя.
     /// </summary>
     Task ResetPasswordAsync(string keycloakId, string newPassword, CancellationToken ct = default);
+    /// <summary>
+    /// Обновляет имя и фамилию пользователя в Keycloak.
+    /// </summary>
+    Task UpdateUserNameAsync(string keycloakId, string firstName, string lastName, CancellationToken ct = default);
 }

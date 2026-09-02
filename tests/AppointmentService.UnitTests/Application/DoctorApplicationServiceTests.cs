@@ -322,7 +322,7 @@ public class DoctorApplicationServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenDoctorNotFound_ThrowsNotFoundAndRollsBack()
+    public async Task UpdateAsync_WhenDoctorNotFound_ThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -335,7 +335,12 @@ public class DoctorApplicationServiceTests
 
         // Assert
         Assert.Equal($"Врач {id} не найден.", ex.Message);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -361,7 +366,7 @@ public class DoctorApplicationServiceTests
     [Fact]
     public async Task UpdateAsync_WhenSpecializationIdsEmpty_ThrowsBusinessRule()
     {
-        // Arrange — валидатор замокан как valid, бизнес-правило в сервисе
+        // Arrange
         var doctor = CreateDoctor();
         var existing = CreateSpecialization();
         AttachSpecialization(doctor, existing);
@@ -417,6 +422,96 @@ public class DoctorApplicationServiceTests
             r => r.RemoveDoctorSpecializationAsync(doctor.Id, oldSpec.Id, It.IsAny<CancellationToken>()),
             Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenNameChanged_UpdatesKeycloak()
+    {
+        // Arrange
+        var doctor = CreateDoctor();
+        var spec = CreateSpecialization();
+        AttachSpecialization(doctor, spec);
+        var dto = ValidUpdateDto(spec.Id);
+
+        _doctors.SetupSequence(r => r.GetWithSpecializationsAsync(doctor.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor)
+            .ReturnsAsync(doctor);
+        _specializations.Setup(r => r.GetByIdAsync(spec.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(spec);
+
+        // Act
+        await _sut.UpdateAsync(doctor.Id, dto, CancellationToken.None);
+
+        // Assert
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                doctor.KeycloakId, "Сидор", "Сидоров", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenNameUnchanged_DoesNotCallKeycloak()
+    {
+        // Arrange
+        var doctor = CreateDoctor();
+        var spec = CreateSpecialization();
+        AttachSpecialization(doctor, spec);
+        var dto = new UpdateDoctorDto
+        {
+            LastName = doctor.LastName,
+            FirstName = doctor.FirstName,
+            MiddleName = doctor.MiddleName,
+            Description = "Обновлённое описание",
+            ExperienceYears = 12,
+            SpecializationIds = [spec.Id]
+        };
+
+        _doctors.SetupSequence(r => r.GetWithSpecializationsAsync(doctor.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor)
+            .ReturnsAsync(doctor);
+        _specializations.Setup(r => r.GetByIdAsync(spec.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(spec);
+
+        // Act
+        await _sut.UpdateAsync(doctor.Id, dto, CancellationToken.None);
+
+        // Assert
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenDbFailsAfterKeycloak_CompensatesOldName()
+    {
+        // Arrange
+        var doctor = CreateDoctor();
+        var spec = CreateSpecialization();
+        AttachSpecialization(doctor, spec);
+        var dto = ValidUpdateDto(spec.Id);
+
+        _doctors.Setup(r => r.GetWithSpecializationsAsync(doctor.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor);
+        _specializations.Setup(r => r.GetByIdAsync(spec.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(spec);
+        _uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("db"));
+
+        // Act
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _sut.UpdateAsync(doctor.Id, dto, CancellationToken.None));
+
+        // Assert
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                doctor.KeycloakId, "Сидор", "Сидоров", It.IsAny<CancellationToken>()),
+            Times.Once);
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                doctor.KeycloakId, "Петр", "Петров", It.IsAny<CancellationToken>()),
+            Times.Once);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Deactivate

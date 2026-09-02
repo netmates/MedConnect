@@ -142,7 +142,7 @@ public class AdminPatientApplicationServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenPatientNotFound_ThrowsNotFoundAndRollsBack()
+    public async Task UpdateAsync_WhenPatientNotFound_ThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -155,7 +155,12 @@ public class AdminPatientApplicationServiceTests
 
         // Assert
         Assert.Equal($"Пациент {id} не найден.", ex.Message);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -177,6 +182,78 @@ public class AdminPatientApplicationServiceTests
         Assert.Equal("+79007654321", result.Phone);
         _patients.Verify(r => r.UpdateAsync(patient, It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenNameChanged_UpdatesKeycloak()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var dto = ValidUpdateDto();
+        _patients.Setup(r => r.GetByIdAsync(patient.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(patient);
+
+        // Act
+        await _sut.UpdateAsync(patient.Id, dto, CancellationToken.None);
+
+        // Assert
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                patient.KeycloakId, "Сидор", "Сидоров", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenOnlyPhoneChanged_DoesNotCallKeycloak()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var dto = new UpdatePatientDto
+        {
+            LastName = patient.LastName,
+            FirstName = patient.FirstName,
+            MiddleName = patient.MiddleName,
+            Phone = "+79009998877",
+            DateOfBirth = patient.DateOfBirth
+        };
+        _patients.Setup(r => r.GetByIdAsync(patient.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(patient);
+
+        // Act
+        await _sut.UpdateAsync(patient.Id, dto, CancellationToken.None);
+
+        // Assert
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenDbFailsAfterKeycloak_CompensatesOldName()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var dto = ValidUpdateDto();
+        _patients.Setup(r => r.GetByIdAsync(patient.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(patient);
+        _uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("db"));
+
+        // Act
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _sut.UpdateAsync(patient.Id, dto, CancellationToken.None));
+
+        // Assert
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                patient.KeycloakId, "Сидор", "Сидоров", It.IsAny<CancellationToken>()),
+            Times.Once);
+        _keycloak.Verify(
+            k => k.UpdateUserNameAsync(
+                patient.KeycloakId, "Иван", "Иванов", It.IsAny<CancellationToken>()),
+            Times.Once);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Deactivate

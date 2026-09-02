@@ -149,6 +149,38 @@ public class KeycloakAdminService(
         await EnsureKeycloakSuccessAsync(putResponse, ct);
     }
 
+    public async Task UpdateUserNameAsync(string keycloakId, string firstName, string lastName, CancellationToken ct = default)
+    {
+        var adminToken = await GetAdminTokenAsync(ct);
+        var userPath = $"/admin/realms/{Realm}/users/{keycloakId}";
+
+        using var getRequest = new HttpRequestMessage(HttpMethod.Get, userPath);
+        getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var getResponse = await _httpClient.SendAsync(getRequest, ct);
+        await EnsureKeycloakSuccessAsync(getResponse, ct);
+
+        await using var stream = await getResponse.Content.ReadAsStreamAsync(ct);
+        var user = await JsonNode.ParseAsync(stream, cancellationToken: ct)
+            ?? throw new InvalidOperationException($"Пустой ответ при загрузке пользователя {keycloakId}.");
+
+        user["firstName"] = firstName;
+        user["lastName"] = lastName;
+
+        using var putRequest = new HttpRequestMessage(HttpMethod.Put, userPath)
+        {
+            Content = new StringContent(user.ToJsonString(), Encoding.UTF8, "application/json")
+        };
+        putRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var putResponse = await _httpClient.SendAsync(putRequest, ct);
+        await EnsureKeycloakSuccessAsync(putResponse, ct);
+
+        _logger.LogInformation(
+            "Keycloak user name updated: {KeycloakId}, FirstName={FirstName}, LastName={LastName}",
+            keycloakId, firstName, lastName);
+    }
+
     public async Task ResetPasswordAsync(string keycloakId, string newPassword, CancellationToken ct = default)
     {
         var adminToken = await GetAdminTokenAsync(ct);
@@ -245,8 +277,7 @@ public class KeycloakAdminService(
     /// <summary>
     /// Получает представление realm-роли из Keycloak (нужно для role-mappings API).
     /// </summary>
-    private async Task<JsonElement> GetRealmRoleAsync(
-        string adminToken, string roleName, CancellationToken ct)
+    private async Task<JsonElement> GetRealmRoleAsync(string adminToken, string roleName, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
@@ -258,9 +289,7 @@ public class KeycloakAdminService(
         return await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
     }
 
-    private async Task EnsureKeycloakSuccessAsync(
-        HttpResponseMessage response,
-        CancellationToken ct)
+    private async Task EnsureKeycloakSuccessAsync(HttpResponseMessage response, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode)
             return;

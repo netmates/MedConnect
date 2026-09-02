@@ -1,5 +1,6 @@
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.Exceptions;
+using AppointmentService.Application.Helpers;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
@@ -128,12 +129,24 @@ public class DoctorApplicationService(
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        var doctor = await _doctorRepository.GetWithSpecializationsAsync(id, ct)
+            ?? throw new NotFoundException($"Врач {id} не найден.");
+
+        var keycloakId = doctor.KeycloakId;
+        var oldFirstName = doctor.FirstName;
+        var oldLastName = doctor.LastName;
+        var nameChanged = await KeycloakNameSync.ApplyIfChangedAsync(
+            _keycloakAdminService,
+            keycloakId,
+            oldFirstName,
+            oldLastName,
+            dto.FirstName,
+            dto.LastName,
+            ct);
+
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var doctor = await _doctorRepository.GetWithSpecializationsAsync(id, ct)
-            ?? throw new NotFoundException($"Врач {id} не найден.");
-
             doctor.Update(
                 lastName: dto.LastName,
                 firstName: dto.FirstName,
@@ -178,9 +191,21 @@ public class DoctorApplicationService(
 
             return MapToDto(updateDoctor!);
         }
-        catch
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(CancellationToken.None);
+
+            await KeycloakNameSync.CompensateIfNeededAsync(
+                _keycloakAdminService,
+                _logger,
+                nameChanged,
+                ex,
+                keycloakId,
+                oldFirstName,
+                oldLastName,
+                "DoctorId={DoctorId}, KeycloakId={KeycloakId}",
+                id, keycloakId);
+
             throw;
         }
     }

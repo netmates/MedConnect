@@ -1,5 +1,6 @@
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
+using AppointmentService.Application.Helpers;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
@@ -43,12 +44,24 @@ public class AdminPatientApplicationService(
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        var patient = await _patientRepository.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException($"Пациент {id} не найден.");
+
+        var keycloakId = patient.KeycloakId;
+        var oldFirstName = patient.FirstName;
+        var oldLastName = patient.LastName;
+        var nameChanged = await KeycloakNameSync.ApplyIfChangedAsync(
+            _keycloakAdminService,
+            keycloakId,
+            oldFirstName,
+            oldLastName,
+            dto.FirstName,
+            dto.LastName,
+            ct);
+
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var patient = await _patientRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Пациент {id} не найден.");
-
             patient.Update(
                 lastName: dto.LastName,
                 firstName: dto.FirstName,
@@ -63,9 +76,21 @@ public class AdminPatientApplicationService(
 
             return MapToDto(patient);
         }
-        catch
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(CancellationToken.None);
+
+            await KeycloakNameSync.CompensateIfNeededAsync(
+                _keycloakAdminService,
+                _logger,
+                nameChanged,
+                ex,
+                keycloakId,
+                oldFirstName,
+                oldLastName,
+                "PatientId={PatientId}, KeycloakId={KeycloakId}",
+                id, keycloakId);
+
             throw;
         }
     }

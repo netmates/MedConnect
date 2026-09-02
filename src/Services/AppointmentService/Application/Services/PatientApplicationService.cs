@@ -1,5 +1,6 @@
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
+using AppointmentService.Application.Helpers;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
@@ -11,12 +12,14 @@ namespace AppointmentService.Application.Services;
 public class PatientApplicationService(
     IPatientRepository patientRepository,
     IUnitOfWork unitOfWork,
+    IKeycloakAdminService keycloakAdminService,
     IValidator<RegisterPatientDto> registerPatientValidator,
     IValidator<UpdatePatientDto> updatePatientValidator,
     ILogger<PatientApplicationService> logger) : IPatientApplicationService
 {
     private readonly IPatientRepository _patientRepository = patientRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IKeycloakAdminService _keycloakAdminService = keycloakAdminService;
     private readonly IValidator<RegisterPatientDto> _registerPatientValidator = registerPatientValidator;
     private readonly IValidator<UpdatePatientDto> _updatePatientValidator = updatePatientValidator;
     private readonly ILogger<PatientApplicationService> _logger = logger;
@@ -73,12 +76,23 @@ public class PatientApplicationService(
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
+            ?? throw new NotFoundException("Профиль пациента не найден.");
+
+        var oldFirstName = patient.FirstName;
+        var oldLastName = patient.LastName;
+        var nameChanged = await KeycloakNameSync.ApplyIfChangedAsync(
+            _keycloakAdminService,
+            keycloakId,
+            oldFirstName,
+            oldLastName,
+            dto.FirstName,
+            dto.LastName,
+            ct);
+
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
-                ?? throw new NotFoundException("Профиль пациента не найден.");
-
             patient.Update(
                 lastName: dto.LastName,
                 firstName: dto.FirstName,
@@ -95,9 +109,21 @@ public class PatientApplicationService(
 
             return MapToDto(patient);
         }
-        catch
+        catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(CancellationToken.None);
+
+            await KeycloakNameSync.CompensateIfNeededAsync(
+                _keycloakAdminService,
+                _logger,
+                nameChanged,
+                ex,
+                keycloakId,
+                oldFirstName,
+                oldLastName,
+                "PatientId={PatientId}, KeycloakId={KeycloakId}",
+                patient.Id, keycloakId);
+
             throw;
         }
     }
