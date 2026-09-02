@@ -1,3 +1,4 @@
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;
@@ -67,7 +68,7 @@ public class DoctorApplicationService(
         var keycloakId = await _keycloakAdminService.CreateUserAsync(
             email: dto.Email,
             temporaryPassword: dto.TemporaryPassword,
-            role: "doctor",
+            role: Roles.Doctor,
             firstName: dto.FirstName,
             lastName: dto.LastName,
             ct: ct);

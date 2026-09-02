@@ -1,3 +1,4 @@
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces.Services;
 using System.Net.Http.Headers;
@@ -70,8 +71,8 @@ public class KeycloakAdminService(
         try
         {
             await AssignRealmRoleAsync(keycloakId, role, ct);
-            if (role == "doctor")
-                await RemoveRealmRoleAsync(keycloakId, "patient", ct);
+            if (role == Roles.Doctor)
+                await RemoveRealmRoleAsync(keycloakId, Roles.Patient, ct);
         }
         catch
         {

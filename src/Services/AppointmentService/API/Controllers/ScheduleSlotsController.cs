@@ -1,4 +1,5 @@
 using AppointmentService.API.Auth;
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -15,7 +16,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
 
     /// <summary>GET /api/slots — полное расписание текущего врача.</summary>
     [HttpGet]
-    [Authorize(Roles = "doctor")]
+    [Authorize(Roles = Roles.Doctor)]
     [ProducesResponseType(typeof(IReadOnlyList<ScheduleSlotDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -30,7 +31,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
 
     /// <summary>GET /api/slots/available — доступные слоты врача на указанную дату.</summary>
     [HttpGet("available")]
-    [Authorize(Roles = "patient,doctor")]
+    [Authorize(Roles = Roles.PatientOrDoctor)]
     [ProducesResponseType(typeof(IReadOnlyList<ScheduleSlotDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -47,7 +48,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
 
     /// <summary>POST /api/slots — создать слот расписания (врач).</summary>
     [HttpPost]
-    [Authorize(Roles = "doctor")]
+    [Authorize(Roles = Roles.Doctor)]
     [ProducesResponseType(typeof(ScheduleSlotDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -62,7 +63,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
 
     /// <summary>PUT /api/slots/{id} — обновить слот расписания (врач).</summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "doctor")]
+    [Authorize(Roles = Roles.Doctor)]
     [ProducesResponseType(typeof(ScheduleSlotDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -77,7 +78,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
 
     /// <summary>DELETE /api/slots/{id} — удалить слот расписания (врач).</summary>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "doctor")]
+    [Authorize(Roles = Roles.Doctor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

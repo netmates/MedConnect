@@ -1,4 +1,5 @@
 using AppointmentService.API.Auth;
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,7 @@ namespace AppointmentService.API.Controllers;
 
 [ApiController]
 [Route("api/patients")]
-[Authorize(Roles = "patient")]
+[Authorize(Roles = Roles.Patient)]
 public class PatientsController(IPatientApplicationService service) : ControllerBase
 {
     private readonly IPatientApplicationService _service = service;

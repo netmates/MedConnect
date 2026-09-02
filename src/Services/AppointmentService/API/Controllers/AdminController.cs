@@ -1,3 +1,4 @@
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.DTOs.Specialization;
@@ -9,7 +10,7 @@ namespace AppointmentService.API.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-[Authorize(Roles = "admin")]
+[Authorize(Roles = Roles.Admin)]
 public class AdminController(
     ISpecializationApplicationService specializationService,
     IDoctorApplicationService doctorService,

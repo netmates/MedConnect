@@ -1,4 +1,5 @@
 using AppointmentService.API.Auth;
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Enums;
@@ -15,7 +16,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
 
     /// <summary>GET /api/appointments/my — список записей текущего пациента.</summary>
     [HttpGet("my")]
-    [Authorize(Roles = "patient")]
+    [Authorize(Roles = Roles.Patient)]
     [ProducesResponseType(typeof(IReadOnlyList<AppointmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -33,7 +34,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
 
     /// <summary>GET /api/appointments/doctor/my — список записей текущего врача.</summary>
     [HttpGet("doctor/my")]
-    [Authorize(Roles = "doctor")]
+    [Authorize(Roles = Roles.Doctor)]
     [ProducesResponseType(typeof(IReadOnlyList<AppointmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -51,7 +52,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
 
     /// <summary>GET /api/appointments/{id} — запись по id (пациент или врач этой записи).</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "patient,doctor")]
+    [Authorize(Roles = Roles.PatientOrDoctor)]
     [ProducesResponseType(typeof(AppointmentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -65,7 +66,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
 
     /// <summary>POST /api/appointments — создать запись на приём.</summary>
     [HttpPost]
-    [Authorize(Roles = "patient")]
+    [Authorize(Roles = Roles.Patient)]
     [ProducesResponseType(typeof(AppointmentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -80,7 +81,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
 
     /// <summary>POST /api/appointments/{id}/cancel — отменить запись (пациент или врач).</summary>
     [HttpPost("{id:guid}/cancel")]
-    [Authorize(Roles = "patient,doctor")]
+    [Authorize(Roles = Roles.PatientOrDoctor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -95,7 +96,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
 
     /// <summary>POST /api/appointments/{id}/confirm — подтвердить запись (врач).</summary>
     [HttpPost("{id:guid}/confirm")]
-    [Authorize(Roles = "doctor")]
+    [Authorize(Roles = Roles.Doctor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -110,7 +111,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
 
     /// <summary>POST /api/appointments/{id}/complete — завершить приём (врач).</summary>
     [HttpPost("{id:guid}/complete")]
-    [Authorize(Roles = "doctor")]
+    [Authorize(Roles = Roles.Doctor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

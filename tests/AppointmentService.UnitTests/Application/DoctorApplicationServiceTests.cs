@@ -1,3 +1,4 @@
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
@@ -248,7 +249,7 @@ public class DoctorApplicationServiceTests
         const string keycloakId = "kc-new-doctor";
 
         _keycloak.Setup(k => k.CreateUserAsync(
-                dto.Email, dto.TemporaryPassword, "doctor",
+                dto.Email, dto.TemporaryPassword, Roles.Doctor,
                 dto.FirstName, dto.LastName, It.IsAny<CancellationToken>()))
             .ReturnsAsync(keycloakId);
         _specializations.Setup(r => r.GetByIdAsync(missingSpecId, It.IsAny<CancellationToken>()))
@@ -274,7 +275,7 @@ public class DoctorApplicationServiceTests
         Doctor? added = null;
 
         _keycloak.Setup(k => k.CreateUserAsync(
-                dto.Email, dto.TemporaryPassword, "doctor",
+                dto.Email, dto.TemporaryPassword, Roles.Doctor,
                 dto.FirstName, dto.LastName, It.IsAny<CancellationToken>()))
             .ReturnsAsync(keycloakId);
         _specializations.Setup(r => r.GetByIdAsync(spec.Id, It.IsAny<CancellationToken>()))

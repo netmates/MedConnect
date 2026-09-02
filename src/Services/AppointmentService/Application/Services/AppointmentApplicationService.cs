@@ -1,3 +1,4 @@
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
@@ -149,7 +150,7 @@ public class AppointmentApplicationService(
             if (!isPatientOwner && !isDoctorOwner)
                 throw new ForbiddenException("Нет доступа к этой записи.");
 
-            cancelledBy = isPatientOwner ? "patient" : "doctor";
+            cancelledBy = isPatientOwner ? Roles.Patient : Roles.Doctor;
 
             var slot = await _slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
                 ?? throw new NotFoundException("Слот записи не найден.");

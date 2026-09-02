@@ -1,3 +1,4 @@
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Interfaces.Services;
@@ -162,7 +163,7 @@ public static class DataSeeder
             var keycloakId = await keycloak.CreateUserAsync(
                 email: p.Email,
                 temporaryPassword: p.Password,
-                role: "patient",
+                role: Roles.Patient,
                 firstName: p.Dto.FirstName,
                 lastName: p.Dto.LastName,
                 ct: ct);
