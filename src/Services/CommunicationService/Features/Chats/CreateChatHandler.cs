@@ -6,8 +6,7 @@ namespace CommunicationService.Features.Chats;
 
 public sealed class CreateChatHandler(IMongoDatabase db)
 {
-    private readonly IMongoCollection<ChatDocument> _chats =
-        db.GetCollection<ChatDocument>(MongoCollections.Chats);
+    private readonly IMongoCollection<ChatDocument> _chats = db.GetCollection<ChatDocument>(MongoCollections.Chats);
 
     public async Task<(ChatDocument Chat, bool Created)> HandleAsync(
         CreateChatRequest request,
@@ -17,8 +16,7 @@ public sealed class CreateChatHandler(IMongoDatabase db)
         if (currentKeycloakId != request.PatientKeycloakId
             && currentKeycloakId != request.DoctorKeycloakId)
         {
-            throw new ForbiddenException(
-                "Создать чат может только пациент или врач этой записи.");
+            throw new ForbiddenException("Создать чат может только пациент или врач этой записи.");
         }
 
         var existing = await _chats
@@ -47,8 +45,7 @@ public sealed class CreateChatHandler(IMongoDatabase db)
             var again = await _chats
                 .Find(x => x.AppointmentId == request.AppointmentId)
                 .FirstOrDefaultAsync(ct)
-                ?? throw new InvalidOperationException(
-                    $"Чат для appointment {request.AppointmentId} не найден после DuplicateKey.");
+                ?? throw new InvalidOperationException($"Чат для appointment {request.AppointmentId} не найден после DuplicateKey.");
 
             return (again, Created: false);
         }

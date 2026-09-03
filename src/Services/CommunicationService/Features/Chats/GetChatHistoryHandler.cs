@@ -18,10 +18,8 @@ public sealed class GetChatHistoryHandler(IMongoDatabase db)
         string currentKeycloakId,
         CancellationToken ct)
     {
-        var chat = await _chats.Find(x => x.Id == chatId).FirstOrDefaultAsync(ct);
-        if (chat is null)
-            throw new NotFoundException($"Чат {chatId} не найден.");
-
+        var chat = await _chats.Find(x => x.Id == chatId).FirstOrDefaultAsync(ct)
+            ?? throw new NotFoundException($"Чат {chatId} не найден.");
         ChatAccess.EnsureParticipant(chat, currentKeycloakId);
 
         return await _messages

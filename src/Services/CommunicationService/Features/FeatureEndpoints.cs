@@ -1,3 +1,4 @@
+using CommunicationService.Common.Auth;
 using CommunicationService.Features.Chats;
 using CommunicationService.Features.Messages;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +12,7 @@ public static class FeatureEndpoints
         var chats = app.MapGroup("/api/chats")
             .RequireAuthorization(new AuthorizeAttribute
             {
-                Roles = "patient,doctor"
+                Roles = Roles.PatientOrDoctor
             })
             .WithTags("Chats");
 

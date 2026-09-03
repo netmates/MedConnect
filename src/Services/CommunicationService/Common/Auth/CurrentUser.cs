@@ -16,12 +16,12 @@ public static class CurrentUser
 
     public static string GetSenderRole(ClaimsPrincipal user)
     {
-        if (user.IsInRole("doctor"))
-            return "doctor";
+        if (user.IsInRole(Roles.Doctor))
+            return Roles.Doctor;
 
-        if (user.IsInRole("patient"))
-            return "patient";
+        if (user.IsInRole(Roles.Patient))
+            return Roles.Patient;
 
-        throw new ForbiddenException("Нужна роль patient или doctor.");
+        throw new ForbiddenException($"Нужна роль {Roles.Patient} или {Roles.Doctor}.");
     }
 }

@@ -20,7 +20,7 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
             return Task.CompletedTask;
         });
 
-        using (LogContext.PushProperty("CorrelationId", correlationId))
+        using (LogContext.PushProperty(ItemKey, correlationId))
         {
             await next(context);
         }

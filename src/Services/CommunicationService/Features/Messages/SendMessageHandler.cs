@@ -20,16 +20,15 @@ public sealed class SendMessageHandler(IMongoDatabase db)
         string senderRole,
         CancellationToken ct)
     {
-        var chat = await _chats.Find(x => x.Id == chatId).FirstOrDefaultAsync(ct);
-        if (chat is null)
-            throw new NotFoundException($"Чат {chatId} не найден.");
+        var chat = await _chats.Find(x => x.Id == chatId).FirstOrDefaultAsync(ct)
+            ?? throw new NotFoundException($"Чат {chatId} не найден.");
 
         ChatAccess.EnsureParticipant(chat, currentKeycloakId);
 
-        if (senderRole == "patient" && currentKeycloakId != chat.PatientKeycloakId)
-            throw new ForbiddenException("Роль patient не совпадает с участником чата.");
-        if (senderRole == "doctor" && currentKeycloakId != chat.DoctorKeycloakId)
-            throw new ForbiddenException("Роль doctor не совпадает с участником чата.");
+        if (senderRole == Roles.Patient && currentKeycloakId != chat.PatientKeycloakId)
+            throw new ForbiddenException($"Роль {Roles.Patient} не совпадает с участником чата.");
+        if (senderRole == Roles.Doctor && currentKeycloakId != chat.DoctorKeycloakId)
+            throw new ForbiddenException($"Роль {Roles.Doctor} не совпадает с участником чата.");
 
         var message = MessageDocument.Create(chat.Id, currentKeycloakId, senderRole, request.Text);
 

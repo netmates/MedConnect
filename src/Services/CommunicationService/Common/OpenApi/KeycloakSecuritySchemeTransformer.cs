@@ -13,6 +13,7 @@ internal sealed class KeycloakSecuritySchemeTransformer(
     IConfiguration configuration) : IOpenApiDocumentTransformer
 {
     public const string SchemeId = "OAuth2";
+    public const string OpenIdScope = "openid";
 
     public Task TransformAsync(
         OpenApiDocument document,
@@ -35,7 +36,7 @@ internal sealed class KeycloakSecuritySchemeTransformer(
                     TokenUrl = tokenUrl,
                     Scopes = new Dictionary<string, string>
                     {
-                        ["openid"] = "OpenID Connect"
+                        [OpenIdScope] = "OpenID Connect"
                     }
                 }
             }
@@ -48,7 +49,7 @@ internal sealed class KeycloakSecuritySchemeTransformer(
         document.Security.Add(
             new OpenApiSecurityRequirement
             {
-                [new OpenApiSecuritySchemeReference(SchemeId, document)] = ["openid"]
+                [new OpenApiSecuritySchemeReference(SchemeId, document)] = [OpenIdScope]
             });
 
         return Task.CompletedTask;

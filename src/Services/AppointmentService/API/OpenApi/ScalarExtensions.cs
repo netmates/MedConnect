@@ -18,7 +18,7 @@ public static class ScalarExtensions
                 {
                     flow.ClientId = clientId;
                     flow.Username = "admin1";
-                    flow.SelectedScopes = ["openid"];
+                    flow.SelectedScopes = [KeycloakSecuritySchemeTransformer.OpenIdScope];
                     flow.WithCredentialsLocation(CredentialsLocation.Body);
                 });
         });
