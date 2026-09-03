@@ -34,7 +34,7 @@ public sealed class GlobalExceptionHandler(
             Detail = status == StatusCodes.Status500InternalServerError
                 ? "Произошла внутренняя ошибка."
                 : exception is ValidationException
-                    ? "One or more validation errors occurred."
+                    ? "Одна или несколько ошибок валидации."
                     : exception.Message
         };
 
