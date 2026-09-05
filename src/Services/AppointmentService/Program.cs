@@ -37,6 +37,9 @@ builder.Services.AddAppointmentHealthChecks(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+// gRPC: регистрация сервисов для MapGrpcService (внутренние вызовы от CommunicationService)
+builder.Services.AddGrpc();
+
 var app = builder.Build();
 
 try
@@ -78,6 +81,9 @@ try
 
     // HTTP API: контроллеры appointments / slots / patients / doctors / admin
     app.MapControllers();
+
+    // gRPC: ValidateAppointmentAccess — проверка записи перед открытием/созданием чата
+    app.MapGrpcService<AppointmentService.API.Grpc.AppointmentGrpcService>();
 
     await app.RunAsync();
 }

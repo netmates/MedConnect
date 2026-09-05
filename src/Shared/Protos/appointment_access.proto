@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option csharp_namespace = "MedConnect.Shared.Grpc";
+
+package medconnect.appointments;
+
+// CommunicationService → AppointmentService:
+// можно ли открыть/создать чат по записи для этого пользователя.
+service AppointmentAccess {
+  rpc ValidateAppointmentAccess (ValidateAppointmentAccessRequest)
+      returns (ValidateAppointmentAccessResponse);
+}
+
+message ValidateAppointmentAccessRequest {
+  string appointment_id = 1;
+  string keycloak_id = 2;
+}
+
+message ValidateAppointmentAccessResponse {
+  bool allowed = 1;
+  DenialReason denial_reason = 2;
+
+  string appointment_id = 3;
+
+  string patient_id = 4;
+  string doctor_id = 5;
+  string patient_keycloak_id = 6;
+  string doctor_keycloak_id = 7;
+  string patient_name = 8;
+  string doctor_name = 9;
+}
+
+enum DenialReason {
+  DENIAL_REASON_UNSPECIFIED = 0;
+  DENIAL_REASON_NOT_FOUND = 1;
+  DENIAL_REASON_FORBIDDEN = 2;
+  DENIAL_REASON_CLOSED = 3;
+}

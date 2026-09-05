@@ -19,6 +19,7 @@ public sealed class GlobalExceptionHandler(
             ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden"),
             BusinessRuleException => (StatusCodes.Status400BadRequest, "Business Rule Violation"),
             ValidationException => (StatusCodes.Status400BadRequest, "Validation Error"),
+            ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Service Unavailable"),
             _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
         };
 

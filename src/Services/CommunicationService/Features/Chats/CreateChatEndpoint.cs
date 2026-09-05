@@ -19,7 +19,7 @@ public static class CreateChatEndpoint
                 throw new ValidationException(validation.Errors);
 
             var keycloakId = CurrentUser.GetKeycloakId(http.User);
-            var (chat, created) = await handler.HandleAsync(request, keycloakId, ct);
+            var (chat, created) = await handler.HandleAsync(request.AppointmentId, keycloakId, ct);
 
             var body = CreateChatResponse.From(chat);
 
@@ -32,7 +32,11 @@ public static class CreateChatEndpoint
             .Produces(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status200OK)
             .ProducesValidationProblem()
-            .Produces(StatusCodes.Status403Forbidden);
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status503ServiceUnavailable);
 
         return group;
     }

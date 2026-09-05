@@ -243,6 +243,48 @@ public class AppointmentApplicationService(
             appointmentId, doctor.Id);
     }
 
+    public async Task<ValidateAppointmentAccessResult> ValidateAccessAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
+    {
+        var appointment = await _appointmentRepository.GetByIdWithDetailsAsync(appointmentId, ct);
+        if (appointment is null)
+        {
+            _logger.LogWarning(
+                "Appointment access denied: not found. AppointmentId={AppointmentId}, KeycloakId={KeycloakId}",
+                appointmentId, keycloakId);
+            return ValidateAppointmentAccessResult.Deny(AppointmentAccessDenial.NotFound);
+        }
+
+        var isPatient = appointment.Patient.KeycloakId == keycloakId;
+        var isDoctor = appointment.Doctor.KeycloakId == keycloakId;
+        if (!isPatient && !isDoctor)
+        {
+            _logger.LogWarning(
+                "Appointment access denied: forbidden. AppointmentId={AppointmentId}, KeycloakId={KeycloakId}",
+                appointmentId, keycloakId);
+            return ValidateAppointmentAccessResult.Deny(AppointmentAccessDenial.Forbidden);
+        }
+
+        if (appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.Completed)
+        {
+            _logger.LogWarning(
+                "Appointment access denied: closed. AppointmentId={AppointmentId}, Status={Status}, KeycloakId={KeycloakId}",
+                appointmentId, appointment.Status, keycloakId);
+            return ValidateAppointmentAccessResult.Deny(AppointmentAccessDenial.Closed);
+        }
+
+        _logger.LogDebug(
+            "Appointment access allowed. AppointmentId={AppointmentId}, KeycloakId={KeycloakId}",
+            appointmentId, keycloakId);
+        return ValidateAppointmentAccessResult.Allow(
+            appointment.Id,
+            appointment.PatientId,
+            appointment.DoctorId,
+            appointment.Patient.KeycloakId,
+            appointment.Doctor.KeycloakId,
+            FormatFullName(appointment.Patient.LastName, appointment.Patient.FirstName, appointment.Patient.MiddleName),
+            FormatFullName(appointment.Doctor.LastName, appointment.Doctor.FirstName, appointment.Doctor.MiddleName));
+    }
+
     private static AppointmentDto MapToDto(Appointment a) => new()
     {
         Id = a.Id,

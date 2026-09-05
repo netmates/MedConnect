@@ -43,4 +43,13 @@ public interface IAppointmentApplicationService
     /// Подтвердить запись.
     /// </summary>
     Task ConfirmAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
+    /// <summary>
+    /// Проверка доступа к записи для CommunicationService (gRPC):
+    /// запись существует, пользователь (keycloakId) — ее пациент или врач,
+    /// статус не Cancelled/Completed.
+    /// </summary>
+    Task<ValidateAppointmentAccessResult> ValidateAccessAsync(
+        Guid appointmentId,
+        string keycloakId,
+        CancellationToken ct);
 }

@@ -1,39 +1,33 @@
-using CommunicationService.Common.Exceptions;
+using CommunicationService.Common.Grpc;
 using CommunicationService.Common.Persistence;
 using MongoDB.Driver;
 
 namespace CommunicationService.Features.Chats;
 
-public sealed class CreateChatHandler(IMongoDatabase db)
+public sealed class CreateChatHandler(IMongoDatabase db, AppointmentAccessClient appointmentAccess)
 {
     private readonly IMongoCollection<ChatDocument> _chats = db.GetCollection<ChatDocument>(MongoCollections.Chats);
 
     public async Task<(ChatDocument Chat, bool Created)> HandleAsync(
-        CreateChatRequest request,
+        Guid appointmentId,
         string currentKeycloakId,
         CancellationToken ct)
     {
-        if (currentKeycloakId != request.PatientKeycloakId
-            && currentKeycloakId != request.DoctorKeycloakId)
-        {
-            throw new ForbiddenException("Создать чат может только пациент или врач этой записи.");
-        }
+        var access = await appointmentAccess.ValidateAsync(appointmentId, currentKeycloakId, ct);
 
         var existing = await _chats
-            .Find(x => x.AppointmentId == request.AppointmentId)
+            .Find(x => x.AppointmentId == access.AppointmentId)
             .FirstOrDefaultAsync(ct);
-
-        if (existing is not null)
-            return (existing, Created: false);
+        if (existing is not null) return (existing, Created: false);
 
         var chat = ChatDocument.Create(
-            request.AppointmentId,
-            request.PatientId,
-            request.DoctorId,
-            request.PatientKeycloakId,
-            request.DoctorKeycloakId,
-            request.PatientName,
-            request.DoctorName);
+            access.AppointmentId,
+            access.PatientId,
+            access.DoctorId,
+            access.PatientKeycloakId,
+            access.DoctorKeycloakId,
+            access.PatientName,
+            access.DoctorName);
 
         try
         {
@@ -43,9 +37,9 @@ public sealed class CreateChatHandler(IMongoDatabase db)
         catch (MongoWriteException ex) when (ex.WriteError?.Category == ServerErrorCategory.DuplicateKey)
         {
             var again = await _chats
-                .Find(x => x.AppointmentId == request.AppointmentId)
+                .Find(x => x.AppointmentId == access.AppointmentId)
                 .FirstOrDefaultAsync(ct)
-                ?? throw new InvalidOperationException($"Чат для appointment {request.AppointmentId} не найден после DuplicateKey.");
+                ?? throw new InvalidOperationException($"Чат для appointment {access.AppointmentId} не найден после DuplicateKey.");
 
             return (again, Created: false);
         }

@@ -1,4 +1,5 @@
 using CommunicationService.Common.Auth;
+using CommunicationService.Common.Grpc;
 using CommunicationService.Common.Health;
 using CommunicationService.Common.Logging;
 using CommunicationService.Common.Middleware;
@@ -40,6 +41,9 @@ builder.Services.AddScoped<SendMessageHandler>();
 
 // MongoDB: IMongoClient + IMongoDatabase из ConnectionStrings:Mongo и Mongo:Database
 builder.Services.AddMongo(builder.Configuration);
+
+// gRPC-клиент к AppointmentService: проверка записи перед открытием/созданием чата (AppointmentGrpc:Address)
+builder.Services.AddAppointmentGrpcClient(builder.Configuration);
 
 // Health checks: self (live) + MongoDB (ready)
 builder.Services.AddCommunicationHealthChecks();
