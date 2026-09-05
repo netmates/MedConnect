@@ -14,20 +14,16 @@ public class KeycloakAdminService(
     ILogger<KeycloakAdminService> logger,
     IKeycloakTokenCache tokenCache) : IKeycloakAdminService
 {
-    private readonly HttpClient _httpClient = httpClient;
-    private readonly IConfiguration _configuration = configuration;
-    private readonly ILogger<KeycloakAdminService> _logger = logger;
-    private readonly IKeycloakTokenCache _tokenCache = tokenCache;
     private const int TokenExpiryBufferSeconds = 30;
 
     private string Realm =>
-        KeycloakConfiguration.GetRequired(_configuration, nameof(KeycloakOptions.Realm));
+        KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Realm));
 
     private string AdminClientId =>
-        KeycloakConfiguration.GetRequired(_configuration, KeycloakOptions.AdminClientIdKey);
+        KeycloakConfiguration.GetRequired(configuration, KeycloakOptions.AdminClientIdKey);
 
     private string AdminClientSecret =>
-        KeycloakConfiguration.GetRequired(_configuration, KeycloakOptions.AdminClientSecretKey);
+        KeycloakConfiguration.GetRequired(configuration, KeycloakOptions.AdminClientSecretKey);
 
     public async Task<string> CreateUserAsync(
         string email,
@@ -60,7 +56,7 @@ public class KeycloakAdminService(
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await _httpClient.SendAsync(request, ct);
+        var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
 
         var location = response.Headers.Location?.ToString()
@@ -82,7 +78,7 @@ public class KeycloakAdminService(
             }
             catch (Exception rollbackEx)
             {
-                _logger.LogError(
+                logger.LogError(
                     rollbackEx,
                     "Failed to rollback Keycloak user {KeycloakId} after role assignment failure",
                     keycloakId);
@@ -91,7 +87,7 @@ public class KeycloakAdminService(
             throw;
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Keycloak user created: {KeycloakId} for {Email} with role {Role}",
             keycloakId, email, role);
 
@@ -107,10 +103,10 @@ public class KeycloakAdminService(
             $"/admin/realms/{Realm}/users/{keycloakId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await _httpClient.SendAsync(request, ct);
+        var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
 
-        _logger.LogInformation("Keycloak user deleted: {KeycloakId}", keycloakId);
+        logger.LogInformation("Keycloak user deleted: {KeycloakId}", keycloakId);
     }
 
     public async Task DisableUserAsync(string keycloakId, CancellationToken ct = default)
@@ -131,7 +127,7 @@ public class KeycloakAdminService(
         using var getRequest = new HttpRequestMessage(HttpMethod.Get, userPath);
         getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var getResponse = await _httpClient.SendAsync(getRequest, ct);
+        var getResponse = await httpClient.SendAsync(getRequest, ct);
         await EnsureKeycloakSuccessAsync(getResponse, ct);
 
         await using var stream = await getResponse.Content.ReadAsStreamAsync(ct);
@@ -146,7 +142,7 @@ public class KeycloakAdminService(
         };
         putRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var putResponse = await _httpClient.SendAsync(putRequest, ct);
+        var putResponse = await httpClient.SendAsync(putRequest, ct);
         await EnsureKeycloakSuccessAsync(putResponse, ct);
     }
 
@@ -158,7 +154,7 @@ public class KeycloakAdminService(
         using var getRequest = new HttpRequestMessage(HttpMethod.Get, userPath);
         getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var getResponse = await _httpClient.SendAsync(getRequest, ct);
+        var getResponse = await httpClient.SendAsync(getRequest, ct);
         await EnsureKeycloakSuccessAsync(getResponse, ct);
 
         await using var stream = await getResponse.Content.ReadAsStreamAsync(ct);
@@ -174,10 +170,10 @@ public class KeycloakAdminService(
         };
         putRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var putResponse = await _httpClient.SendAsync(putRequest, ct);
+        var putResponse = await httpClient.SendAsync(putRequest, ct);
         await EnsureKeycloakSuccessAsync(putResponse, ct);
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Keycloak user name updated: {KeycloakId}, FirstName={FirstName}, LastName={LastName}",
             keycloakId, firstName, lastName);
     }
@@ -195,7 +191,7 @@ public class KeycloakAdminService(
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await _httpClient.SendAsync(request, ct);
+        var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
     }
 
@@ -204,7 +200,7 @@ public class KeycloakAdminService(
     /// </summary>
     private async Task<string> GetAdminTokenAsync(CancellationToken ct)
     {
-        if (_tokenCache.TryGetValid(out var cachedToken))
+        if (tokenCache.TryGetValid(out var cachedToken))
             return cachedToken;
 
         var tokenRequest = new FormUrlEncodedContent(
@@ -221,7 +217,7 @@ public class KeycloakAdminService(
             Content = tokenRequest
         };
 
-        var response = await _httpClient.SendAsync(request, ct);
+        var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
@@ -229,7 +225,7 @@ public class KeycloakAdminService(
         var expiresIn = json.TryGetProperty("expires_in", out var exp) ? exp.GetInt32() : 60;
         var expiresAt = DateTime.UtcNow.AddSeconds(Math.Max(expiresIn - TokenExpiryBufferSeconds, 1));
 
-        _tokenCache.Set(token, expiresAt);
+        tokenCache.Set(token, expiresAt);
         return token;
     }
 
@@ -249,7 +245,7 @@ public class KeycloakAdminService(
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await _httpClient.SendAsync(request, ct);
+        var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
     }
 
@@ -269,7 +265,7 @@ public class KeycloakAdminService(
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await _httpClient.SendAsync(request, ct);
+        var response = await httpClient.SendAsync(request, ct);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return;
         await EnsureKeycloakSuccessAsync(response, ct);
@@ -285,7 +281,7 @@ public class KeycloakAdminService(
             $"/admin/realms/{Realm}/roles/{roleName}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await _httpClient.SendAsync(request, ct);
+        var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
     }
@@ -298,10 +294,9 @@ public class KeycloakAdminService(
         var body = await response.Content.ReadAsStringAsync(ct);
         var status = (int)response.StatusCode;
 
-        _logger.LogWarning(
+        logger.LogWarning(
             "Keycloak request failed. StatusCode={StatusCode}, Body={Body}",
-            status,
-            body);
+            status, body);
 
         if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
             throw new ConflictException("Операция конфликтует с текущим состоянием данных.");

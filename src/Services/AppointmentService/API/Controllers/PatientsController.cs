@@ -12,8 +12,6 @@ namespace AppointmentService.API.Controllers;
 [Authorize(Roles = Roles.Patient)]
 public class PatientsController(IPatientApplicationService service) : ControllerBase
 {
-    private readonly IPatientApplicationService _service = service;
-
     /// <summary>POST /api/patients/register — зарегистрировать или получить профиль пациента.</summary>
     [HttpPost("register")]
     [ProducesResponseType(typeof(PatientDto), StatusCodes.Status200OK)]
@@ -23,7 +21,7 @@ public class PatientsController(IPatientApplicationService service) : Controller
     public async Task<ActionResult<PatientDto>> Register([FromBody] RegisterPatientDto dto, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.RegisterOrGetAsync(keycloakId, dto, ct);
+        var result = await service.RegisterOrGetAsync(keycloakId, dto, ct);
         return Ok(result);
     }
 
@@ -36,7 +34,7 @@ public class PatientsController(IPatientApplicationService service) : Controller
     public async Task<ActionResult<PatientDto>> GetMe(CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.GetByKeycloakIdAsync(keycloakId, ct);
+        var result = await service.GetByKeycloakIdAsync(keycloakId, ct);
         return Ok(result);
     }
 
@@ -50,7 +48,7 @@ public class PatientsController(IPatientApplicationService service) : Controller
     public async Task<ActionResult<PatientDto>> UpdateMe([FromBody] UpdatePatientDto dto, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.UpdateAsync(keycloakId, dto, ct);
+        var result = await service.UpdateAsync(keycloakId, dto, ct);
         return Ok(result);
     }
 }

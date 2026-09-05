@@ -12,8 +12,6 @@ namespace AppointmentService.API.Controllers;
 [Route("api/slots")]
 public class ScheduleSlotsController(IScheduleSlotApplicationService service) : ControllerBase
 {
-    private readonly IScheduleSlotApplicationService _service = service;
-
     /// <summary>GET /api/slots — полное расписание текущего врача.</summary>
     [HttpGet]
     [Authorize(Roles = Roles.Doctor)]
@@ -25,7 +23,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
     public async Task<ActionResult<IReadOnlyList<ScheduleSlotDto>>> GetSchedule(CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.GetScheduleAsync(keycloakId, ct);
+        var result = await service.GetScheduleAsync(keycloakId, ct);
         return Ok(result);
     }
 
@@ -42,7 +40,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
         [FromQuery, BindRequired] DateTime date,
         CancellationToken ct)
     {
-        var result = await _service.GetAvailableAsync(doctorId, date, ct);
+        var result = await service.GetAvailableAsync(doctorId, date, ct);
         return Ok(result);
     }
 
@@ -57,7 +55,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
     public async Task<ActionResult<ScheduleSlotDto>> Create([FromBody] CreateScheduleSlotDto dto, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.CreateAsync(dto, keycloakId, ct);
+        var result = await service.CreateAsync(dto, keycloakId, ct);
         return CreatedAtAction(nameof(GetSchedule), result);
     }
 
@@ -72,7 +70,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
     public async Task<ActionResult<ScheduleSlotDto>> Update(Guid id, [FromBody] UpdateScheduleSlotDto dto, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.UpdateAsync(id, dto, keycloakId, ct);
+        var result = await service.UpdateAsync(id, dto, keycloakId, ct);
         return Ok(result);
     }
 
@@ -87,7 +85,7 @@ public class ScheduleSlotsController(IScheduleSlotApplicationService service) : 
     public async Task<ActionResult> Delete(Guid id, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        await _service.DeleteAsync(id, keycloakId, ct);
+        await service.DeleteAsync(id, keycloakId, ct);
         return NoContent();
     }
 }

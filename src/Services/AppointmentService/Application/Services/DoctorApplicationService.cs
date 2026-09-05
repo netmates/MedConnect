@@ -23,28 +23,17 @@ public class DoctorApplicationService(
     IValidator<ResetPasswordDto> resetPasswordValidator,
     ILogger<DoctorApplicationService> logger) : IDoctorApplicationService
 {
-    private readonly IDoctorRepository _doctorRepository = doctorRepository;
-    private readonly ISpecializationRepository _specializationRepository = specializationRepository;
-    private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;
-    private readonly IScheduleSlotRepository _slotRepository = slotRepository;
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IKeycloakAdminService _keycloakAdminService = keycloakAdminService;
-    private readonly IValidator<CreateDoctorDto> _createDoctorValidator = createDoctorValidator;
-    private readonly IValidator<UpdateDoctorDto> _updateDoctorValidator = updateDoctorValidator;
-    private readonly IValidator<ResetPasswordDto> _resetPasswordValidator = resetPasswordValidator;
-    private readonly ILogger<DoctorApplicationService> _logger = logger;
-
     public async Task<IReadOnlyList<DoctorDto>> GetAllAsync(Guid? specializationId, CancellationToken ct)
     {
         var doctors = specializationId.HasValue
-            ? await _doctorRepository.GetBySpecializationAsync(specializationId.Value, ct)
-            : await _doctorRepository.GetActiveAsync(ct);
+            ? await doctorRepository.GetBySpecializationAsync(specializationId.Value, ct)
+            : await doctorRepository.GetActiveAsync(ct);
         return doctors.Select(MapToDto).ToList();
     }
 
     public async Task<DoctorDto> GetByIdAsync(Guid id, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetWithSpecializationsAsync(id, ct)
+        var doctor = await doctorRepository.GetWithSpecializationsAsync(id, ct)
             ?? throw new NotFoundException($"Врач {id} не найден.");
 
         if (!doctor.IsActive)
@@ -55,17 +44,17 @@ public class DoctorApplicationService(
 
     public async Task<IReadOnlyList<DoctorDto>> GetAllIncludingInactiveAsync(CancellationToken ct)
     {
-        var doctors = await _doctorRepository.GetAllIncludingInactiveAsync(ct);
+        var doctors = await doctorRepository.GetAllIncludingInactiveAsync(ct);
         return doctors.Select(MapToDto).ToList();
     }
 
     public async Task<DoctorDto> CreateAsync(CreateDoctorDto dto, CancellationToken ct)
     {
-        var validationResult = await _createDoctorValidator.ValidateAsync(dto, ct);
+        var validationResult = await createDoctorValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var keycloakId = await _keycloakAdminService.CreateUserAsync(
+        var keycloakId = await keycloakAdminService.CreateUserAsync(
             email: dto.Email,
             temporaryPassword: dto.TemporaryPassword,
             role: Roles.Doctor,
@@ -73,7 +62,7 @@ public class DoctorApplicationService(
             lastName: dto.LastName,
             ct: ct);
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             var doctor = Doctor.Create(
@@ -83,22 +72,22 @@ public class DoctorApplicationService(
                 middleName: dto.MiddleName,
                 description: dto.Description,
                 experienceYears: dto.ExperienceYears);
-            await _doctorRepository.AddAsync(doctor, ct);
+            await doctorRepository.AddAsync(doctor, ct);
 
             foreach (var specializationId in dto.SpecializationIds)
             {
-                var specialization = await _specializationRepository.GetByIdAsync(specializationId, ct)
+                var specialization = await specializationRepository.GetByIdAsync(specializationId, ct)
                     ?? throw new NotFoundException($"Специализация {specializationId} не найдена.");
 
-                await _doctorRepository.AddDoctorSpecializationAsync(
+                await doctorRepository.AddDoctorSpecializationAsync(
                     DoctorSpecialization.Create(doctor.Id, specialization.Id), ct);
             }
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
-            var createdDoctor = await _doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
+            var createdDoctor = await doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Doctor created: {DoctorId}, KeycloakId={KeycloakId}",
                 doctor.Id, keycloakId);
 
@@ -106,15 +95,15 @@ public class DoctorApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
 
             try
             {
-                await _keycloakAdminService.DeleteUserAsync(keycloakId, CancellationToken.None);
+                await keycloakAdminService.DeleteUserAsync(keycloakId, CancellationToken.None);
             }
             catch (Exception ex)
             {
-                _logger.LogError(
+                logger.LogError(
                     ex,
                     "Failed to rollback Keycloak user {KeycloakId} after doctor create failure",
                     keycloakId);
@@ -126,18 +115,18 @@ public class DoctorApplicationService(
 
     public async Task<DoctorDto> UpdateAsync(Guid id, UpdateDoctorDto dto, CancellationToken ct)
     {
-        var validationResult = await _updateDoctorValidator.ValidateAsync(dto, ct);
+        var validationResult = await updateDoctorValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var doctor = await _doctorRepository.GetWithSpecializationsAsync(id, ct)
+        var doctor = await doctorRepository.GetWithSpecializationsAsync(id, ct)
             ?? throw new NotFoundException($"Врач {id} не найден.");
 
         var keycloakId = doctor.KeycloakId;
         var oldFirstName = doctor.FirstName;
         var oldLastName = doctor.LastName;
         var nameChanged = await KeycloakNameSync.ApplyIfChangedAsync(
-            _keycloakAdminService,
+            keycloakAdminService,
             keycloakId,
             oldFirstName,
             oldLastName,
@@ -145,7 +134,7 @@ public class DoctorApplicationService(
             dto.LastName,
             ct);
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             doctor.Update(
@@ -154,11 +143,11 @@ public class DoctorApplicationService(
                 middleName: dto.MiddleName,
                 description: dto.Description,
                 experienceYears: dto.ExperienceYears);
-            await _doctorRepository.UpdateAsync(doctor, ct);
+            await doctorRepository.UpdateAsync(doctor, ct);
 
             foreach (var specializationId in dto.SpecializationIds)
             {
-                _ = await _specializationRepository.GetByIdAsync(specializationId, ct)
+                _ = await specializationRepository.GetByIdAsync(specializationId, ct)
                     ?? throw new NotFoundException($"Специализация {specializationId} не найдена.");
             }
 
@@ -175,30 +164,30 @@ public class DoctorApplicationService(
 
             foreach (var specializationId in toAdd)
             {
-                await _doctorRepository.AddDoctorSpecializationAsync(
+                await doctorRepository.AddDoctorSpecializationAsync(
                     DoctorSpecialization.Create(doctor.Id, specializationId), ct);
             }
 
             foreach (var specializationId in toRemove)
             {
-                await _doctorRepository.RemoveDoctorSpecializationAsync(doctor.Id, specializationId, ct);
+                await doctorRepository.RemoveDoctorSpecializationAsync(doctor.Id, specializationId, ct);
             }
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
-            var updateDoctor = await _doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
+            var updateDoctor = await doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
 
-            _logger.LogInformation("Doctor updated: {DoctorId}", id);
+            logger.LogInformation("Doctor updated: {DoctorId}", id);
 
             return MapToDto(updateDoctor!);
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
 
             await KeycloakNameSync.CompensateIfNeededAsync(
-                _keycloakAdminService,
-                _logger,
+                keycloakAdminService,
+                logger,
                 nameChanged,
                 ex,
                 keycloakId,
@@ -213,46 +202,46 @@ public class DoctorApplicationService(
 
     public async Task DeactivateAsync(Guid id, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByIdAsync(id, ct)
+        var doctor = await doctorRepository.GetByIdAsync(id, ct)
             ?? throw new NotFoundException($"Врач {id} не найден.");
 
         if (!doctor.IsActive)
         {
-            _logger.LogInformation("Doctor already inactive: {DoctorId}", id);
+            logger.LogInformation("Doctor already inactive: {DoctorId}", id);
             return;
         }
 
         var keycloakId = doctor.KeycloakId;
-        await _keycloakAdminService.DisableUserAsync(keycloakId, ct);
+        await keycloakAdminService.DisableUserAsync(keycloakId, ct);
 
         int cancelledCount;
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var activeAppointments = await _appointmentRepository.GetActiveByDoctorIdAsync(doctor.Id, ct);
+            var activeAppointments = await appointmentRepository.GetActiveByDoctorIdAsync(doctor.Id, ct);
             cancelledCount = await CancelActiveAppointmentsAsync(activeAppointments, ct);
 
             doctor.Deactivate();
-            await _doctorRepository.UpdateAsync(doctor, ct);
+            await doctorRepository.UpdateAsync(doctor, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
 
-            _logger.LogError(
+            logger.LogError(
                 ex,
                 "DB deactivate failed after Keycloak disable. Compensating Keycloak enable. DoctorId={DoctorId}, KeycloakId={KeycloakId}",
                 id, keycloakId);
 
             try
             {
-                await _keycloakAdminService.EnableUserAsync(keycloakId, CancellationToken.None);
+                await keycloakAdminService.EnableUserAsync(keycloakId, CancellationToken.None);
             }
             catch (Exception compensateEx)
             {
-                _logger.LogError(
+                logger.LogError(
                     compensateEx,
                     "Keycloak enable compensation failed for doctor {DoctorId}. Manual fix may be required.",
                     id);
@@ -261,43 +250,43 @@ public class DoctorApplicationService(
             throw;
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Doctor deactivated: {DoctorId}, KeycloakId={KeycloakId}, CancelledAppointments={Count}",
             id, keycloakId, cancelledCount);
     }
 
     public async Task ActivateAsync(Guid id, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByIdAsync(id, ct)
+        var doctor = await doctorRepository.GetByIdAsync(id, ct)
             ?? throw new NotFoundException($"Врач {id} не найден.");
 
         var keycloakId = doctor.KeycloakId;
-        await _keycloakAdminService.EnableUserAsync(keycloakId, ct);
+        await keycloakAdminService.EnableUserAsync(keycloakId, ct);
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             doctor.Activate();
-            await _doctorRepository.UpdateAsync(doctor, ct);
+            await doctorRepository.UpdateAsync(doctor, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
 
-            _logger.LogError(
+            logger.LogError(
                 ex,
                 "DB activate failed after Keycloak enable. Compensating Keycloak disable. DoctorId={DoctorId}, KeycloakId={KeycloakId}",
                 id, keycloakId);
 
             try
             {
-                await _keycloakAdminService.DisableUserAsync(keycloakId, CancellationToken.None);
+                await keycloakAdminService.DisableUserAsync(keycloakId, CancellationToken.None);
             }
             catch (Exception compensateEx)
             {
-                _logger.LogError(
+                logger.LogError(
                     compensateEx,
                     "Keycloak disable compensation failed for doctor {DoctorId}. Manual fix may be required.",
                     id);
@@ -306,23 +295,23 @@ public class DoctorApplicationService(
             throw;
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Doctor activated: {DoctorId}, KeycloakId={KeycloakId}",
             id, keycloakId);
     }
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordDto dto, CancellationToken ct)
     {
-        var validationResult = await _resetPasswordValidator.ValidateAsync(dto, ct);
+        var validationResult = await resetPasswordValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var doctor = await _doctorRepository.GetByIdAsync(id, ct)
+        var doctor = await doctorRepository.GetByIdAsync(id, ct)
             ?? throw new NotFoundException($"Врач {id} не найден.");
 
-        await _keycloakAdminService.ResetPasswordAsync(doctor.KeycloakId, dto.NewPassword, ct);
+        await keycloakAdminService.ResetPasswordAsync(doctor.KeycloakId, dto.NewPassword, ct);
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Doctor password reset: {DoctorId}, KeycloakId={KeycloakId}",
             id, doctor.KeycloakId);
     }
@@ -339,17 +328,17 @@ public class DoctorApplicationService(
 
         foreach (var item in appointments)
         {
-            var appointment = await _appointmentRepository.GetByIdWithLockAsync(item.Id, ct);
+            var appointment = await appointmentRepository.GetByIdWithLockAsync(item.Id, ct);
             if (appointment is null) continue;
 
             if (appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.Completed)
                 continue;
 
-            var slot = await _slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
+            var slot = await slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
                 ?? throw new NotFoundException("Слот записи не найден.");
 
             appointment.Cancel();
-            await _appointmentRepository.UpdateAsync(appointment, ct);
+            await appointmentRepository.UpdateAsync(appointment, ct);
             cancelled++;
 
             if (slot.Status == SlotStatus.Booked)
@@ -359,7 +348,7 @@ public class DoctorApplicationService(
                 else
                     slot.Consume();
 
-                await _slotRepository.UpdateAsync(slot, ct);
+                await slotRepository.UpdateAsync(slot, ct);
             }
         }
 

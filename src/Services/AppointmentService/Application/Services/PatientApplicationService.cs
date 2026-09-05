@@ -17,25 +17,18 @@ public class PatientApplicationService(
     IValidator<UpdatePatientDto> updatePatientValidator,
     ILogger<PatientApplicationService> logger) : IPatientApplicationService
 {
-    private readonly IPatientRepository _patientRepository = patientRepository;
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IKeycloakAdminService _keycloakAdminService = keycloakAdminService;
-    private readonly IValidator<RegisterPatientDto> _registerPatientValidator = registerPatientValidator;
-    private readonly IValidator<UpdatePatientDto> _updatePatientValidator = updatePatientValidator;
-    private readonly ILogger<PatientApplicationService> _logger = logger;
-
     public async Task<PatientDto> RegisterOrGetAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct)
     {
-        var validationResult = await _registerPatientValidator.ValidateAsync(dto, ct);
+        var validationResult = await registerPatientValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
         // Если профиль уже есть (создан через PatientProvisioningMiddleware при OAuth) — возвращаем его
-        var existing = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
+        var existing = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
         if (existing is not null)
             return MapToDto(existing);
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             var patient = Patient.Create(
@@ -45,11 +38,11 @@ public class PatientApplicationService(
                 middleName: dto.MiddleName,
                 phone: dto.Phone,
                 dateOfBirth: dto.DateOfBirth);
-            await _patientRepository.AddAsync(patient, ct);
+            await patientRepository.AddAsync(patient, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Patient registered: {PatientId}, KeycloakId={KeycloakId}",
                 patient.Id, keycloakId);
 
@@ -57,14 +50,14 @@ public class PatientApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
 
     public async Task<PatientDto> GetByKeycloakIdAsync(string keycloakId, CancellationToken ct)
     {
-        var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль пациента не найден.");
 
         return MapToDto(patient);
@@ -72,17 +65,17 @@ public class PatientApplicationService(
 
     public async Task<PatientDto> UpdateAsync(string keycloakId, UpdatePatientDto dto, CancellationToken ct)
     {
-        var validationResult = await _updatePatientValidator.ValidateAsync(dto, ct);
+        var validationResult = await updatePatientValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль пациента не найден.");
 
         var oldFirstName = patient.FirstName;
         var oldLastName = patient.LastName;
         var nameChanged = await KeycloakNameSync.ApplyIfChangedAsync(
-            _keycloakAdminService,
+            keycloakAdminService,
             keycloakId,
             oldFirstName,
             oldLastName,
@@ -90,7 +83,7 @@ public class PatientApplicationService(
             dto.LastName,
             ct);
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             patient.Update(
@@ -99,11 +92,11 @@ public class PatientApplicationService(
                 middleName: dto.MiddleName,
                 phone: dto.Phone,
                 dateOfBirth: dto.DateOfBirth);
-            await _patientRepository.UpdateAsync(patient, ct);
+            await patientRepository.UpdateAsync(patient, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Patient updated: {PatientId}, KeycloakId={KeycloakId}",
                 patient.Id, keycloakId);
 
@@ -111,11 +104,11 @@ public class PatientApplicationService(
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
 
             await KeycloakNameSync.CompensateIfNeededAsync(
-                _keycloakAdminService,
-                _logger,
+                keycloakAdminService,
+                logger,
                 nameChanged,
                 ex,
                 keycloakId,

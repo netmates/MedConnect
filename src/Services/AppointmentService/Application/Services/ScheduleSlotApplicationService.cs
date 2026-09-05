@@ -17,38 +17,31 @@ public class ScheduleSlotApplicationService(
     IValidator<UpdateScheduleSlotDto> updateSlotValidator,
     ILogger<ScheduleSlotApplicationService> logger) : IScheduleSlotApplicationService
 {
-    private readonly IScheduleSlotRepository _slotRepository = slotRepository;
-    private readonly IDoctorRepository _doctorRepository = doctorRepository;
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IValidator<CreateScheduleSlotDto> _createSlotValidator = createSlotValidator;
-    private readonly IValidator<UpdateScheduleSlotDto> _updateSlotValidator = updateSlotValidator;
-    private readonly ILogger<ScheduleSlotApplicationService> _logger = logger;
-
     public async Task<ScheduleSlotDto> CreateAsync(CreateScheduleSlotDto dto, string keycloakId, CancellationToken ct)
     {
-        var validationResult = await _createSlotValidator.ValidateAsync(dto, ct);
+        var validationResult = await createSlotValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль врача не найден.");
 
         if (!doctor.IsActive)
             throw new BusinessRuleException("Нельзя управлять расписанием: профиль врача деактивирован.");
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var hasOverlap = await _slotRepository.HasOverlappingSlotAsync(doctor.Id, dto.StartTime, dto.EndTime, null, ct);
+            var hasOverlap = await slotRepository.HasOverlappingSlotAsync(doctor.Id, dto.StartTime, dto.EndTime, null, ct);
             if (hasOverlap)
                 throw new BusinessRuleException("Слот пересекается с существующим.");
 
             var slot = ScheduleSlot.Create(doctor.Id, dto.StartTime, dto.EndTime);
-            await _slotRepository.AddAsync(slot, ct);
+            await slotRepository.AddAsync(slot, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Schedule slot created: {SlotId}, DoctorId={DoctorId}, Start={StartTime:o}, End={EndTime:o}",
                 slot.Id, doctor.Id, slot.StartTime, slot.EndTime);
 
@@ -56,27 +49,27 @@ public class ScheduleSlotApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
 
     public async Task<ScheduleSlotDto> UpdateAsync(Guid id, UpdateScheduleSlotDto dto, string keycloakId, CancellationToken ct)
     {
-        var validationResult = await _updateSlotValidator.ValidateAsync(dto, ct);
+        var validationResult = await updateSlotValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль врача не найден.");
 
         if (!doctor.IsActive)
             throw new BusinessRuleException("Нельзя управлять расписанием: профиль врача деактивирован.");
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var slot = await _slotRepository.GetByIdWithLockAsync(id, ct)
+            var slot = await slotRepository.GetByIdWithLockAsync(id, ct)
                 ?? throw new NotFoundException($"Слот {id} не найден.");
 
             if (slot.DoctorId != doctor.Id)
@@ -85,16 +78,16 @@ public class ScheduleSlotApplicationService(
             if (slot.Status != SlotStatus.Available)
                 throw new BusinessRuleException("Нельзя редактировать слот: он уже забронирован.");
 
-            var hasOverlap = await _slotRepository.HasOverlappingSlotAsync(doctor.Id, dto.StartTime, dto.EndTime, slot.Id, ct);
+            var hasOverlap = await slotRepository.HasOverlappingSlotAsync(doctor.Id, dto.StartTime, dto.EndTime, slot.Id, ct);
             if (hasOverlap)
                 throw new BusinessRuleException("Слот пересекается с существующим расписанием.");
 
             slot.Update(dto.StartTime, dto.EndTime);
-            await _slotRepository.UpdateAsync(slot, ct);
+            await slotRepository.UpdateAsync(slot, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Schedule slot updated: {SlotId}, DoctorId={DoctorId}, Start={StartTime:o}, End={EndTime:o}",
                 slot.Id, doctor.Id, slot.StartTime, slot.EndTime);
 
@@ -102,23 +95,23 @@ public class ScheduleSlotApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
 
     public async Task DeleteAsync(Guid id, string keycloakId, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль врача не найден.");
 
         if (!doctor.IsActive)
             throw new BusinessRuleException("Нельзя управлять расписанием: профиль врача деактивирован.");
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var slot = await _slotRepository.GetByIdWithLockAsync(id, ct)
+            var slot = await slotRepository.GetByIdWithLockAsync(id, ct)
                 ?? throw new NotFoundException($"Слот {id} не найден.");
 
             if (slot.DoctorId != doctor.Id)
@@ -127,42 +120,42 @@ public class ScheduleSlotApplicationService(
             if (slot.Status != SlotStatus.Available)
                 throw new BusinessRuleException("Удалить можно только свободный слот.");
 
-            await _slotRepository.DeleteAsync(slot, ct);
+            await slotRepository.DeleteAsync(slot, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Schedule slot deleted: {SlotId}, DoctorId={DoctorId}",
             id, doctor.Id);
     }
 
     public async Task<IReadOnlyList<ScheduleSlotDto>> GetScheduleAsync(string keycloakId, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль врача не найден.");
 
         if (!doctor.IsActive)
             throw new BusinessRuleException("Нельзя управлять расписанием: профиль врача деактивирован.");
 
-        var slots = await _slotRepository.GetByDoctorIdAsync(doctor.Id, ct);
+        var slots = await slotRepository.GetByDoctorIdAsync(doctor.Id, ct);
         return slots.Select(MapToDto).ToList();
     }
 
     public async Task<IReadOnlyList<ScheduleSlotDto>> GetAvailableAsync(Guid doctorId, DateTime date, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByIdAsync(doctorId, ct)
+        var doctor = await doctorRepository.GetByIdAsync(doctorId, ct)
             ?? throw new NotFoundException("Врач не найден.");
 
         if (!doctor.IsActive)
             throw new NotFoundException("Врач не найден.");
 
-        var slots = await _slotRepository.GetAvailableByDoctorIdAsync(doctorId, date, ct);
+        var slots = await slotRepository.GetAvailableByDoctorIdAsync(doctorId, date, ct);
         return slots.Select(MapToDto).ToList();
     }
 

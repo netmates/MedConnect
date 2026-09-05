@@ -1,5 +1,6 @@
 using AppointmentService.API.Middleware;
 using AppointmentService.API.OpenApi;
+using AppointmentService.API.Grpc;
 using AppointmentService.Application.Extensions;
 using AppointmentService.Infrastructure.Extensions;
 using AppointmentService.Infrastructure.Persistence;
@@ -83,7 +84,7 @@ try
     app.MapControllers();
 
     // gRPC: ValidateAppointmentAccess — проверка записи перед открытием/созданием чата
-    app.MapGrpcService<AppointmentService.API.Grpc.AppointmentGrpcService>();
+    app.MapGrpcService<AppointmentGrpcService>();
 
     await app.RunAsync();
 }

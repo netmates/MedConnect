@@ -12,8 +12,6 @@ namespace AppointmentService.API.Controllers;
 [Route("api/appointments")]
 public class AppointmentsController(IAppointmentApplicationService service) : ControllerBase
 {
-    private readonly IAppointmentApplicationService _service = service;
-
     /// <summary>GET /api/appointments/my — список записей текущего пациента.</summary>
     [HttpGet("my")]
     [Authorize(Roles = Roles.Patient)]
@@ -28,7 +26,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
         CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.GetByPatientAsync(keycloakId, status, from, to, ct);
+        var result = await service.GetByPatientAsync(keycloakId, status, from, to, ct);
         return Ok(result);
     }
 
@@ -46,7 +44,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
         CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.GetByDoctorAsync(keycloakId, status, from, to, ct);
+        var result = await service.GetByDoctorAsync(keycloakId, status, from, to, ct);
         return Ok(result);
     }
 
@@ -60,7 +58,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     public async Task<ActionResult<AppointmentDto>> GetById(Guid id, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.GetByIdAsync(id, keycloakId, ct);
+        var result = await service.GetByIdAsync(id, keycloakId, ct);
         return Ok(result);
     }
 
@@ -75,7 +73,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     public async Task<ActionResult<AppointmentDto>> Create([FromBody] CreateAppointmentDto dto, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await _service.CreateAsync(dto, keycloakId, ct);
+        var result = await service.CreateAsync(dto, keycloakId, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
@@ -90,7 +88,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     public async Task<ActionResult> Cancel(Guid id, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        await _service.CancelAsync(id, keycloakId, ct);
+        await service.CancelAsync(id, keycloakId, ct);
         return NoContent();
     }
 
@@ -105,7 +103,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     public async Task<ActionResult> Confirm(Guid id, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        await _service.ConfirmAsync(id, keycloakId, ct);
+        await service.ConfirmAsync(id, keycloakId, ct);
         return NoContent();
     }
 
@@ -120,7 +118,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
     public async Task<ActionResult> Complete(Guid id, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        await _service.CompleteAsync(id, keycloakId, ct);
+        await service.CompleteAsync(id, keycloakId, ct);
         return NoContent();
     }
 }

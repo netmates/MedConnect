@@ -19,14 +19,6 @@ public class AppointmentApplicationService(
     IValidator<CreateAppointmentDto> createAppointmentValidator,
     ILogger<AppointmentApplicationService> logger) : IAppointmentApplicationService
 {
-    private readonly IAppointmentRepository _appointmentRepository = appointmentRepository;
-    private readonly IScheduleSlotRepository _slotRepository = slotRepository;
-    private readonly IPatientRepository _patientRepository = patientRepository;
-    private readonly IDoctorRepository _doctorRepository = doctorRepository;
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IValidator<CreateAppointmentDto> _createAppointmentValidator = createAppointmentValidator;
-    private readonly ILogger<AppointmentApplicationService> _logger = logger;
-
     public async Task<IReadOnlyList<AppointmentDto>> GetByPatientAsync(
         string keycloakId,
         AppointmentStatus? status,
@@ -34,10 +26,10 @@ public class AppointmentApplicationService(
         DateTime? to,
         CancellationToken ct)
     {
-        var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Пациент не найден.");
 
-        var appointments = await _appointmentRepository.GetByPatientIdAsync(patient.Id, status, from, to, ct);
+        var appointments = await appointmentRepository.GetByPatientIdAsync(patient.Id, status, from, to, ct);
         return appointments.Select(MapToDto).ToList();
     }
 
@@ -48,23 +40,23 @@ public class AppointmentApplicationService(
         DateTime? to,
         CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Врач не найден.");
 
-        var appointments = await _appointmentRepository.GetByDoctorIdAsync(doctor.Id, status, from, to, ct);
+        var appointments = await appointmentRepository.GetByDoctorIdAsync(doctor.Id, status, from, to, ct);
         return appointments.Select(MapToDto).ToList();
     }
 
     public async Task<AppointmentDto> GetByIdAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
     {
-        var appointment = await _appointmentRepository.GetByIdWithDetailsAsync(appointmentId, ct)
+        var appointment = await appointmentRepository.GetByIdWithDetailsAsync(appointmentId, ct)
             ?? throw new NotFoundException("Запись не найдена.");
 
-        var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
+        var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
         if (patient is not null && appointment.PatientId == patient.Id)
             return MapToDto(appointment);
 
-        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct);
+        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct);
         if (doctor is not null && appointment.DoctorId == doctor.Id)
             return MapToDto(appointment);
 
@@ -73,11 +65,11 @@ public class AppointmentApplicationService(
 
     public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string keycloakId, CancellationToken ct)
     {
-        var validationResult = await _createAppointmentValidator.ValidateAsync(dto, ct);
+        var validationResult = await createAppointmentValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Пациент не найден.");
 
         if (!patient.IsActive)
@@ -85,46 +77,46 @@ public class AppointmentApplicationService(
 
         Appointment appointment;
         ScheduleSlot slot;
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            slot = await _slotRepository.GetByIdWithLockAsync(dto.SlotId, ct)
+            slot = await slotRepository.GetByIdWithLockAsync(dto.SlotId, ct)
                 ?? throw new NotFoundException("Слот записи не найден.");
 
             if (slot.Status != SlotStatus.Available)
                 throw new BusinessRuleException("Слот записи уже занят.");
 
-            var existingAppointment = await _appointmentRepository.GetBySlotIdAsync(slot.Id, ct);
+            var existingAppointment = await appointmentRepository.GetBySlotIdAsync(slot.Id, ct);
             if (existingAppointment is not null)
                 throw new BusinessRuleException("На этот слот уже есть запись.");
 
             if (slot.StartTime <= DateTime.UtcNow)
                 throw new BusinessRuleException("Нельзя записаться на слот в прошлом.");
 
-            var doctor = await _doctorRepository.GetByIdAsync(slot.DoctorId, ct)
+            var doctor = await doctorRepository.GetByIdAsync(slot.DoctorId, ct)
                 ?? throw new NotFoundException("Врач не найден.");
 
             if (!doctor.IsActive)
                 throw new BusinessRuleException("Нельзя записаться: врач деактивирован.");
 
             slot.Book();
-            await _slotRepository.UpdateAsync(slot, ct);
+            await slotRepository.UpdateAsync(slot, ct);
 
             appointment = Appointment.Create(patient.Id, slot.DoctorId, slot.Id, dto.Reason);
-            await _appointmentRepository.AddAsync(appointment, ct);
+            await appointmentRepository.AddAsync(appointment, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 
-        var created = await _appointmentRepository.GetByIdWithDetailsAsync(appointment.Id, ct)
+        var created = await appointmentRepository.GetByIdWithDetailsAsync(appointment.Id, ct)
             ?? throw new NotFoundException("Запись не найдена.");
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Appointment created: {AppointmentId}, PatientId={PatientId}, DoctorId={DoctorId}, SlotId={SlotId}",
             created.Id, created.PatientId, created.DoctorId, created.SlotId);
 
@@ -135,16 +127,16 @@ public class AppointmentApplicationService(
     {
         string cancelledBy;
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var appointment = await _appointmentRepository.GetByIdWithLockAsync(appointmentId, ct)
+            var appointment = await appointmentRepository.GetByIdWithLockAsync(appointmentId, ct)
                 ?? throw new NotFoundException("Запись не найдена.");
 
-            var patient = await _patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
+            var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
             var isPatientOwner = patient is not null && appointment.PatientId == patient.Id;
 
-            var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct);
+            var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct);
             var isDoctorOwner = doctor is not null && appointment.DoctorId == doctor.Id;
 
             if (!isPatientOwner && !isDoctorOwner)
@@ -152,103 +144,103 @@ public class AppointmentApplicationService(
 
             cancelledBy = isPatientOwner ? Roles.Patient : Roles.Doctor;
 
-            var slot = await _slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
+            var slot = await slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
                 ?? throw new NotFoundException("Слот записи не найден.");
 
             if (slot.StartTime <= DateTime.UtcNow)
                 throw new BusinessRuleException("Нельзя отменить запись в прошлом.");
 
             appointment.Cancel();
-            await _appointmentRepository.UpdateAsync(appointment, ct);
+            await appointmentRepository.UpdateAsync(appointment, ct);
 
             slot.Free();
-            await _slotRepository.UpdateAsync(slot, ct);
+            await slotRepository.UpdateAsync(slot, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Appointment cancelled: {AppointmentId}, CancelledBy={CancelledBy}",
             appointmentId, cancelledBy);
     }
 
     public async Task CompleteAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль врача не найден.");
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var appointment = await _appointmentRepository.GetByIdWithLockAsync(appointmentId, ct)
+            var appointment = await appointmentRepository.GetByIdWithLockAsync(appointmentId, ct)
                 ?? throw new NotFoundException("Запись не найдена.");
 
             if (appointment.DoctorId != doctor.Id)
                 throw new ForbiddenException("Врач может завершать только свои записи.");
 
-            var slot = await _slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
+            var slot = await slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
                 ?? throw new NotFoundException("Слот записи не найден.");
 
             appointment.Complete();
-            await _appointmentRepository.UpdateAsync(appointment, ct);
+            await appointmentRepository.UpdateAsync(appointment, ct);
 
             slot.Consume();
-            await _slotRepository.UpdateAsync(slot, ct);
+            await slotRepository.UpdateAsync(slot, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Appointment completed: {AppointmentId}, DoctorId={DoctorId}",
             appointmentId, doctor.Id);
     }
 
     public async Task ConfirmAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
     {
-        var doctor = await _doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
+        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль врача не найден.");
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var appointment = await _appointmentRepository.GetByIdWithLockAsync(appointmentId, ct)
+            var appointment = await appointmentRepository.GetByIdWithLockAsync(appointmentId, ct)
                 ?? throw new NotFoundException("Запись не найдена.");
 
             if (appointment.DoctorId != doctor.Id)
                 throw new ForbiddenException("Врач может подтверждать только свои записи.");
 
             appointment.Confirm();
-            await _appointmentRepository.UpdateAsync(appointment, ct);
+            await appointmentRepository.UpdateAsync(appointment, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Appointment confirmed: {AppointmentId}, DoctorId={DoctorId}",
             appointmentId, doctor.Id);
     }
 
     public async Task<ValidateAppointmentAccessResult> ValidateAccessAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
     {
-        var appointment = await _appointmentRepository.GetByIdWithDetailsAsync(appointmentId, ct);
+        var appointment = await appointmentRepository.GetByIdWithDetailsAsync(appointmentId, ct);
         if (appointment is null)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 "Appointment access denied: not found. AppointmentId={AppointmentId}, KeycloakId={KeycloakId}",
                 appointmentId, keycloakId);
             return ValidateAppointmentAccessResult.Deny(AppointmentAccessDenial.NotFound);
@@ -258,7 +250,7 @@ public class AppointmentApplicationService(
         var isDoctor = appointment.Doctor.KeycloakId == keycloakId;
         if (!isPatient && !isDoctor)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 "Appointment access denied: forbidden. AppointmentId={AppointmentId}, KeycloakId={KeycloakId}",
                 appointmentId, keycloakId);
             return ValidateAppointmentAccessResult.Deny(AppointmentAccessDenial.Forbidden);
@@ -266,13 +258,13 @@ public class AppointmentApplicationService(
 
         if (appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.Completed)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 "Appointment access denied: closed. AppointmentId={AppointmentId}, Status={Status}, KeycloakId={KeycloakId}",
                 appointmentId, appointment.Status, keycloakId);
             return ValidateAppointmentAccessResult.Deny(AppointmentAccessDenial.Closed);
         }
 
-        _logger.LogDebug(
+        logger.LogDebug(
             "Appointment access allowed. AppointmentId={AppointmentId}, KeycloakId={KeycloakId}",
             appointmentId, keycloakId);
         return ValidateAppointmentAccessResult.Allow(

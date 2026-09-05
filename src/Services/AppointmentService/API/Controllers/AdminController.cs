@@ -16,10 +16,6 @@ public class AdminController(
     IDoctorApplicationService doctorService,
     IAdminPatientApplicationService patientService) : ControllerBase
 {
-    private readonly ISpecializationApplicationService _specializationService = specializationService;
-    private readonly IDoctorApplicationService _doctorService = doctorService;
-    private readonly IAdminPatientApplicationService _patientService = patientService;
-
     // ── Специализации ────────────────────────────────────────────────────────
 
     /// <summary>GET /api/admin/specializations — список всех специализаций.</summary>
@@ -29,7 +25,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<SpecializationDto>>> GetSpecializations(CancellationToken ct)
     {
-        var result = await _specializationService.GetAllAsync(ct);
+        var result = await specializationService.GetAllAsync(ct);
         return Ok(result);
     }
 
@@ -41,7 +37,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<SpecializationDto>> CreateSpecialization([FromBody] CreateSpecializationDto dto, CancellationToken ct)
     {
-        var result = await _specializationService.CreateAsync(dto, ct);
+        var result = await specializationService.CreateAsync(dto, ct);
         return CreatedAtAction(nameof(GetSpecializations), result);
     }
 
@@ -54,7 +50,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SpecializationDto>> UpdateSpecialization(Guid id, [FromBody] UpdateSpecializationDto dto, CancellationToken ct)
     {
-        var result = await _specializationService.UpdateAsync(id, dto, ct);
+        var result = await specializationService.UpdateAsync(id, dto, ct);
         return Ok(result);
     }
 
@@ -67,7 +63,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteSpecialization(Guid id, CancellationToken ct)
     {
-        await _specializationService.DeleteAsync(id, ct);
+        await specializationService.DeleteAsync(id, ct);
         return NoContent();
     }
 
@@ -80,7 +76,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<DoctorDto>>> GetDoctors(CancellationToken ct)
     {
-        var result = await _doctorService.GetAllIncludingInactiveAsync(ct);
+        var result = await doctorService.GetAllIncludingInactiveAsync(ct);
         return Ok(result);
     }
 
@@ -93,7 +89,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DoctorDto>> CreateDoctor([FromBody] CreateDoctorDto dto, CancellationToken ct)
     {
-        var result = await _doctorService.CreateAsync(dto, ct);
+        var result = await doctorService.CreateAsync(dto, ct);
         return CreatedAtAction(nameof(GetDoctors), result);
     }
 
@@ -106,7 +102,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DoctorDto>> UpdateDoctor(Guid id, [FromBody] UpdateDoctorDto dto, CancellationToken ct)
     {
-        var result = await _doctorService.UpdateAsync(id, dto, ct);
+        var result = await doctorService.UpdateAsync(id, dto, ct);
         return Ok(result);
     }
 
@@ -119,7 +115,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeactivateDoctor(Guid id, CancellationToken ct)
     {
-        await _doctorService.DeactivateAsync(id, ct);
+        await doctorService.DeactivateAsync(id, ct);
         return NoContent();
     }
 
@@ -131,7 +127,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> ActivateDoctor(Guid id, CancellationToken ct)
     {
-        await _doctorService.ActivateAsync(id, ct);
+        await doctorService.ActivateAsync(id, ct);
         return NoContent();
     }
 
@@ -144,7 +140,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> ResetDoctorPassword(Guid id, [FromBody] ResetPasswordDto dto, CancellationToken ct)
     {
-        await _doctorService.ResetPasswordAsync(id, dto, ct);
+        await doctorService.ResetPasswordAsync(id, dto, ct);
         return NoContent();
     }
 
@@ -157,7 +153,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<PatientDto>>> GetPatients(CancellationToken ct)
     {
-        var result = await _patientService.GetAllIncludingInactiveAsync(ct);
+        var result = await patientService.GetAllIncludingInactiveAsync(ct);
         return Ok(result);
     }
 
@@ -169,7 +165,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PatientDto>> GetPatient(Guid id, CancellationToken ct)
     {
-        var result = await _patientService.GetByIdAsync(id, ct);
+        var result = await patientService.GetByIdAsync(id, ct);
         return Ok(result);
     }
 
@@ -182,7 +178,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PatientDto>> UpdatePatient(Guid id, [FromBody] UpdatePatientDto dto, CancellationToken ct)
     {
-        var result = await _patientService.UpdateAsync(id, dto, ct);
+        var result = await patientService.UpdateAsync(id, dto, ct);
         return Ok(result);
     }
 
@@ -195,7 +191,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeactivatePatient(Guid id, CancellationToken ct)
     {
-        await _patientService.DeactivateAsync(id, ct);
+        await patientService.DeactivateAsync(id, ct);
         return NoContent();
     }
 
@@ -207,7 +203,7 @@ public class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> ActivatePatient(Guid id, CancellationToken ct)
     {
-        await _patientService.ActivateAsync(id, ct);
+        await patientService.ActivateAsync(id, ct);
         return NoContent();
     }
 }

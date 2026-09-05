@@ -15,33 +15,27 @@ public class SpecializationApplicationService(
     IValidator<UpdateSpecializationDto> updateSpecializationValidator,
     ILogger<SpecializationApplicationService> logger) : ISpecializationApplicationService
 {
-    private readonly ISpecializationRepository _specializationRepository = specializationRepository;
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IValidator<CreateSpecializationDto> _createSpecializationValidator = createSpecializationValidator;
-    private readonly IValidator<UpdateSpecializationDto> _updateSpecializationValidator = updateSpecializationValidator;
-    private readonly ILogger<SpecializationApplicationService> _logger = logger;
-
     public async Task<IReadOnlyList<SpecializationDto>> GetAllAsync(CancellationToken ct)
     {
-        var specializations = await _specializationRepository.GetAllAsync(ct);
+        var specializations = await specializationRepository.GetAllAsync(ct);
         return specializations.Select(MapToDto).ToList();
     }
 
     public async Task<SpecializationDto> CreateAsync(CreateSpecializationDto dto, CancellationToken ct)
     {
-        var validationResult = await _createSpecializationValidator.ValidateAsync(dto, ct);
+        var validationResult = await createSpecializationValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             var specialization = Specialization.Create(name: dto.Name);
-            await _specializationRepository.AddAsync(specialization, ct);
+            await specializationRepository.AddAsync(specialization, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Specialization created: {SpecializationId}, Name={Name}",
                 specialization.Id, specialization.Name);
 
@@ -49,29 +43,29 @@ public class SpecializationApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
 
     public async Task<SpecializationDto> UpdateAsync(Guid id, UpdateSpecializationDto dto, CancellationToken ct)
     {
-        var validationResult = await _updateSpecializationValidator.ValidateAsync(dto, ct);
+        var validationResult = await updateSpecializationValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var specialization = await _specializationRepository.GetByIdAsync(id, ct)
+            var specialization = await specializationRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException($"Специализация {id} не найдена.");
 
             specialization.Update(name: dto.Name);
-            await _specializationRepository.UpdateAsync(specialization, ct);
+            await specializationRepository.UpdateAsync(specialization, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Specialization updated: {SpecializationId}, Name={Name}",
                 specialization.Id, specialization.Name);
 
@@ -79,34 +73,34 @@ public class SpecializationApplicationService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct)
     {
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var specialization = await _specializationRepository.GetByIdAsync(id, ct)
+            var specialization = await specializationRepository.GetByIdAsync(id, ct)
             ?? throw new NotFoundException($"Специализация {id} не найдена.");
 
-            var hasLinkedDoctors = await _specializationRepository.HasAnyDoctorsAsync(id, ct);
+            var hasLinkedDoctors = await specializationRepository.HasAnyDoctorsAsync(id, ct);
             if (hasLinkedDoctors)
                 throw new BusinessRuleException("Нельзя удалить специализацию: к ней привязаны врачи.");
 
-            await _specializationRepository.DeleteAsync(specialization, ct);
+            await specializationRepository.DeleteAsync(specialization, ct);
 
-            await _unitOfWork.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
 
-        _logger.LogInformation("Specialization deleted: {SpecializationId}", id);
+        logger.LogInformation("Specialization deleted: {SpecializationId}", id);
     }
 
     private static SpecializationDto MapToDto(Specialization s) => new()
