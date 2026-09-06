@@ -18,7 +18,7 @@ internal sealed class KeycloakSecuritySchemeTransformer(
     public Task TransformAsync(
         OpenApiDocument document,
         OpenApiDocumentTransformerContext context,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
         var tokenUrl = KeycloakConfiguration.GetTokenEndpoint(configuration);
 

@@ -16,7 +16,7 @@ internal sealed class BearerSecuritySchemeTransformer(
     public async Task TransformAsync(
         OpenApiDocument document,
         OpenApiDocumentTransformerContext context,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
         var schemes = await authenticationSchemeProvider.GetAllSchemesAsync();
         if (!schemes.Any(s => s.Name == SchemeId)) return;

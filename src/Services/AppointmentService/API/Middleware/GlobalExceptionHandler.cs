@@ -13,7 +13,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
         var (status, title) = exception switch
         {
@@ -55,7 +55,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         }
 
         httpContext.Response.StatusCode = status;
-        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(problem, ct);
         return true;
     }
 }
