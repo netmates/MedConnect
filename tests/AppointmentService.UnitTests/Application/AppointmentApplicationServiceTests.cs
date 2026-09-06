@@ -2,11 +2,14 @@ using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
+using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
 using FluentValidation.Results;
+using MedConnect.Shared.Events;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Reflection;
@@ -21,6 +24,8 @@ public class AppointmentApplicationServiceTests
     private readonly Mock<IDoctorRepository> _doctors = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IValidator<CreateAppointmentDto>> _createValidator = new();
+    private readonly Mock<IIntegrationEventPublisher> _publisher = new();
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessor = new();
 
     private readonly AppointmentApplicationService _sut;
 
@@ -33,6 +38,17 @@ public class AppointmentApplicationServiceTests
             .Setup(v => v.ValidateAsync(It.IsAny<CreateAppointmentDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
 
+        _httpContextAccessor.Setup(a => a.HttpContext).Returns((HttpContext?)null);
+
+        _publisher
+            .Setup(p => p.PublishAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<AppointmentCreatedPayload>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         _sut = new AppointmentApplicationService(
             _appointments.Object,
             _slots.Object,
@@ -40,7 +56,9 @@ public class AppointmentApplicationServiceTests
             _doctors.Object,
             _uow.Object,
             _createValidator.Object,
-            NullLogger<AppointmentApplicationService>.Instance);
+            NullLogger<AppointmentApplicationService>.Instance,
+            _publisher.Object,
+            _httpContextAccessor.Object);
     }
 
     private static Patient CreatePatient(string keycloakId = "patient-kc")
@@ -514,6 +532,18 @@ public class AppointmentApplicationServiceTests
         _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _slots.Verify(r => r.UpdateAsync(slot, It.IsAny<CancellationToken>()), Times.Once);
+        _publisher.Verify(p => p.PublishAsync(
+            EventTypes.AppointmentCreated,
+            RoutingKeys.AppointmentCreated,
+            It.Is<AppointmentCreatedPayload>(payload =>
+                payload.AppointmentId == added.Id &&
+                payload.PatientId == patient.Id &&
+                payload.DoctorId == doctor.Id &&
+                payload.SlotId == slot.Id &&
+                payload.PatientKeycloakId == patient.KeycloakId &&
+                payload.DoctorKeycloakId == doctor.KeycloakId),
+            It.Is<string?>(id => id == null),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Cancel
