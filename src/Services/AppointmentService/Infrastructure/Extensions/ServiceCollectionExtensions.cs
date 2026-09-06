@@ -1,9 +1,10 @@
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
+using AppointmentService.Infrastructure.Keycloak;
+using AppointmentService.Infrastructure.Messaging;
 using AppointmentService.Infrastructure.Persistence;
 using AppointmentService.Infrastructure.Repositories;
-using AppointmentService.Infrastructure.Keycloak;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentService.Infrastructure.Extensions;
@@ -41,6 +42,9 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri(
                 KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.AdminApiUrl)));
         });
+
+        // RabbitMQ: publisher integration events (AppointmentCreated → medconnect.events)
+        services.AddRabbitMqPublisher(configuration);
 
         return services;
     }

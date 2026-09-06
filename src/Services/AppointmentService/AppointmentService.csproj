@@ -22,6 +22,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.10" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.16.18" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="9.1.0" />
@@ -29,6 +30,7 @@
 
   <ItemGroup>
 	<Protobuf Include="..\..\Shared\Protos\appointment_access.proto" GrpcServices="Server" Link="Protos\appointment_access.proto" />
+	<Compile Include="..\..\Shared\Events\**\*.cs" Link="Events\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

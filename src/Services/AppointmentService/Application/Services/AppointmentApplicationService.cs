@@ -1,4 +1,5 @@
 using AppointmentService.Application.Auth;
+using AppointmentService.Application.Common;
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
@@ -7,6 +8,7 @@ using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
+using MedConnect.Shared.Events;
 
 namespace AppointmentService.Application.Services;
 
@@ -17,7 +19,9 @@ public class AppointmentApplicationService(
     IDoctorRepository doctorRepository,
     IUnitOfWork unitOfWork,
     IValidator<CreateAppointmentDto> createAppointmentValidator,
-    ILogger<AppointmentApplicationService> logger) : IAppointmentApplicationService
+    ILogger<AppointmentApplicationService> logger,
+    IIntegrationEventPublisher publisher,
+    IHttpContextAccessor httpContextAccessor) : IAppointmentApplicationService
 {
     public async Task<IReadOnlyList<AppointmentDto>> GetByPatientAsync(
         string keycloakId,
@@ -119,6 +123,36 @@ public class AppointmentApplicationService(
         logger.LogInformation(
             "Appointment created: {AppointmentId}, PatientId={PatientId}, DoctorId={DoctorId}, SlotId={SlotId}",
             created.Id, created.PatientId, created.DoctorId, created.SlotId);
+
+        var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
+        try
+        {
+            await publisher.PublishAsync(
+                EventTypes.AppointmentCreated,
+                RoutingKeys.AppointmentCreated,
+                new AppointmentCreatedPayload
+                {
+                    AppointmentId = created.Id,
+                    PatientId = created.PatientId,
+                    DoctorId = created.DoctorId,
+                    SlotId = created.SlotId,
+                    StartTime = created.Slot.StartTime,
+                    EndTime = created.Slot.EndTime,
+                    Reason = created.Reason,
+                    PatientKeycloakId = created.Patient.KeycloakId,
+                    DoctorKeycloakId = created.Doctor.KeycloakId,
+                    PatientName = FormatFullName(created.Patient.LastName, created.Patient.FirstName, created.Patient.MiddleName),
+                    DoctorName = FormatFullName(created.Doctor.LastName, created.Doctor.FirstName, created.Doctor.MiddleName)
+                },
+                correlationId,
+                ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "Failed to publish AppointmentCreated. AppointmentId={AppointmentId}",
+                created.Id);
+        }
 
         return MapToDto(created);
     }

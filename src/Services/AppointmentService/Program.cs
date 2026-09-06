@@ -41,6 +41,9 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 // gRPC: регистрация сервисов для MapGrpcService (внутренние вызовы от CommunicationService)
 builder.Services.AddGrpc();
 
+// HttpContext для CorrelationId (X-Correlation-ID) при публикации AppointmentCreated
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
 
 try

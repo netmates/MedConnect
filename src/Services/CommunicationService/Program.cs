@@ -2,6 +2,7 @@ using CommunicationService.Common.Auth;
 using CommunicationService.Common.Grpc;
 using CommunicationService.Common.Health;
 using CommunicationService.Common.Logging;
+using CommunicationService.Common.Messaging;
 using CommunicationService.Common.Middleware;
 using CommunicationService.Common.OpenApi;
 using CommunicationService.Common.Persistence;
@@ -34,6 +35,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 // CreateChat: создать чат по appointment (идемпотентно)
 builder.Services.AddScoped<CreateChatHandler>();
+// Общий Mongo ensure-chat (HTTP CreateChat + AppointmentCreated consumer)
+builder.Services.AddScoped<EnsureChatService>();
 // GetChatHistory: история сообщений для участника чата
 builder.Services.AddScoped<GetChatHistoryHandler>();
 // SendMessage: отправить сообщение в чат
@@ -41,6 +44,9 @@ builder.Services.AddScoped<SendMessageHandler>();
 
 // MongoDB: IMongoClient + IMongoDatabase из ConnectionStrings:Mongo и Mongo:Database
 builder.Services.AddMongo(builder.Configuration);
+
+// RabbitMQ: consumer AppointmentCreated → EnsureChat
+builder.Services.AddRabbitMqConsumer(builder.Configuration);
 
 // gRPC-клиент к AppointmentService: проверка записи перед открытием/созданием чата (AppointmentGrpc:Address)
 builder.Services.AddAppointmentGrpcClient(builder.Configuration);
