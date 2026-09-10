@@ -1,7 +1,8 @@
-using System.Security.Claims;
-using System.Text.Json;
+using CommunicationService.Common.SignalR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace CommunicationService.Common.Auth;
 
@@ -31,6 +32,7 @@ public static class AuthenticationExtensions
 
                 options.Events = new JwtBearerEvents
                 {
+                    OnMessageReceived = ReadSignalRAccessToken,
                     OnTokenValidated = MapKeycloakRealmRoles
                 };
             });
@@ -39,13 +41,12 @@ public static class AuthenticationExtensions
     }
 
     /// <summary>
-    /// Keycloak кладёт роли в claim realm_access (JSON: { "roles": ["admin", ...] }).
+    /// Keycloak кладет роли в claim realm_access (JSON: { "roles": ["admin", ...] }).
     /// Добавляем каждую роль как отдельный claim "role" для [Authorize(Roles = "...")].
     /// </summary>
     private static Task MapKeycloakRealmRoles(TokenValidatedContext context)
     {
-        var identity = context.Principal?.Identity as ClaimsIdentity;
-        if (identity is null)
+        if (context.Principal?.Identity is not ClaimsIdentity identity)
             return Task.CompletedTask;
 
         var realmAccessClaim = context.Principal!.FindFirst("realm_access")?.Value;
@@ -65,6 +66,24 @@ public static class AuthenticationExtensions
 
             if (!identity.HasClaim("role", role))
                 identity.AddClaim(new Claim("role", role));
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// SignalR: JWT из query access_token (WebSocket без заголовка Authorization).
+    /// Подставляем context.Token только для пути хаба (включая /negotiate).
+    /// </summary>
+    private static Task ReadSignalRAccessToken(MessageReceivedContext context)
+    {
+        var accessToken = context.Request.Query["access_token"];
+        var path = context.HttpContext.Request.Path;
+
+        if (!string.IsNullOrEmpty(accessToken)
+            && path.StartsWithSegments(ChatHubPaths.Hub))
+        {
+            context.Token = accessToken;
         }
 
         return Task.CompletedTask;

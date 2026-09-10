@@ -6,6 +6,7 @@ using CommunicationService.Common.Messaging;
 using CommunicationService.Common.Middleware;
 using CommunicationService.Common.OpenApi;
 using CommunicationService.Common.Persistence;
+using CommunicationService.Common.SignalR;
 using CommunicationService.Features;
 using CommunicationService.Features.Chats;
 using CommunicationService.Features.Messages;
@@ -50,6 +51,9 @@ builder.Services.AddRabbitMqConsumer(builder.Configuration);
 
 // gRPC-клиент к AppointmentService: проверка записи перед открытием/созданием чата (AppointmentGrpc:Address)
 builder.Services.AddAppointmentGrpcClient(builder.Configuration);
+
+// SignalR
+builder.Services.AddChatSignalR();
 
 // Health checks: self (live) + MongoDB (ready)
 builder.Services.AddCommunicationHealthChecks();
@@ -96,6 +100,9 @@ try
 
     // API чатов: create / history / send (роли patient, doctor)
     app.MapFeatureEndpoints();
+
+    // SignalR: real-time чат
+    app.MapChatHub();
 
     await app.RunAsync();
 }

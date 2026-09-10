@@ -40,13 +40,12 @@ public static class AuthenticationExtensions
     }
 
     /// <summary>
-    /// Keycloak кладёт роли в claim realm_access (JSON: { "roles": ["admin", ...] }).
+    /// Keycloak кладет роли в claim realm_access (JSON: { "roles": ["admin", ...] }).
     /// Добавляем каждую роль как отдельный claim "role" для [Authorize(Roles = "...")].
     /// </summary>
     private static Task MapKeycloakRealmRoles(TokenValidatedContext context)
     {
-        var identity = context.Principal?.Identity as ClaimsIdentity;
-        if (identity is null)
+        if (context.Principal?.Identity is not ClaimsIdentity identity)
             return Task.CompletedTask;
 
         var realmAccessClaim = context.Principal!.FindFirst("realm_access")?.Value;

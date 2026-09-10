@@ -1,4 +1,5 @@
 using CommunicationService.Common.Auth;
+using CommunicationService.Common.SignalR;
 using FluentValidation;
 
 namespace CommunicationService.Features.Messages;
@@ -12,6 +13,7 @@ public static class SendMessageEndpoint
                 SendMessageRequest request,
                 SendMessageHandler handler,
                 IValidator<SendMessageRequest> validator,
+                IChatNotifier notifier,
                 HttpContext http,
                 CancellationToken ct) =>
         {
@@ -24,6 +26,7 @@ public static class SendMessageEndpoint
             var message = await handler.HandleAsync(chatId, request, keycloakId, role, ct);
 
             var body = MessageResponse.From(message);
+            await notifier.NotifyMessageAsync(body, ct);
 
             return Results.Created($"/api/chats/{chatId}/messages", body);
         })
