@@ -1,13 +1,35 @@
 # MedConnect
 
-Локальный запуск инфраструктуры и **AppointmentService** (.NET).
+Локальный запуск инфраструктуры, бэкенд-сервисов (.NET) и SPA (`src/Web.Generated`).
 
 ## Требования
 
 - Docker Desktop (или совместимый Docker Engine + Compose)
 - .NET SDK 10
-- Node.js 24 LTS (для админ-фронта)
+- Node.js 24 LTS (для SPA)
 - Git
+- **HTTPS-сертификат разработчика ASP.NET Core — установлен и trusted** (см. ниже)
+
+### HTTPS developer certificate (обязательно для локалки)
+
+CommunicationService ходит в AppointmentService по **HTTPS gRPC** (`https://localhost:7246`).  
+Без доверенного dev-сертификата локально ломаются gRPC/чат и другие HTTPS-вызовы между сервисами.
+
+Один раз на машине:
+
+```powershell
+dotnet dev-certs https --clean
+dotnet dev-certs https --trust
+```
+
+Проверка:
+
+```powershell
+dotnet dev-certs https --check --trust
+```
+
+Должно быть: сертификат найден и **trusted**.  
+Если Windows покажет диалог доверия — подтвердите. После смены/переустановки SDK или сертификата повторите `--trust`.
 
 ## 1. Клонирование и инфраструктура
 
@@ -19,11 +41,13 @@ docker compose up -d
 
 Поднимаются:
 
-| Сервис   | URL / порт              | Назначение                          |
-|----------|-------------------------|-------------------------------------|
-| Postgres | `localhost:5432`        | БД `medconnect` / `postgres`/`postgres` |
-| Keycloak | http://localhost:8080   | admin / admin                       |
-| Seq      | http://localhost:5341   | UI логов (Dev)                      |
+| Сервис   | URL / порт                         | Назначение                                      |
+|----------|------------------------------------|-------------------------------------------------|
+| Postgres | `localhost:5432`                   | БД `medconnect` / `postgres` / `postgres`       |
+| Keycloak | http://localhost:8080              | admin / admin                                   |
+| Seq      | http://localhost:5341              | UI логов (Dev)                                  |
+| MongoDB  | `localhost:27017`                  | чаты (CommunicationService)                     |
+| RabbitMQ | `localhost:5672`, UI `:15672`      | очереди / `medconnect` / `medconnect`           |
 
 Дождитесь готовности Keycloak (первый старт и импорт realm могут занять минуту).
 
@@ -49,7 +73,11 @@ cd src/Services/AppointmentService
 dotnet user-secrets set "Keycloak:AdminClientSecret" "<вставьте_secret_сюда>"
 ```
 
-## 3. Запуск AppointmentService
+## 3. Запуск бэкенда
+
+Нужны **trusted** HTTPS-сертификат (см. выше), Docker-инфра и AdminClientSecret.
+
+### 3.1. AppointmentService
 
 ```powershell
 cd src/Services/AppointmentService
@@ -58,36 +86,75 @@ dotnet run
 
 По умолчанию профиль Development:
 
-- HTTP: http://localhost:5067  
-- HTTPS: https://localhost:7246  
+- HTTP: http://localhost:5067
+- HTTPS: https://localhost:7246
 - OpenAPI / Scalar: `/scalar` (в Development)
 
 Миграции EF и seed применяются при старте.  
-В Development включён `Seed:DemoUsers` (`appsettings.Development.json`) — нужны рабочий Keycloak и корректный `AdminClientSecret`.
+В Development включен `Seed:DemoUsers` (`appsettings.Development.json`) — нужны рабочий Keycloak и корректный `AdminClientSecret`.
 
-## 4. Логирование
-
-- **Console** — при `dotnet run` (формат и уровни в `appsettings*.json`).
-- **Seq** — только в Development (`LoggingExtensions` → `http://localhost:5341`).
-- В логах: `ServiceName`, `EnvironmentName`, `CorrelationId`, после JWT — `UserId`.
-
-Заголовок запроса/ответа: `X-Correlation-ID`.
-
-## 5. Админ-фронт (`src/Web/admin`)
-
-Vite + React + TypeScript. Вход через Keycloak (**Authorization Code + PKCE**), клиент `medconnect-app`.
+### 3.2. CommunicationService
 
 ```powershell
-cd src/Web/admin
+cd src/Services/CommunicationService
+dotnet run
+```
+
+- HTTP: http://localhost:5080
+- HTTPS: https://localhost:7280
+- OpenAPI / Scalar: `/scalar` (в Development)
+- gRPC к Appointment: `https://localhost:7246` (нужен trusted cert)
+
+## 4. SPA (`src/Web.Generated`)
+
+Vite + React + TypeScript + **MUI** (`@mui/material`, `@mui/icons-material`).  
+Вход через Keycloak (**Authorization Code + PKCE**), клиент `medconnect-app`.
+
+Роли открывают свои зоны:
+
+| Роль      | Базовый путь | Разделы                                      |
+|-----------|--------------|----------------------------------------------|
+| `admin`   | `/admin`     | специализации, врачи, пациенты               |
+| `doctor`  | `/doctor`    | расписание, приемы, чат                      |
+| `patient` | `/patient`   | профиль, запись к врачу, записи, чат         |
+
+```powershell
+cd src/Web.Generated
 npm install
 npm run dev
 ```
 
-UI: http://localhost:3000 (порт задан в `vite.config.ts`, совпадает с `redirectUris` / `webOrigins` в realm).
+UI: http://localhost:3000 (порт в `vite.config.ts`, совпадает с `redirectUris` / `webOrigins` в realm).
 
-Нужны запущенные Keycloak и (для API позже) AppointmentService. Логин тестового админа из realm-export: `admin1` / `Admin1Pass!` (роль `admin`).
+Прокси Vite:
 
-Маршруты сейчас: `/login`, `/auth/callback`, `/` (после входа), `/access-denied`.
+- `/api/chats` → CommunicationService `:5080`
+- `/api` → AppointmentService `:5067`
+
+Нужны запущенные Keycloak, AppointmentService и (для чата) CommunicationService.
+
+### Тестовые пользователи
+
+Из realm-export / seed (Development):
+
+| Логин                         | Пароль          | Роль    |
+|-------------------------------|-----------------|---------|
+| `admin1`                      | `Admin1Pass!`   | admin   |
+| `admin2`                      | `Admin2Pass!`   | admin   |
+| `doctor1@medconnect.local`    | `Doctor1Pass!`  | doctor  |
+| `doctor2@medconnect.local`    | `Doctor2Pass!`  | doctor  |
+| `patient1@medconnect.local`   | `Patient1Pass!` | patient |
+| `patient2@medconnect.local`   | `Patient2Pass!` | patient |
+
+Врачи и пациенты создаются seed-ом AppointmentService при `Seed:DemoUsers=true` (первый успешный старт с Keycloak).
+
+## 5. Логирование
+
+- **Console** — при `dotnet run` (формат и уровни в `appsettings*.json`).
+- **Seq** — только в Development (`http://localhost:5341`).
+- В логах: `ServiceName`, `EnvironmentName`, `CorrelationId`, после JWT — `UserId`.
+
+Заголовок запроса/ответа: `X-Correlation-ID`.
 
 ## 6. Тесты
 
@@ -98,11 +165,13 @@ dotnet test
 
 ## 7. Чеклист для нового ПК
 
-1. [ ] Установлены Docker, .NET 10 и Node.js 24  
-2. [ ] `docker compose up -d`  
-3. [ ] Keycloak доступен на :8080, realm `medconnect`  
-4. [ ] Скопирован Client secret `medconnect-admin-cli`  
-5. [ ] `dotnet user-secrets set "Keycloak:AdminClientSecret" "..."`  
-6. [ ] `dotnet run` в `AppointmentService`  
-7. [ ] `npm install` + `npm run dev` в `src/Web/admin`  
-8. [ ] (опционально) Seq UI на :5341  
+1. [ ] Установлены Docker, .NET 10 и Node.js 24
+2. [ ] `dotnet dev-certs https --trust` — сертификат **trusted** (`--check --trust` ок)
+3. [ ] `docker compose up -d`
+4. [ ] Keycloak доступен на :8080, realm `medconnect`
+5. [ ] Скопирован Client secret `medconnect-admin-cli`
+6. [ ] `dotnet user-secrets set "Keycloak:AdminClientSecret" "..."` в AppointmentService
+7. [ ] `dotnet run` в `AppointmentService`
+8. [ ] `dotnet run` в `CommunicationService`
+9. [ ] `npm install` + `npm run dev` в `src/Web.Generated`
+10. [ ] (опционально) Seq UI на :5341, RabbitMQ UI на :15672
