@@ -34,7 +34,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .IsRequired();
 
         // Уникальность SlotId для всех статусов, кроме Cancelled —
-        // после отмены слот можно забронировать снова; Completed остаётся в индексе
+        // после отмены слот можно забронировать снова; Completed остается в индексе
         builder.HasIndex(a => a.SlotId)
             .IsUnique()
             .HasFilter($"\"Status\" != {(int)AppointmentStatus.Cancelled}");

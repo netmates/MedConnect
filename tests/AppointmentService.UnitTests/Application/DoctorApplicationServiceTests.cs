@@ -462,7 +462,7 @@ public class DoctorApplicationServiceTests
             LastName = doctor.LastName,
             FirstName = doctor.FirstName,
             MiddleName = doctor.MiddleName,
-            Description = "Обновлённое описание",
+            Description = "Обновленное описание",
             ExperienceYears = 12,
             SpecializationIds = [spec.Id]
         };

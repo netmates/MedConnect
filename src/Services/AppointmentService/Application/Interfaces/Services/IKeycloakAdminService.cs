@@ -3,7 +3,7 @@ namespace AppointmentService.Application.Interfaces.Services;
 public interface IKeycloakAdminService
 {
     /// <summary>
-    /// Создаёт пользователя в Keycloak и возвращает его KeycloakId.
+    /// Создает пользователя в Keycloak и возвращает его KeycloakId.
     /// </summary>
     Task<string> CreateUserAsync(
         string email,

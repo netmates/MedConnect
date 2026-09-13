@@ -9,7 +9,7 @@ public static class HealthChecksExtensions
     private const string ReadyTag = "ready";
 
     public static IServiceCollection AddCommunicationHealthChecks(
-        this IServiceCollection services)        
+        this IServiceCollection services)
     {
         services.AddHealthChecks()
             // --- Liveness: только процесс ---

@@ -62,7 +62,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
         return Ok(result);
     }
 
-    /// <summary>POST /api/appointments — создать запись на приём.</summary>
+    /// <summary>POST /api/appointments — создать запись на прием.</summary>
     [HttpPost]
     [Authorize(Roles = Roles.Patient)]
     [ProducesResponseType(typeof(AppointmentDto), StatusCodes.Status201Created)]
@@ -107,7 +107,7 @@ public class AppointmentsController(IAppointmentApplicationService service) : Co
         return NoContent();
     }
 
-    /// <summary>POST /api/appointments/{id}/complete — завершить приём (врач).</summary>
+    /// <summary>POST /api/appointments/{id}/complete — завершить прием (врач).</summary>
     [HttpPost("{id:guid}/complete")]
     [Authorize(Roles = Roles.Doctor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

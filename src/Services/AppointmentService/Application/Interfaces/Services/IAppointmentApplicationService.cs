@@ -28,7 +28,7 @@ public interface IAppointmentApplicationService
     /// </summary>
     Task<AppointmentDto> GetByIdAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
     /// <summary>
-    /// Создать запись на приём.
+    /// Создать запись на прием.
     /// </summary>
     Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string keycloakId, CancellationToken ct);
     /// <summary>
@@ -36,7 +36,7 @@ public interface IAppointmentApplicationService
     /// </summary>
     Task CancelAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
     /// <summary>
-    /// Завершить приём.
+    /// Завершить прием.
     /// </summary>
     Task CompleteAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
     /// <summary>

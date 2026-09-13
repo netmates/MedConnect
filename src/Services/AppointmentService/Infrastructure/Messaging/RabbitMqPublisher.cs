@@ -20,7 +20,7 @@ public sealed class RabbitMqPublisher(
     };
 
     private readonly RabbitMqOptions _options = options.Value;
-    
+
     public async Task PublishAsync<TPayload>(
         string eventType,
         string routingKey,

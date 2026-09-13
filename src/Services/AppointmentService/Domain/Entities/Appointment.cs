@@ -1,4 +1,4 @@
-﻿using AppointmentService.Domain.Enums;
+using AppointmentService.Domain.Enums;
 using AppointmentService.Domain.Exceptions;
 
 namespace AppointmentService.Domain.Entities;
@@ -64,7 +64,7 @@ public class Appointment
     public void Cancel()
     {
         if (Status is AppointmentStatus.Cancelled or AppointmentStatus.Completed)
-            throw new DomainException("Нельзя отменить завершённую или уже отменённую запись.");
+            throw new DomainException("Нельзя отменить завершенную или уже отмененную запись.");
         Status = AppointmentStatus.Cancelled;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -72,7 +72,7 @@ public class Appointment
     public void Complete()
     {
         if (Status != AppointmentStatus.Confirmed)
-            throw new DomainException($"Завершить можно только подтверждённую запись. Текущий статус: {Status}.");
+            throw new DomainException($"Завершить можно только подтвержденную запись. Текущий статус: {Status}.");
         Status = AppointmentStatus.Completed;
         UpdatedAt = DateTime.UtcNow;
     }

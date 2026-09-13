@@ -190,7 +190,7 @@ public class AppointmentTests
         var ex = Assert.Throws<DomainException>(() => appointment.Complete());
 
         // Assert
-        Assert.Equal("Завершить можно только подтверждённую запись. Текущий статус: Created.", ex.Message);
+        Assert.Equal("Завершить можно только подтвержденную запись. Текущий статус: Created.", ex.Message);
     }
 
     [Fact]

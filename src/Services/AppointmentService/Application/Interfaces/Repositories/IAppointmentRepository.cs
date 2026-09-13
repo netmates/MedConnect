@@ -32,7 +32,7 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// </summary>
     Task<Appointment?> GetBySlotIdAsync(Guid slotId, CancellationToken ct = default);
     /// <summary>
-    /// Получить запись на приём с пессимистической блокировкой.
+    /// Получить запись на прием с пессимистической блокировкой.
     /// Защита от race condition: при одновременной отмене, изменении или обработке одной и той же записи
     /// второй запрос будет ждать, пока первый не завершит транзакцию; вызывается только внутри открытой транзакции.
     /// </summary>

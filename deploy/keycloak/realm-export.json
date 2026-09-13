@@ -7,7 +7,7 @@
   "roles": {
     "realm": [
       { "name": "patient", "description": "Пациент — самостоятельная регистрация" },
-      { "name": "doctor",  "description": "Врач — создаётся администратором" },
+      { "name": "doctor",  "description": "Врач — создается администратором" },
       { "name": "admin",   "description": "Администратор системы" }
     ]
   },
@@ -49,7 +49,7 @@
       "serviceAccountsEnabled": true,
       "directAccessGrantsEnabled": false,
       "standardFlowEnabled": false,
-      "description": "Service account для AppointmentService — управление пользователями через Admin API. Secret задаётся вручную в Console (Credentials) и в User Secrets приложения (Keycloak:AdminClientSecret)."
+      "description": "Service account для AppointmentService — управление пользователями через Admin API."
     }
   ],
   "users": [
