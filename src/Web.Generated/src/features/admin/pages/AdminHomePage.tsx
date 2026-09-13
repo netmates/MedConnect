@@ -1,5 +1,10 @@
-import { Link } from 'react-router-dom'
+import CategoryIcon from '@mui/icons-material/Category'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import PeopleIcon from '@mui/icons-material/People'
+import { List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material'
+import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthContext'
+import { Page } from '../../../components/Page'
 
 export function AdminHomePage() {
   const { user, roles } = useAuth()
@@ -9,23 +14,35 @@ export function AdminHomePage() {
     'пользователь'
 
   return (
-    <section className="panel">
-      <h1>Админ-панель</h1>
-      <p className="lead">
-        Вы вошли как <strong>{name}</strong>.
-      </p>
-      <p>Роли: {roles.length > 0 ? roles.join(', ') : '—'}</p>
-      <ul className="home-links">
-        <li>
-          <Link to="/admin/specializations">Специализации</Link>
-        </li>
-        <li>
-          <Link to="/admin/doctors">Врачи</Link>
-        </li>
-        <li>
-          <Link to="/admin/patients">Пациенты</Link>
-        </li>
-      </ul>
-    </section>
+    <Page
+      title="Админ-панель"
+      description={
+        <>
+          Вы вошли как <strong>{name}</strong>. Роли:{' '}
+          {roles.length > 0 ? roles.join(', ') : '—'}.
+        </>
+      }
+    >
+      <List disablePadding>
+        <ListItemButton component={RouterLink} to="/admin/specializations">
+          <ListItemIcon>
+            <CategoryIcon />
+          </ListItemIcon>
+          <ListItemText primary="Специализации" />
+        </ListItemButton>
+        <ListItemButton component={RouterLink} to="/admin/doctors">
+          <ListItemIcon>
+            <MedicalServicesIcon />
+          </ListItemIcon>
+          <ListItemText primary="Врачи" />
+        </ListItemButton>
+        <ListItemButton component={RouterLink} to="/admin/patients">
+          <ListItemIcon>
+            <PeopleIcon />
+          </ListItemIcon>
+          <ListItemText primary="Пациенты" />
+        </ListItemButton>
+      </List>
+    </Page>
   )
 }

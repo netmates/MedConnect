@@ -1,12 +1,24 @@
+import { Box, CircularProgress, Typography } from '@mui/material'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthContext'
+
+function SessionCheck() {
+  return (
+    <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '40vh' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <CircularProgress size={22} />
+        <Typography>Проверка сессии…</Typography>
+      </Box>
+    </Box>
+  )
+}
 
 export function RequireAuth() {
   const { user, isLoading } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
-    return <p className="page-status">Проверка сессии…</p>
+    return <SessionCheck />
   }
 
   if (!user) {
@@ -20,7 +32,7 @@ export function RequireAdmin() {
   const { isAdmin, isLoading } = useAuth()
 
   if (isLoading) {
-    return <p className="page-status">Проверка сессии…</p>
+    return <SessionCheck />
   }
 
   if (!isAdmin) {
@@ -34,7 +46,7 @@ export function RequireDoctor() {
   const { isDoctor, isLoading } = useAuth()
 
   if (isLoading) {
-    return <p className="page-status">Проверка сессии…</p>
+    return <SessionCheck />
   }
 
   if (!isDoctor) {
@@ -48,7 +60,7 @@ export function RequirePatient() {
   const { isPatient, isLoading } = useAuth()
 
   if (isLoading) {
-    return <p className="page-status">Проверка сессии…</p>
+    return <SessionCheck />
   }
 
   if (!isPatient) {

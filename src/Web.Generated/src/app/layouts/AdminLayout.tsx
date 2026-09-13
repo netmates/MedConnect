@@ -1,36 +1,24 @@
-import { Link, Outlet } from 'react-router-dom'
-import { useAuth } from '../../auth/AuthContext'
+import HomeIcon from '@mui/icons-material/Home'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import PeopleIcon from '@mui/icons-material/People'
+import CategoryIcon from '@mui/icons-material/Category'
+import { AppShell } from './AppShell'
 
 export function AdminLayout() {
-  const { user, logout } = useAuth()
-  const name =
-    user?.profile?.preferred_username ??
-    user?.profile?.name ??
-    user?.profile?.sub ??
-    'user'
-
   return (
-    <div className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <Link to="/admin">MedConnect · Админ</Link>
-        </div>
-        <nav className="nav">
-          <Link to="/admin">Главная</Link>
-          <Link to="/admin/specializations">Специализации</Link>
-          <Link to="/admin/doctors">Врачи</Link>
-          <Link to="/admin/patients">Пациенты</Link>
-        </nav>
-        <div className="topbar-user">
-          <span>{name}</span>
-          <button type="button" className="btn btn-ghost" onClick={() => void logout()}>
-            Выйти
-          </button>
-        </div>
-      </header>
-      <main className="content">
-        <Outlet />
-      </main>
-    </div>
+    <AppShell
+      brand="MedConnect · Админ"
+      brandTo="/admin"
+      nav={[
+        { to: '/admin', label: 'Главная', icon: <HomeIcon /> },
+        {
+          to: '/admin/specializations',
+          label: 'Специализации',
+          icon: <CategoryIcon />,
+        },
+        { to: '/admin/doctors', label: 'Врачи', icon: <MedicalServicesIcon /> },
+        { to: '/admin/patients', label: 'Пациенты', icon: <PeopleIcon /> },
+      ]}
+    />
   )
 }

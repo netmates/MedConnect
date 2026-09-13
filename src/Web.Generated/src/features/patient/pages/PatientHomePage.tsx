@@ -1,5 +1,10 @@
-import { Link } from 'react-router-dom'
+import EventNoteIcon from '@mui/icons-material/EventNote'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import PersonIcon from '@mui/icons-material/Person'
+import { List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material'
+import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthContext'
+import { Page } from '../../../components/Page'
 
 export function PatientHomePage() {
   const { user, roles } = useAuth()
@@ -9,23 +14,34 @@ export function PatientHomePage() {
     'пользователь'
 
   return (
-    <section className="panel">
-      <h1>Кабинет пациента</h1>
-      <p className="lead">
-        Здравствуйте, <strong>{name}</strong>.
-      </p>
-      <p>Роли: {roles.join(', ') || '—'}</p>
-      <ul className="home-links">
-        <li>
-          <Link to="/patient/profile">Профиль</Link>
-        </li>
-        <li>
-          <Link to="/patient/doctors">Найти врача и записаться</Link>
-        </li>
-        <li>
-          <Link to="/patient/appointments">Мои записи</Link>
-        </li>
-      </ul>
-    </section>
+    <Page
+      title="Кабинет пациента"
+      description={
+        <>
+          Здравствуйте, <strong>{name}</strong>. Роли: {roles.join(', ') || '—'}.
+        </>
+      }
+    >
+      <List disablePadding>
+        <ListItemButton component={RouterLink} to="/patient/profile">
+          <ListItemIcon>
+            <PersonIcon />
+          </ListItemIcon>
+          <ListItemText primary="Профиль" />
+        </ListItemButton>
+        <ListItemButton component={RouterLink} to="/patient/doctors">
+          <ListItemIcon>
+            <MedicalServicesIcon />
+          </ListItemIcon>
+          <ListItemText primary="Найти врача и записаться" />
+        </ListItemButton>
+        <ListItemButton component={RouterLink} to="/patient/appointments">
+          <ListItemIcon>
+            <EventNoteIcon />
+          </ListItemIcon>
+          <ListItemText primary="Мои записи" />
+        </ListItemButton>
+      </List>
+    </Page>
   )
 }

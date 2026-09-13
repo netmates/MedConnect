@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material'
+import LoginIcon from '@mui/icons-material/Login'
 import { userManager } from '../auth/userManager'
 import { getRealmRolesFromAccessToken, homePathForRoles } from '../auth/roles'
 
@@ -25,17 +34,47 @@ export function AuthCallbackPage() {
 
   if (error) {
     return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <h1>Не удалось войти</h1>
-          <p className="lead">{error}</p>
-          <button type="button" className="btn btn-primary" onClick={() => navigate('/login')}>
-            На страницу входа
-          </button>
-        </div>
-      </div>
-    )
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'grid',
+          placeItems: 'center',
+          p: 2,
+          bgcolor: 'background.default',
+        }}
+      >
+        <Paper sx={{ p: 4, maxWidth: 460, width: '100%' }}>
+          <Stack spacing={2}>
+            <Typography variant="h1">Не удалось войти</Typography>
+            <Typography sx={{
+              color: "text.secondary"
+            }}>{error}</Typography>
+            <Button
+              variant="contained"
+              startIcon={<LoginIcon />}
+              onClick={() => navigate('/login')}
+            >
+              На страницу входа
+            </Button>
+          </Stack>
+        </Paper>
+      </Box>
+    );
   }
 
-  return <p className="page-status">Завершение входа…</p>
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        p: 2,
+      }}
+    >
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+        <CircularProgress size={24} />
+        <Typography>Завершение входа…</Typography>
+      </Stack>
+    </Box>
+  )
 }

@@ -1,6 +1,18 @@
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import BlockIcon from '@mui/icons-material/Block'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import SaveIcon from '@mui/icons-material/Save'
+import {
+  Button,
+  CircularProgress,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
 import { patientsApi } from '../../../api/admin/patientsApi'
+import { Page } from '../../../components/Page'
 import { formatApiError, fullName } from '../../../lib/format'
 import type { PatientDto, UpdatePatientDto } from '../../../types/patient'
 
@@ -77,78 +89,88 @@ export function PatientDetailPage() {
 
   if (!form || !patient) {
     return (
-      <section className="panel">
-        {error ? <p className="error-banner">{error}</p> : <p className="page-status">Загрузка…</p>}
-        <Link to="/admin/patients">← К списку</Link>
-      </section>
+      <Page title="Пациент" error={error}>
+        {!error && (
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <CircularProgress size={20} />
+            <Typography>Загрузка…</Typography>
+          </Stack>
+        )}
+        <Button
+          component={RouterLink}
+          to="/admin/patients"
+          startIcon={<ArrowBackIcon />}
+        >
+          К списку
+        </Button>
+      </Page>
     )
   }
 
   return (
-    <section className="panel panel-wide">
-      <p>
-        <Link to="/admin/patients">← К списку</Link>
-      </p>
-      <h1>{fullName(patient.lastName, patient.firstName, patient.middleName)}</h1>
-      <p className="lead">
-        Статус: {patient.isActive ? 'активен' : 'неактивен'} · KeycloakId: {patient.keycloakId}
-      </p>
-
-      {error && <p className="error-banner">{error}</p>}
-
-      <form className="form-grid" onSubmit={(e) => void onSubmit(e)}>
-        <label>
-          Фамилия
-          <input
-            className="input"
-            required
-            value={form.lastName}
-            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-          />
-        </label>
-        <label>
-          Имя
-          <input
-            className="input"
-            required
-            value={form.firstName}
-            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-          />
-        </label>
-        <label>
-          Отчество
-          <input
-            className="input"
-            value={form.middleName ?? ''}
-            onChange={(e) => setForm({ ...form, middleName: e.target.value })}
-          />
-        </label>
-        <label>
-          Телефон
-          <input
-            className="input"
-            value={form.phone ?? ''}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-        </label>
-        <label>
-          Дата рождения
-          <input
-            className="input"
-            type="date"
-            value={form.dateOfBirth ?? ''}
-            onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
-          />
-        </label>
-        <div className="btn-row">
-          <button className="btn btn-primary" type="submit" disabled={busy}>
+    <Page
+      title={fullName(patient.lastName, patient.firstName, patient.middleName)}
+      description={`Статус: ${patient.isActive ? 'активен' : 'неактивен'} · KeycloakId: ${patient.keycloakId}`}
+      error={error}
+      actions={
+        <Button
+          component={RouterLink}
+          to="/admin/patients"
+          startIcon={<ArrowBackIcon />}
+        >
+          К списку
+        </Button>
+      }
+    >
+      <Stack component="form" spacing={2} onSubmit={(e) => void onSubmit(e)}>
+        <TextField
+          label="Фамилия"
+          required
+          value={form.lastName}
+          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+        />
+        <TextField
+          label="Имя"
+          required
+          value={form.firstName}
+          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+        />
+        <TextField
+          label="Отчество"
+          value={form.middleName ?? ''}
+          onChange={(e) => setForm({ ...form, middleName: e.target.value })}
+        />
+        <TextField
+          label="Телефон"
+          value={form.phone ?? ''}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        />
+        <TextField
+          label="Дата рождения"
+          type="date"
+          value={form.dateOfBirth ?? ''}
+          onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+        <Stack direction="row" spacing={1}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={busy}
+            startIcon={<SaveIcon />}
+          >
             Сохранить
-          </button>
-          <button className="btn btn-danger" type="button" disabled={busy} onClick={() => void toggleActive()}>
+          </Button>
+          <Button
+            color={patient.isActive ? 'error' : 'success'}
+            disabled={busy}
+            startIcon={patient.isActive ? <BlockIcon /> : <CheckCircleIcon />}
+            onClick={() => void toggleActive()}
+          >
             {patient.isActive ? 'Деактивировать' : 'Активировать'}
-          </button>
-        </div>
-      </form>
-    </section>
+          </Button>
+        </Stack>
+      </Stack>
+    </Page>
   )
 }

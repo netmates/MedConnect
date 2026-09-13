@@ -1,6 +1,20 @@
+import BlockIcon from '@mui/icons-material/Block'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import {
+  Button,
+  Chip,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from '@mui/material'
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link as RouterLink } from 'react-router-dom'
 import { patientsApi } from '../../../api/admin/patientsApi'
+import { Page } from '../../../components/Page'
 import { formatApiError, fullName } from '../../../lib/format'
 import type { PatientDto } from '../../../types/patient'
 
@@ -39,50 +53,64 @@ export function PatientsPage() {
   }
 
   return (
-    <section className="panel panel-wide">
-      <h1>Пациенты</h1>
-      <p className="lead">Список профилей, включая неактивных.</p>
-
-      {error && <p className="error-banner">{error}</p>}
-
-      <table className="table">
-        <thead>
-          <tr>
-            <th>ФИО</th>
-            <th>Телефон</th>
-            <th>Статус</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+    <Page
+      title="Пациенты"
+      description="Список профилей, включая неактивных."
+      error={error}
+    >
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>ФИО</TableCell>
+            <TableCell>Телефон</TableCell>
+            <TableCell>Статус</TableCell>
+            <TableCell align="right">Действия</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {items.map((patient) => (
-            <tr key={patient.id}>
-              <td>{fullName(patient.lastName, patient.firstName, patient.middleName)}</td>
-              <td>{patient.phone ?? '—'}</td>
-              <td>{patient.isActive ? 'активен' : 'неактивен'}</td>
-              <td><div className="actions">
-                <Link className="btn btn-ghost-dark" to={`/admin/patients/${patient.id}`}>
-                  Открыть
-                </Link>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  disabled={busy}
-                  onClick={() => void toggleActive(patient)}
-                >
-                  {patient.isActive ? 'Деактивировать' : 'Активировать'}
-                </button>
-                </div>
-              </td>
-            </tr>
+            <TableRow key={patient.id} hover>
+              <TableCell>
+                {fullName(patient.lastName, patient.firstName, patient.middleName)}
+              </TableCell>
+              <TableCell>{patient.phone ?? '—'}</TableCell>
+              <TableCell>
+                <Chip
+                  size="small"
+                  color={patient.isActive ? 'success' : 'default'}
+                  label={patient.isActive ? 'активен' : 'неактивен'}
+                />
+              </TableCell>
+              <TableCell align="right">
+                <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                  <Button
+                    size="small"
+                    component={RouterLink}
+                    to={`/admin/patients/${patient.id}`}
+                    startIcon={<OpenInNewIcon />}
+                  >
+                    Открыть
+                  </Button>
+                  <Button
+                    size="small"
+                    color={patient.isActive ? 'error' : 'success'}
+                    startIcon={patient.isActive ? <BlockIcon /> : <CheckCircleIcon />}
+                    disabled={busy}
+                    onClick={() => void toggleActive(patient)}
+                  >
+                    {patient.isActive ? 'Деактивировать' : 'Активировать'}
+                  </Button>
+                </Stack>
+              </TableCell>
+            </TableRow>
           ))}
           {items.length === 0 && (
-            <tr>
-              <td colSpan={4}>Пока нет пациентов</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={4}>Пока нет пациентов</TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
-    </section>
+        </TableBody>
+      </Table>
+    </Page>
   )
 }

@@ -1,5 +1,21 @@
+import AddIcon from '@mui/icons-material/Add'
+import CancelIcon from '@mui/icons-material/Cancel'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import SaveIcon from '@mui/icons-material/Save'
+import {
+  Button,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+} from '@mui/material'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { specializationsApi } from '../../../api/admin/specializationsApi'
+import { Page } from '../../../components/Page'
 import { formatApiError } from '../../../lib/format'
 import type { SpecializationDto } from '../../../types/specialization'
 
@@ -65,82 +81,97 @@ export function SpecializationsPage() {
   }
 
   return (
-    <section className="panel panel-wide">
-      <h1>Специализации</h1>
-      <p className="lead">Справочник для профилей врачей.</p>
-
-      {error && <p className="error-banner">{error}</p>}
-
-      <form className="form-row" onSubmit={(e) => void onSubmit(e)}>
-        <input
-          className="input"
+    <Page
+      title="Специализации"
+      description="Справочник для профилей врачей."
+      error={error}
+    >
+      <Stack
+        component="form"
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1.5}
+        sx={{ alignItems: { sm: 'center' } }}
+        onSubmit={(e) => void onSubmit(e)}
+      >
+        <TextField
+          label="Название"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Название"
           required
+          fullWidth
+          size="small"
         />
-        <button className="btn btn-primary" type="submit" disabled={busy}>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={busy}
+          startIcon={editingId ? <SaveIcon /> : <AddIcon />}
+        >
           {editingId ? 'Сохранить' : 'Добавить'}
-        </button>
+        </Button>
         {editingId && (
-          <button
-            className="btn btn-ghost-dark"
+          <Button
             type="button"
             disabled={busy}
+            startIcon={<CancelIcon />}
             onClick={() => {
               setEditingId(null)
               setName('')
             }}
           >
             Отмена
-          </button>
+          </Button>
         )}
-      </form>
+      </Stack>
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Название</th>
-            <th>Id</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Название</TableCell>
+            <TableCell>Id</TableCell>
+            <TableCell align="right">Действия</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {items.map((item) => (
-            <tr key={item.id}>
-              <td>{item.name}</td>
-              <td className="mono">{item.id}</td>
-              <td><div className="actions">
-                <button
-                  type="button"
-                  className="btn btn-ghost-dark"
-                  disabled={busy}
-                  onClick={() => {
-                    setEditingId(item.id)
-                    setName(item.name)
-                  }}
-                >
-                  Изменить
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  disabled={busy}
-                  onClick={() => void onDelete(item.id)}
-                >
-                  Удалить
-                </button>
-                </div>
-              </td>
-            </tr>
+            <TableRow key={item.id} hover>
+              <TableCell>{item.name}</TableCell>
+              <TableCell sx={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.85rem' }}>
+                {item.id}
+              </TableCell>
+              <TableCell align="right">
+                <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                  <Button
+                    size="small"
+                    startIcon={<EditIcon />}
+                    disabled={busy}
+                    onClick={() => {
+                      setEditingId(item.id)
+                      setName(item.name)
+                    }}
+                  >
+                    Изменить
+                  </Button>
+                  <Button
+                    size="small"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    disabled={busy}
+                    onClick={() => void onDelete(item.id)}
+                  >
+                    Удалить
+                  </Button>
+                </Stack>
+              </TableCell>
+            </TableRow>
           ))}
           {items.length === 0 && (
-            <tr>
-              <td colSpan={3}>Пока пусто</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={3}>Пока пусто</TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
-    </section>
+        </TableBody>
+      </Table>
+    </Page>
   )
 }

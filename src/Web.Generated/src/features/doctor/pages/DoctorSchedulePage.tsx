@@ -1,5 +1,22 @@
-import { useCallback, useEffect, useState, type ClipboardEvent, type FormEvent } from 'react'
+import AddIcon from '@mui/icons-material/Add'
+import CancelIcon from '@mui/icons-material/Cancel'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import SaveIcon from '@mui/icons-material/Save'
+import {
+  Button,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { slotsApi } from '../../../api/slotsApi'
+import { Page } from '../../../components/Page'
 import {
   formatApiError,
   formatDateTime,
@@ -53,10 +70,12 @@ export function DoctorSchedulePage() {
   }
 
   function onPasteLocal(
-    e: ClipboardEvent<HTMLInputElement>,
+    e: { clipboardData: DataTransfer | null; preventDefault: () => void },
     setter: (value: string) => void,
   ) {
-    const parsed = parseToLocalInput(e.clipboardData.getData('text'))
+    const text = e.clipboardData?.getData('text')
+    if (!text) return
+    const parsed = parseToLocalInput(text)
     if (!parsed) return
     e.preventDefault()
     setter(parsed)
@@ -99,101 +118,103 @@ export function DoctorSchedulePage() {
   }
 
   return (
-    <section className="panel panel-wide">
-      <h1>Расписание</h1>
-      <p className="lead">
-        Создание и правка слотов приема. Значение из «Начало» можно скопировать
-        (Ctrl+A, Ctrl+C) и вставить в «Конец» (Ctrl+V).
-      </p>
-
-      {error && <p className="error-banner">{error}</p>}
-
-      <form className="form-grid" onSubmit={(e) => void onSubmit(e)}>
-        <h2>{editingId ? 'Редактирование слота' : 'Новый слот'}</h2>
-        <label>
-          Начало
-          <input
-            className="input"
+    <Page
+      title="Расписание"
+      description="Создание и правка слотов приема. Значение из «Начало» можно скопировать (Ctrl+A, Ctrl+C) и вставить в «Конец» (Ctrl+V)."
+      error={error}
+    >
+      <Stack component="form" spacing={2} onSubmit={(e) => void onSubmit(e)}>
+        <Typography variant="h2">
+          {editingId ? 'Редактирование слота' : 'Новый слот'}
+        </Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <TextField
+            label="Начало"
             type="datetime-local"
             required
+            fullWidth
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
             onPaste={(e) => onPasteLocal(e, setStartTime)}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
-        </label>
-        <label>
-          Конец
-          <input
-            className="input"
+          <TextField
+            label="Конец"
             type="datetime-local"
             required
+            fullWidth
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
             onPaste={(e) => onPasteLocal(e, setEndTime)}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
-        </label>
-        <div className="btn-row">
-          <button className="btn btn-primary" type="submit" disabled={busy}>
+        </Stack>
+        <Stack direction="row" spacing={1}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={busy}
+            startIcon={editingId ? <SaveIcon /> : <AddIcon />}
+          >
             {editingId ? 'Сохранить' : 'Создать'}
-          </button>
+          </Button>
           {editingId && (
-            <button className="btn btn-ghost-dark" type="button" onClick={resetForm}>
+            <Button startIcon={<CancelIcon />} onClick={resetForm}>
               Отмена
-            </button>
+            </Button>
           )}
-        </div>
-      </form>
+        </Stack>
+      </Stack>
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Начало</th>
-            <th>Конец</th>
-            <th>Статус</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Начало</TableCell>
+            <TableCell>Конец</TableCell>
+            <TableCell>Статус</TableCell>
+            <TableCell align="right">Действия</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {items.map((slot) => (
-            <tr key={slot.id}>
-              <td>{formatDateTime(slot.startTime)}</td>
-              <td>{formatDateTime(slot.endTime)}</td>
-              <td>{slotStatusLabel(slot.status)}</td>
-              <td>
-                <div className="actions">
-                  {slot.status === 'Available' ? (
-                    <>
-                      <button
-                        type="button"
-                        className="btn btn-ghost-dark"
-                        disabled={busy}
-                        onClick={() => openEdit(slot)}
-                      >
-                        Изменить
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger"
-                        disabled={busy}
-                        onClick={() => void onDelete(slot.id)}
-                      >
-                        Удалить
-                      </button>
-                    </>
-                  ) : (
-                    <span className="muted">—</span>
-                  )}
-                </div>
-              </td>
-            </tr>
+            <TableRow key={slot.id} hover>
+              <TableCell>{formatDateTime(slot.startTime)}</TableCell>
+              <TableCell>{formatDateTime(slot.endTime)}</TableCell>
+              <TableCell>{slotStatusLabel(slot.status)}</TableCell>
+              <TableCell align="right">
+                {slot.status === 'Available' ? (
+                  <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                    <Button
+                      size="small"
+                      startIcon={<EditIcon />}
+                      disabled={busy}
+                      onClick={() => openEdit(slot)}
+                    >
+                      Изменить
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      disabled={busy}
+                      onClick={() => void onDelete(slot.id)}
+                    >
+                      Удалить
+                    </Button>
+                  </Stack>
+                ) : (
+                  <Typography color="text.secondary">—</Typography>
+                )}
+              </TableCell>
+            </TableRow>
           ))}
           {items.length === 0 && (
-            <tr>
-              <td colSpan={4}>Слотов пока нет</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={4}>Слотов пока нет</TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
-    </section>
+        </TableBody>
+      </Table>
+    </Page>
   )
 }

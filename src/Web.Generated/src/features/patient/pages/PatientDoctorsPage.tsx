@@ -1,9 +1,25 @@
+import EventAvailableIcon from '@mui/icons-material/EventAvailable'
+import ScheduleIcon from '@mui/icons-material/Schedule'
+import {
+  Button,
+  Link,
+  MenuItem,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link as RouterLink } from 'react-router-dom'
 import { appointmentsApi } from '../../../api/appointmentsApi'
 import { catalogDoctorsApi } from '../../../api/catalogDoctorsApi'
 import { catalogSpecializationsApi } from '../../../api/catalogSpecializationsApi'
 import { slotsApi } from '../../../api/slotsApi'
+import { Page } from '../../../components/Page'
 import {
   formatApiError,
   formatDateTime,
@@ -87,132 +103,141 @@ export function PatientDoctorsPage() {
   }
 
   return (
-    <section className="panel panel-wide">
-      <h1>Врачи и запись</h1>
-      <p className="lead">
-        Выберите специалиста и свободный слот. Перед записью нужен{' '}
-        <Link to="/patient/profile">профиль пациента</Link>.
-      </p>
+    <Page
+      title="Врачи и запись"
+      description={
+        <>
+          Выберите специалиста и свободный слот. Перед записью нужен{' '}
+          <Link component={RouterLink} to="/patient/profile">
+            профиль пациента
+          </Link>
+          .
+        </>
+      }
+      error={error}
+      ok={ok}
+    >
+      <TextField
+        select
+        label="Специализация"
+        size="small"
+        value={specId}
+        onChange={(e) => {
+          setSpecId(e.target.value)
+          setSelectedDoctor(null)
+          setSlots([])
+        }}
+        sx={{ maxWidth: 320 }}
+      >
+        <MenuItem value="">Все</MenuItem>
+        {specs.map((s) => (
+          <MenuItem key={s.id} value={s.id}>
+            {s.name}
+          </MenuItem>
+        ))}
+      </TextField>
 
-      {error && <p className="error-banner">{error}</p>}
-      {ok && <p className="ok">{ok}</p>}
-
-      <div className="form-row">
-        <label>
-          Специализация
-          <select
-            className="input"
-            value={specId}
-            onChange={(e) => {
-              setSpecId(e.target.value)
-              setSelectedDoctor(null)
-              setSlots([])
-            }}
-          >
-            <option value="">Все</option>
-            {specs.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <table className="table">
-        <thead>
-          <tr>
-            <th>ФИО</th>
-            <th>Стаж</th>
-            <th>Специализации</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>ФИО</TableCell>
+            <TableCell>Стаж</TableCell>
+            <TableCell>Специализации</TableCell>
+            <TableCell align="right">Действия</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {doctors.map((doctor) => (
-            <tr key={doctor.id}>
-              <td>{fullName(doctor.lastName, doctor.firstName, doctor.middleName)}</td>
-              <td>{doctor.experienceYears}</td>
-              <td>{doctor.specializations.join(', ') || '—'}</td>
-              <td><div className="actions">
-                <button
-                  type="button"
-                  className="btn btn-ghost-dark"
+            <TableRow key={doctor.id} hover>
+              <TableCell>
+                {fullName(doctor.lastName, doctor.firstName, doctor.middleName)}
+              </TableCell>
+              <TableCell>{doctor.experienceYears}</TableCell>
+              <TableCell>{doctor.specializations.join(', ') || '—'}</TableCell>
+              <TableCell align="right">
+                <Button
+                  size="small"
+                  startIcon={<ScheduleIcon />}
                   onClick={() => void openDoctor(doctor)}
                 >
                   Слоты
-                </button>
-                </div>
-              </td>
-            </tr>
+                </Button>
+              </TableCell>
+            </TableRow>
           ))}
           {doctors.length === 0 && (
-            <tr>
-              <td colSpan={4}>Нет активных врачей</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={4}>Нет активных врачей</TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
       {selectedDoctor && (
-        <div className="form-grid">
-          <h2>
-            Слоты: {fullName(selectedDoctor.lastName, selectedDoctor.firstName, selectedDoctor.middleName)}
-          </h2>
-          <p>{selectedDoctor.description}</p>
-          <label>
-            Дата
-            <input
-              className="input"
+        <Stack spacing={2}>
+          <Typography variant="h2">
+            Слоты:{' '}
+            {fullName(
+              selectedDoctor.lastName,
+              selectedDoctor.firstName,
+              selectedDoctor.middleName,
+            )}
+          </Typography>
+          <Typography color="text.secondary">{selectedDoctor.description}</Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              label="Дата"
               type="date"
+              size="small"
               value={date}
               onChange={(e) => void onDateChange(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
-          </label>
-          <label>
-            Причина визита (необязательно)
-            <input
-              className="input"
+            <TextField
+              label="Причина визита (необязательно)"
+              size="small"
+              fullWidth
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
-          </label>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Время</th>
-                <th>Статус</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
+          </Stack>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Время</TableCell>
+                <TableCell>Статус</TableCell>
+                <TableCell align="right">Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {slots.map((slot) => (
-                <tr key={slot.id}>
-                  <td>
+                <TableRow key={slot.id} hover>
+                  <TableCell>
                     {formatDateTime(slot.startTime)} — {formatDateTime(slot.endTime)}
-                  </td>
-                  <td>{slotStatusLabel(slot.status)}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
+                  </TableCell>
+                  <TableCell>{slotStatusLabel(slot.status)}</TableCell>
+                  <TableCell align="right">
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={<EventAvailableIcon />}
                       disabled={busy || slot.status !== 'Available'}
                       onClick={(e) => void book(slot.id, e)}
                     >
                       Записаться
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
               {slots.length === 0 && (
-                <tr>
-                  <td colSpan={3}>На этот день свободных слотов нет</td>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan={3}>На этот день свободных слотов нет</TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Stack>
       )}
-    </section>
+    </Page>
   )
 }

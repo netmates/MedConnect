@@ -1,6 +1,9 @@
+import SaveIcon from '@mui/icons-material/Save'
+import { Button, Stack, TextField, Typography } from '@mui/material'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { ApiError } from '../../../api/http'
 import { patientProfileApi } from '../../../api/patientProfileApi'
+import { Page } from '../../../components/Page'
 import { formatApiError } from '../../../lib/format'
 import type { PatientDto, UpdatePatientDto } from '../../../types/patient'
 
@@ -86,73 +89,62 @@ export function PatientProfilePage() {
   }
 
   return (
-    <section className="panel panel-wide">
-      <h1>Профиль</h1>
-      <p className="lead">
-        {needsRegister
+    <Page
+      title="Профиль"
+      description={
+        needsRegister
           ? 'Профиля еще нет — заполните данные для регистрации в системе.'
-          : 'Редактирование данных пациента.'}
-      </p>
-
-      {error && <p className="error-banner">{error}</p>}
-      {ok && <p className="ok">{ok}</p>}
-
-      <form className="form-grid" onSubmit={(e) => void onSubmit(e)}>
-        <label>
-          Фамилия
-          <input
-            className="input"
-            required
-            value={form.lastName}
-            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-          />
-        </label>
-        <label>
-          Имя
-          <input
-            className="input"
-            required
-            value={form.firstName}
-            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-          />
-        </label>
-        <label>
-          Отчество
-          <input
-            className="input"
-            value={form.middleName ?? ''}
-            onChange={(e) => setForm({ ...form, middleName: e.target.value })}
-          />
-        </label>
-        <label>
-          Телефон
-          <input
-            className="input"
-            value={form.phone ?? ''}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-        </label>
-        <label>
-          Дата рождения
-          <input
-            className="input"
-            type="date"
-            value={form.dateOfBirth ?? ''}
-            onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
-          />
-        </label>
-        <div className="btn-row">
-          <button className="btn btn-primary" type="submit" disabled={busy}>
-            {needsRegister ? 'Зарегистрировать профиль' : 'Сохранить'}
-          </button>
-        </div>
-      </form>
+          : 'Редактирование данных пациента.'
+      }
+      error={error}
+      ok={ok}
+    >
+      <Stack component="form" spacing={2} onSubmit={(e) => void onSubmit(e)}>
+        <TextField
+          label="Фамилия"
+          required
+          value={form.lastName}
+          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+        />
+        <TextField
+          label="Имя"
+          required
+          value={form.firstName}
+          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+        />
+        <TextField
+          label="Отчество"
+          value={form.middleName ?? ''}
+          onChange={(e) => setForm({ ...form, middleName: e.target.value })}
+        />
+        <TextField
+          label="Телефон"
+          value={form.phone ?? ''}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        />
+        <TextField
+          label="Дата рождения"
+          type="date"
+          value={form.dateOfBirth ?? ''}
+          onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={busy}
+          startIcon={<SaveIcon />}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          {needsRegister ? 'Зарегистрировать профиль' : 'Сохранить'}
+        </Button>
+      </Stack>
 
       {profile && (
-        <p className="lead">
+        <Typography color="text.secondary">
           Статус: {profile.isActive ? 'активен' : 'неактивен'} · id: {profile.id}
-        </p>
+        </Typography>
       )}
-    </section>
+    </Page>
   )
 }

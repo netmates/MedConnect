@@ -1,6 +1,21 @@
+import CancelIcon from '@mui/icons-material/Cancel'
+import ChatIcon from '@mui/icons-material/Chat'
+import {
+  Button,
+  MenuItem,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material'
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link as RouterLink } from 'react-router-dom'
 import { appointmentsApi } from '../../../api/appointmentsApi'
+import { Page } from '../../../components/Page'
 import {
   appointmentStatusLabel,
   formatApiError,
@@ -42,77 +57,79 @@ export function PatientAppointmentsPage() {
   }
 
   return (
-    <section className="panel panel-wide">
-      <h1>Мои записи</h1>
-      <p className="lead">Записи к врачам и переход в чат по приему.</p>
+    <Page
+      title="Мои записи"
+      description="Записи к врачам и переход в чат по приему."
+      error={error}
+    >
+      <TextField
+        select
+        label="Статус записи"
+        size="small"
+        value={status}
+        onChange={(e) => setStatus(e.target.value)}
+        sx={{ maxWidth: 280 }}
+      >
+        <MenuItem value="">Все</MenuItem>
+        <MenuItem value="Created">Создана</MenuItem>
+        <MenuItem value="Confirmed">Подтверждена</MenuItem>
+        <MenuItem value="Cancelled">Отменена</MenuItem>
+        <MenuItem value="Completed">Завершена</MenuItem>
+      </TextField>
 
-      {error && <p className="error-banner">{error}</p>}
-
-      <div className="form-row">
-        <label>
-          Статус записи
-          <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Все</option>
-            <option value="Created">Создана</option>
-            <option value="Confirmed">Подтверждена</option>
-            <option value="Cancelled">Отменена</option>
-            <option value="Completed">Завершена</option>
-          </select>
-        </label>
-      </div>
-
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Врач</th>
-            <th>Время</th>
-            <th>Статус</th>
-            <th>Причина</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Врач</TableCell>
+            <TableCell>Время</TableCell>
+            <TableCell>Статус</TableCell>
+            <TableCell>Причина</TableCell>
+            <TableCell align="right">Действия</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {items.map((item) => (
-            <tr key={item.id}>
-              <td>{item.doctorFullName}</td>
-              <td>
+            <TableRow key={item.id} hover>
+              <TableCell>{item.doctorFullName}</TableCell>
+              <TableCell>
                 {formatDateTime(item.startTime)} — {formatDateTime(item.endTime)}
-              </td>
-              <td>{appointmentStatusLabel(item.status)}</td>
-              <td>{item.reason ?? '—'}</td>
-              <td>
-                <div className="actions">
-                  {item.status !== 'Cancelled' && item.status !== 'Completed' ? (
-                    <>
-                      <Link
-                        className="btn btn-ghost-dark"
-                        to={`/patient/appointments/${item.id}/chat`}
-                      >
-                        Чат
-                      </Link>
-                      <button
-                        type="button"
-                        className="btn btn-danger"
-                        disabled={busy}
-                        onClick={() => void cancel(item.id)}
-                      >
-                        Отменить
-                      </button>
-                    </>
-                  ) : (
-                    <span className="muted">—</span>
-                  )}
-                </div>
-              </td>
-            </tr>
+              </TableCell>
+              <TableCell>{appointmentStatusLabel(item.status)}</TableCell>
+              <TableCell>{item.reason ?? '—'}</TableCell>
+              <TableCell align="right">
+                {item.status !== 'Cancelled' && item.status !== 'Completed' ? (
+                  <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                    <Button
+                      size="small"
+                      component={RouterLink}
+                      to={`/patient/appointments/${item.id}/chat`}
+                      startIcon={<ChatIcon />}
+                    >
+                      Чат
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      startIcon={<CancelIcon />}
+                      disabled={busy}
+                      onClick={() => void cancel(item.id)}
+                    >
+                      Отменить
+                    </Button>
+                  </Stack>
+                ) : (
+                  <Typography color="text.secondary">—</Typography>
+                )}
+              </TableCell>
+            </TableRow>
           ))}
           {items.length === 0 && (
-            <tr>
-              <td colSpan={5}>Записей пока нет</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={5}>Записей пока нет</TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
-    </section>
+        </TableBody>
+      </Table>
+    </Page>
   )
 }

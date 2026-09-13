@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { Box, CircularProgress, Typography } from '@mui/material'
 import { useAuth } from '../auth/AuthContext'
 import {
   RequireAdmin,
@@ -27,11 +28,22 @@ import { AccessDeniedPage } from '../pages/AccessDeniedPage'
 import { AuthCallbackPage } from '../pages/AuthCallbackPage'
 import { LoginPage } from '../pages/LoginPage'
 
+function SessionCheck() {
+  return (
+    <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '40vh' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <CircularProgress size={22} />
+        <Typography>Проверка сессии…</Typography>
+      </Box>
+    </Box>
+  )
+}
+
 function LoginRoute() {
   const { user, isLoading, roles } = useAuth()
 
   if (isLoading) {
-    return <p className="page-status">Проверка сессии…</p>
+    return <SessionCheck />
   }
 
   if (user) {
@@ -45,7 +57,7 @@ function RootRedirect() {
   const { roles, isLoading } = useAuth()
 
   if (isLoading) {
-    return <p className="page-status">Проверка сессии…</p>
+    return <SessionCheck />
   }
 
   return <Navigate to={homePathForRoles(roles)} replace />

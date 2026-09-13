@@ -1,6 +1,23 @@
+import CancelIcon from '@mui/icons-material/Cancel'
+import ChatIcon from '@mui/icons-material/Chat'
+import CheckIcon from '@mui/icons-material/Check'
+import DoneAllIcon from '@mui/icons-material/DoneAll'
+import {
+  Button,
+  MenuItem,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material'
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link as RouterLink } from 'react-router-dom'
 import { appointmentsApi } from '../../../api/appointmentsApi'
+import { Page } from '../../../components/Page'
 import {
   appointmentStatusLabel,
   formatApiError,
@@ -41,77 +58,87 @@ export function DoctorAppointmentsPage() {
   }
 
   return (
-    <section className="panel panel-wide">
-      <h1>Приемы</h1>
-      <p className="lead">Подтверждение, завершение, отмена и чат с пациентом.</p>
+    <Page
+      title="Приемы"
+      description="Подтверждение, завершение, отмена и чат с пациентом."
+      error={error}
+    >
+      <TextField
+        select
+        label="Статус записи"
+        size="small"
+        value={status}
+        onChange={(e) => setStatus(e.target.value)}
+        sx={{ maxWidth: 280 }}
+      >
+        <MenuItem value="">Все</MenuItem>
+        <MenuItem value="Created">Создана</MenuItem>
+        <MenuItem value="Confirmed">Подтверждена</MenuItem>
+        <MenuItem value="Cancelled">Отменена</MenuItem>
+        <MenuItem value="Completed">Завершена</MenuItem>
+      </TextField>
 
-      {error && <p className="error-banner">{error}</p>}
-
-      <div className="form-row">
-        <label>
-          Статус записи
-          <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Все</option>
-            <option value="Created">Создана</option>
-            <option value="Confirmed">Подтверждена</option>
-            <option value="Cancelled">Отменена</option>
-            <option value="Completed">Завершена</option>
-          </select>
-        </label>
-      </div>
-
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Пациент</th>
-            <th>Время</th>
-            <th>Статус</th>
-            <th>Причина</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Пациент</TableCell>
+            <TableCell>Время</TableCell>
+            <TableCell>Статус</TableCell>
+            <TableCell>Причина</TableCell>
+            <TableCell align="right">Действия</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {items.map((item) => (
-            <tr key={item.id}>
-              <td>{item.patientFullName}</td>
-              <td>
+            <TableRow key={item.id} hover>
+              <TableCell>{item.patientFullName}</TableCell>
+              <TableCell>
                 {formatDateTime(item.startTime)} — {formatDateTime(item.endTime)}
-              </td>
-              <td>{appointmentStatusLabel(item.status)}</td>
-              <td>{item.reason ?? '—'}</td>
-              <td>
-                <div className="actions">
+              </TableCell>
+              <TableCell>{appointmentStatusLabel(item.status)}</TableCell>
+              <TableCell>{item.reason ?? '—'}</TableCell>
+              <TableCell align="right">
                 {item.status !== 'Cancelled' && item.status !== 'Completed' ? (
-                  <>
-                    <Link
-                      className="btn btn-ghost-dark"
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    useFlexGap
+                    sx={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}
+                  >
+                    <Button
+                      size="small"
+                      component={RouterLink}
                       to={`/doctor/appointments/${item.id}/chat`}
+                      startIcon={<ChatIcon />}
                     >
                       Чат
-                    </Link>
+                    </Button>
                     {item.status === 'Created' && (
-                      <button
-                        type="button"
-                        className="btn btn-primary"
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<CheckIcon />}
                         disabled={busy}
                         onClick={() => void run(() => appointmentsApi.confirm(item.id))}
                       >
                         Подтвердить
-                      </button>
+                      </Button>
                     )}
                     {item.status === 'Confirmed' && (
-                      <button
-                        type="button"
-                        className="btn btn-primary"
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<DoneAllIcon />}
                         disabled={busy}
                         onClick={() => void run(() => appointmentsApi.complete(item.id))}
                       >
                         Завершить
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      type="button"
-                      className="btn btn-danger"
+                    <Button
+                      size="small"
+                      color="error"
+                      startIcon={<CancelIcon />}
                       disabled={busy}
                       onClick={() => {
                         if (!confirm('Отменить прием?')) return
@@ -119,22 +146,21 @@ export function DoctorAppointmentsPage() {
                       }}
                     >
                       Отменить
-                    </button>
-                  </>
+                    </Button>
+                  </Stack>
                 ) : (
-                  <span className="muted">—</span>
+                  <Typography color="text.secondary">—</Typography>
                 )}
-                </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
           {items.length === 0 && (
-            <tr>
-              <td colSpan={5}>Приемов пока нет</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={5}>Приемов пока нет</TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
-    </section>
+        </TableBody>
+      </Table>
+    </Page>
   )
 }

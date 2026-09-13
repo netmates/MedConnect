@@ -1,5 +1,9 @@
-import { Link } from 'react-router-dom'
+import AssignmentIcon from '@mui/icons-material/Assignment'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
+import { List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material'
+import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthContext'
+import { Page } from '../../../components/Page'
 
 export function DoctorHomePage() {
   const { user, roles } = useAuth()
@@ -9,20 +13,28 @@ export function DoctorHomePage() {
     'пользователь'
 
   return (
-    <section className="panel">
-      <h1>Кабинет врача</h1>
-      <p className="lead">
-        Здравствуйте, <strong>{name}</strong>.
-      </p>
-      <p>Роли: {roles.join(', ') || '—'}</p>
-      <ul className="home-links">
-        <li>
-          <Link to="/doctor/schedule">Расписание слотов</Link>
-        </li>
-        <li>
-          <Link to="/doctor/appointments">Приемы</Link>
-        </li>
-      </ul>
-    </section>
+    <Page
+      title="Кабинет врача"
+      description={
+        <>
+          Здравствуйте, <strong>{name}</strong>. Роли: {roles.join(', ') || '—'}.
+        </>
+      }
+    >
+      <List disablePadding>
+        <ListItemButton component={RouterLink} to="/doctor/schedule">
+          <ListItemIcon>
+            <CalendarMonthIcon />
+          </ListItemIcon>
+          <ListItemText primary="Расписание слотов" />
+        </ListItemButton>
+        <ListItemButton component={RouterLink} to="/doctor/appointments">
+          <ListItemIcon>
+            <AssignmentIcon />
+          </ListItemIcon>
+          <ListItemText primary="Приемы" />
+        </ListItemButton>
+      </List>
+    </Page>
   )
 }
