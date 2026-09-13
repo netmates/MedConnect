@@ -17,15 +17,16 @@ public class ScheduleSlotRepository(AppointmentDbContext context) : Repository<S
     public async Task<IReadOnlyList<ScheduleSlot>> GetAvailableByDoctorIdAsync(Guid doctorId, DateTime date, CancellationToken ct = default)
     {
         // Диапазон вместо StartTime.Date == date.Date
-        // Диапазон >= / < транслируется в простое сравнение и задействует индекс по StartTime
-        var startOfDay = date.Date;
+        // Диапазон >= / < транслируется в простое сравнение и задействует индекс по StartTime.
+        var startOfDay = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc);
         var endOfDay = startOfDay.AddDays(1);
+        var now = DateTime.UtcNow;
         return await _context.ScheduleSlots
             .Where(s => s.DoctorId == doctorId
                     && s.Status == SlotStatus.Available
                     && s.StartTime >= startOfDay
                     && s.StartTime < endOfDay
-                    && s.StartTime > DateTime.UtcNow)
+                    && s.StartTime > now)
             .OrderBy(s => s.StartTime)
             .ToListAsync(ct);
     }

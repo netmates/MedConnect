@@ -11,11 +11,11 @@ services:
       - postgres_data:/var/lib/postgresql
       
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0
+    image: quay.io/keycloak/keycloak:26.7.3
     command: start-dev --import-realm
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
     volumes:
       - keycloak_data:/opt/keycloak/data
       - ./deploy/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
@@ -23,7 +23,7 @@ services:
       - "8080:8080"
   
   seq:
-    image: datalust/seq:latest
+    image: datalust/seq:2026.1
     environment:
       ACCEPT_EULA: "Y"
       SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
@@ -33,7 +33,7 @@ services:
       - seq_data:/data
   
   mongo:
-    image: mongo:7
+    image: mongo:8.0
     ports:
       - "27017:27017"
     volumes:

@@ -1,10 +1,18 @@
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 
 namespace CommunicationService.Common.Persistence;
 
 public static class MongoExtensions
 {
+    static MongoExtensions()
+    {
+        BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
+    }
+
     public static IServiceCollection AddMongo(
         this IServiceCollection services,
         IConfiguration configuration)

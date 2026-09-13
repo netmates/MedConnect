@@ -12,12 +12,12 @@ public static class GrpcExtensions
         services.Configure<AppointmentAccessOptions>(configuration.GetSection(AppointmentAccessOptions.SectionName));
 
         services.AddGrpcClient<AppointmentAccess.AppointmentAccessClient>((sp, options) =>
-        {
-            var address = sp.GetRequiredService<IOptions<AppointmentAccessOptions>>().Value.Address;
-            if (string.IsNullOrWhiteSpace(address))
-                throw new InvalidOperationException("AppointmentGrpc:Address не задан.");
-            options.Address = new Uri(address);
-        });
+            {
+                var address = sp.GetRequiredService<IOptions<AppointmentAccessOptions>>().Value.Address;
+                if (string.IsNullOrWhiteSpace(address))
+                    throw new InvalidOperationException($"{AppointmentAccessOptions.SectionName}:Address не задан.");
+                options.Address = new Uri(address);
+            });
 
         services.AddScoped<AppointmentAccessClient>();
         return services;
