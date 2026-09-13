@@ -2,6 +2,7 @@ using AppointmentService.Application.Auth;
 using AppointmentService.Application.Common;
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
+using AppointmentService.Application.Helpers;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
@@ -141,8 +142,8 @@ public class AppointmentApplicationService(
                     Reason = created.Reason,
                     PatientKeycloakId = created.Patient.KeycloakId,
                     DoctorKeycloakId = created.Doctor.KeycloakId,
-                    PatientName = FormatFullName(created.Patient.LastName, created.Patient.FirstName, created.Patient.MiddleName),
-                    DoctorName = FormatFullName(created.Doctor.LastName, created.Doctor.FirstName, created.Doctor.MiddleName)
+                    PatientName = FullNameFormatter.Format(created.Patient.LastName, created.Patient.FirstName, created.Patient.MiddleName),
+                    DoctorName = FullNameFormatter.Format(created.Doctor.LastName, created.Doctor.FirstName, created.Doctor.MiddleName)
                 },
                 correlationId,
                 ct);
@@ -307,8 +308,8 @@ public class AppointmentApplicationService(
             appointment.DoctorId,
             appointment.Patient.KeycloakId,
             appointment.Doctor.KeycloakId,
-            FormatFullName(appointment.Patient.LastName, appointment.Patient.FirstName, appointment.Patient.MiddleName),
-            FormatFullName(appointment.Doctor.LastName, appointment.Doctor.FirstName, appointment.Doctor.MiddleName));
+            FullNameFormatter.Format(appointment.Patient.LastName, appointment.Patient.FirstName, appointment.Patient.MiddleName),
+            FullNameFormatter.Format(appointment.Doctor.LastName, appointment.Doctor.FirstName, appointment.Doctor.MiddleName));
     }
 
     private static AppointmentDto MapToDto(Appointment a) => new()
@@ -321,14 +322,9 @@ public class AppointmentApplicationService(
         Status = a.Status.ToString(),
         CreatedAt = a.CreatedAt,
         UpdatedAt = a.UpdatedAt,
-        DoctorFullName = FormatFullName(a.Doctor.LastName, a.Doctor.FirstName, a.Doctor.MiddleName),
-        PatientFullName = FormatFullName(a.Patient.LastName, a.Patient.FirstName, a.Patient.MiddleName),
+        DoctorFullName = FullNameFormatter.Format(a.Doctor.LastName, a.Doctor.FirstName, a.Doctor.MiddleName),
+        PatientFullName = FullNameFormatter.Format(a.Patient.LastName, a.Patient.FirstName, a.Patient.MiddleName),
         StartTime = a.Slot.StartTime,
         EndTime = a.Slot.EndTime
     };
-
-    private static string FormatFullName(string lastName, string firstName, string? middleName)
-        => string.IsNullOrWhiteSpace(middleName)
-            ? $"{lastName} {firstName}".Trim()
-            : $"{lastName} {firstName} {middleName}".Trim();
 }

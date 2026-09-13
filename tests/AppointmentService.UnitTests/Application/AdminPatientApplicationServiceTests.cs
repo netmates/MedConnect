@@ -8,6 +8,7 @@ using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
@@ -21,6 +22,8 @@ public class AdminPatientApplicationServiceTests
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IKeycloakAdminService> _keycloak = new();
     private readonly Mock<IValidator<UpdatePatientDto>> _updateValidator = new();
+    private readonly Mock<IIntegrationEventPublisher> _publisher = new();
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessor = new();
 
     private readonly AdminPatientApplicationService _sut;
 
@@ -40,7 +43,9 @@ public class AdminPatientApplicationServiceTests
             _uow.Object,
             _keycloak.Object,
             _updateValidator.Object,
-            NullLogger<AdminPatientApplicationService>.Instance);
+            NullLogger<AdminPatientApplicationService>.Instance,
+            _publisher.Object,
+            _httpContextAccessor.Object);
     }
 
     private static Patient CreatePatient(string keycloakId = "patient-kc")

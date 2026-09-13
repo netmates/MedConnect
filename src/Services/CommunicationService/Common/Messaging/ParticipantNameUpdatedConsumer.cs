@@ -9,11 +9,11 @@ using Serilog.Context;
 
 namespace CommunicationService.Common.Messaging;
 
-public sealed class AppointmentCreatedConsumer(
+public sealed class ParticipantNameUpdatedConsumer(
     RabbitMqConnection connection,
     IOptions<RabbitMqOptions> options,
     IServiceScopeFactory scopeFactory,
-    ILogger<AppointmentCreatedConsumer> logger) : BackgroundService
+    ILogger<ParticipantNameUpdatedConsumer> logger) : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -41,7 +41,7 @@ public sealed class AppointmentCreatedConsumer(
             cancellationToken: stoppingToken);
 
         await _channel.QueueDeclareAsync(
-            queue: _options.AppointmentCreatedQueue,
+            queue: _options.ParticipantNameUpdatedQueue,
             durable: true,
             exclusive: false,
             autoDelete: false,
@@ -49,9 +49,9 @@ public sealed class AppointmentCreatedConsumer(
             cancellationToken: stoppingToken);
 
         await _channel.QueueBindAsync(
-            queue: _options.AppointmentCreatedQueue,
+            queue: _options.ParticipantNameUpdatedQueue,
             exchange: _options.ExchangeName,
-            routingKey: RoutingKeys.AppointmentCreated,
+            routingKey: RoutingKeys.ParticipantNameUpdated,
             arguments: null,
             cancellationToken: stoppingToken);
 
@@ -65,15 +65,15 @@ public sealed class AppointmentCreatedConsumer(
         consumer.ReceivedAsync += OnReceivedAsync;
 
         await _channel.BasicConsumeAsync(
-            queue: _options.AppointmentCreatedQueue,
+            queue: _options.ParticipantNameUpdatedQueue,
             autoAck: false,
             consumer: consumer,
             cancellationToken: stoppingToken);
 
         logger.LogInformation(
-            "AppointmentCreated consumer started. Queue={Queue}, RoutingKey={RoutingKey}",
-            _options.AppointmentCreatedQueue,
-            RoutingKeys.AppointmentCreated);
+            "ParticipantNameUpdated consumer started. Queue={Queue}, RoutingKey={RoutingKey}",
+            _options.ParticipantNameUpdatedQueue,
+            RoutingKeys.ParticipantNameUpdated);
 
         try
         {
@@ -90,31 +90,31 @@ public sealed class AppointmentCreatedConsumer(
         var channel = _channel
             ?? throw new InvalidOperationException("RabbitMQ channel is not initialized.");
 
-        IntegrationEventEnvelope<AppointmentCreatedPayload>? envelope;
+        IntegrationEventEnvelope<ParticipantNameUpdatedPayload>? envelope;
         try
         {
             var json = Encoding.UTF8.GetString(ea.Body.Span);
-            envelope = JsonSerializer.Deserialize<IntegrationEventEnvelope<AppointmentCreatedPayload>>(
+            envelope = JsonSerializer.Deserialize<IntegrationEventEnvelope<ParticipantNameUpdatedPayload>>(
                 json, JsonOptions);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to deserialize AppointmentCreated. DeliveryTag={DeliveryTag}", ea.DeliveryTag);
+            logger.LogError(ex, "Failed to deserialize ParticipantNameUpdated. DeliveryTag={DeliveryTag}", ea.DeliveryTag);
             await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
             return;
         }
 
         if (envelope?.Payload is null)
         {
-            logger.LogError("AppointmentCreated envelope/payload is null. DeliveryTag={DeliveryTag}", ea.DeliveryTag);
+            logger.LogError("ParticipantNameUpdated envelope/payload is null. DeliveryTag={DeliveryTag}", ea.DeliveryTag);
             await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
             return;
         }
 
-        if (!string.Equals(envelope.EventType, EventTypes.AppointmentCreated, StringComparison.Ordinal))
+        if (!string.Equals(envelope.EventType, EventTypes.ParticipantNameUpdated, StringComparison.Ordinal))
         {
             logger.LogWarning(
-                "Unexpected event type on appointment-created queue. EventType={EventType}, EventId={EventId}",
+                "Unexpected event type on participant-name-updated queue. EventType={EventType}, EventId={EventId}",
                 envelope.EventType, envelope.EventId);
             await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
             return;
@@ -128,29 +128,44 @@ public sealed class AppointmentCreatedConsumer(
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var ensureChat = scope.ServiceProvider.GetRequiredService<EnsureChatService>();
+                var updater = scope.ServiceProvider.GetRequiredService<UpdateChatParticipantNamesService>();
 
-                var (_, created) = await ensureChat.EnsureAsync(
-                    payload.AppointmentId,
-                    payload.PatientId,
-                    payload.DoctorId,
-                    payload.PatientKeycloakId,
-                    payload.DoctorKeycloakId,
-                    payload.PatientName,
-                    payload.DoctorName,
-                    _stoppingToken);
+                long modified;
+                if (string.Equals(payload.Role, ParticipantRoles.Patient, StringComparison.Ordinal))
+                {
+                    modified = await updater.UpdatePatientNameAsync(
+                        payload.ParticipantId,
+                        payload.FullName,
+                        _stoppingToken);
+                }
+                else if (string.Equals(payload.Role, ParticipantRoles.Doctor, StringComparison.Ordinal))
+                {
+                    modified = await updater.UpdateDoctorNameAsync(
+                        payload.ParticipantId,
+                        payload.FullName,
+                        _stoppingToken);
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "Unknown participant role. Role={Role}, ParticipantId={ParticipantId}, EventId={EventId}",
+                        payload.Role, payload.ParticipantId, envelope.EventId);
+                    await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+                    return;
+                }
 
                 await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
 
                 logger.LogInformation(
-                    "AppointmentCreated processed. AppointmentId={AppointmentId}, ChatCreated={ChatCreated}, EventId={EventId}",
-                    payload.AppointmentId, created, envelope.EventId);
+                    "ParticipantNameUpdated processed. Role={Role}, ParticipantId={ParticipantId}, ModifiedChats={ModifiedChats}, EventId={EventId}",
+                    payload.Role, payload.ParticipantId, modified, envelope.EventId);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex,
-                    "Failed to process AppointmentCreated. AppointmentId={AppointmentId}, EventId={EventId}",
-                    payload.AppointmentId, envelope.EventId);
+                logger.LogError(
+                    ex,
+                    "Failed to process ParticipantNameUpdated. Role={Role}, ParticipantId={ParticipantId}, EventId={EventId}",
+                    payload.Role, payload.ParticipantId, envelope.EventId);
 
                 await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true);
             }

@@ -9,6 +9,7 @@ using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Reflection;
@@ -26,6 +27,8 @@ public class DoctorApplicationServiceTests
     private readonly Mock<IValidator<CreateDoctorDto>> _createValidator = new();
     private readonly Mock<IValidator<UpdateDoctorDto>> _updateValidator = new();
     private readonly Mock<IValidator<ResetPasswordDto>> _resetPasswordValidator = new();
+    private readonly Mock<IIntegrationEventPublisher> _publisher = new();
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessor = new();
 
     private readonly DoctorApplicationService _sut;
 
@@ -54,7 +57,9 @@ public class DoctorApplicationServiceTests
             _createValidator.Object,
             _updateValidator.Object,
             _resetPasswordValidator.Object,
-            NullLogger<DoctorApplicationService>.Instance);
+            NullLogger<DoctorApplicationService>.Instance,
+            _publisher.Object,
+            _httpContextAccessor.Object);
     }
 
     private static Doctor CreateDoctor(string keycloakId = "doctor-kc")

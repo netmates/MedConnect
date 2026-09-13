@@ -1,4 +1,5 @@
 using AppointmentService.Application.Auth;
+using AppointmentService.Application.Common;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;
@@ -8,6 +9,7 @@ using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
+using MedConnect.Shared.Events;
 
 namespace AppointmentService.Application.Services;
 
@@ -21,7 +23,9 @@ public class DoctorApplicationService(
     IValidator<CreateDoctorDto> createDoctorValidator,
     IValidator<UpdateDoctorDto> updateDoctorValidator,
     IValidator<ResetPasswordDto> resetPasswordValidator,
-    ILogger<DoctorApplicationService> logger) : IDoctorApplicationService
+    ILogger<DoctorApplicationService> logger,
+    IIntegrationEventPublisher publisher,
+    IHttpContextAccessor httpContextAccessor) : IDoctorApplicationService
 {
     public async Task<IReadOnlyList<DoctorDto>> GetAllAsync(Guid? specializationId, CancellationToken ct)
     {
@@ -125,6 +129,11 @@ public class DoctorApplicationService(
         var keycloakId = doctor.KeycloakId;
         var oldFirstName = doctor.FirstName;
         var oldLastName = doctor.LastName;
+        var oldMiddleName = doctor.MiddleName;
+        var oldFullName = FullNameFormatter.Format(oldLastName, oldFirstName, oldMiddleName);
+        var newFullName = FullNameFormatter.Format(dto.LastName, dto.FirstName, dto.MiddleName);
+        var fullNameChanged = !string.Equals(oldFullName, newFullName, StringComparison.Ordinal);
+
         var nameChanged = await KeycloakNameSync.ApplyIfChangedAsync(
             keycloakAdminService,
             keycloakId,
@@ -178,6 +187,32 @@ public class DoctorApplicationService(
             var updateDoctor = await doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
 
             logger.LogInformation("Doctor updated: {DoctorId}", id);
+
+            if (fullNameChanged)
+            {
+                var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
+                try
+                {
+                    await publisher.PublishAsync(
+                        EventTypes.ParticipantNameUpdated,
+                        RoutingKeys.ParticipantNameUpdated,
+                        new ParticipantNameUpdatedPayload
+                        {
+                            ParticipantId = doctor.Id,
+                            Role = ParticipantRoles.Doctor,
+                            FullName = newFullName
+                        },
+                        correlationId,
+                        ct);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "Failed to publish ParticipantNameUpdated. DoctorId={DoctorId}",
+                        doctor.Id);
+                }
+            }
 
             return MapToDto(updateDoctor!);
         }

@@ -25,5 +25,8 @@ public sealed class RabbitMqOptions
     public string AppointmentCreatedQueue { get; set; } = "communication.appointment-created.q";
 
     [Required]
+    public string ParticipantNameUpdatedQueue { get; set; } = "communication.participant-name-updated.q";
+
+    [Required]
     public string ClientProvidedName { get; set; } = "CommunicationService-consumer";
 }

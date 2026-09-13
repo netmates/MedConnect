@@ -14,6 +14,7 @@ public static class MessagingExtensions
 
         services.AddSingleton<RabbitMqConnection>();
         services.AddHostedService<AppointmentCreatedConsumer>();
+        services.AddHostedService<ParticipantNameUpdatedConsumer>();
 
         return services;
     }
