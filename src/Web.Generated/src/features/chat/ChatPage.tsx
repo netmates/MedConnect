@@ -1,4 +1,3 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import SendIcon from '@mui/icons-material/Send'
 import {
   Box,
@@ -101,7 +100,7 @@ export function ChatPage({ backTo, backLabel }: ChatPageProps) {
       }
       error={error}
       actions={
-        <Button component={RouterLink} to={backTo} startIcon={<ArrowBackIcon />}>
+        <Button component={RouterLink} to={backTo}>
           {backLabel}
         </Button>
       }
