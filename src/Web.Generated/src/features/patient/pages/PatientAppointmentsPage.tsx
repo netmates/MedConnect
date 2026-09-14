@@ -23,16 +23,22 @@ import {
 } from '../../../lib/format'
 import type { AppointmentDto } from '../../../types/appointment'
 
+const statusAll = 'all'
+
 export function PatientAppointmentsPage() {
   const [items, setItems] = useState<AppointmentDto[]>([])
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState(statusAll)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
     setError(null)
     try {
-      setItems(await appointmentsApi.myAsPatient({ status: status || undefined }))
+      setItems(
+        await appointmentsApi.myAsPatient({
+          status: status === statusAll ? undefined : status,
+        }),
+      )
     } catch (e) {
       setError(formatApiError(e))
     }
@@ -70,7 +76,7 @@ export function PatientAppointmentsPage() {
         onChange={(e) => setStatus(e.target.value)}
         sx={{ maxWidth: 280 }}
       >
-        <MenuItem value="">Все</MenuItem>
+        <MenuItem value={statusAll}>Все</MenuItem>
         <MenuItem value="Created">Создана</MenuItem>
         <MenuItem value="Confirmed">Подтверждена</MenuItem>
         <MenuItem value="Cancelled">Отменена</MenuItem>

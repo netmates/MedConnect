@@ -12,6 +12,7 @@ import {
 import type { ReactNode } from 'react'
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { sessionLabelFromProfile } from '../../lib/format'
 
 export type NavItem = {
   to: string
@@ -28,11 +29,7 @@ type AppShellProps = {
 export function AppShell({ brand, brandTo, nav }: AppShellProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
-  const name =
-    user?.profile?.preferred_username ??
-    user?.profile?.name ??
-    user?.profile?.sub ??
-    'user'
+  const name = sessionLabelFromProfile(user?.profile)
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

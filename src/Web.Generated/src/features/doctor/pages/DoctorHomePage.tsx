@@ -4,13 +4,11 @@ import { List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthContext'
 import { Page } from '../../../components/Page'
+import { sessionLabelFromProfile } from '../../../lib/format'
 
 export function DoctorHomePage() {
   const { user, roles } = useAuth()
-  const name =
-    user?.profile?.preferred_username ??
-    user?.profile?.name ??
-    'пользователь'
+  const name = sessionLabelFromProfile(user?.profile, 'пользователь')
 
   return (
     <Page

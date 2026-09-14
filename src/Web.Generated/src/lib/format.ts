@@ -30,6 +30,31 @@ export function fullName(
   return [lastName, firstName, middleName].filter(Boolean).join(' ')
 }
 
+type TokenProfile = {
+  preferred_username?: string
+  email?: string
+  sub?: string
+  family_name?: string
+  given_name?: string
+}
+
+/** Подпись сессии из OIDC: login (Фамилия Имя). */
+export function sessionLabelFromProfile(
+  profile: TokenProfile | undefined | null,
+  fallback = 'user',
+): string {
+  const login =
+    profile?.preferred_username?.trim() ||
+    profile?.email?.trim() ||
+    profile?.sub?.trim() ||
+    fallback
+  const fio = [profile?.family_name, profile?.given_name]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(' ')
+  return fio ? `${login} (${fio})` : login
+}
+
 export function formatDateTime(value: string): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
