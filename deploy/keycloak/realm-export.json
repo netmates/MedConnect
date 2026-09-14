@@ -11,7 +11,7 @@
       { "name": "admin",   "description": "Администратор системы" }
     ]
   },
-  "defaultRoles": ["patient"],
+  "defaultRoles": [],
   "clients": [
     {
       "clientId": "medconnect-app",

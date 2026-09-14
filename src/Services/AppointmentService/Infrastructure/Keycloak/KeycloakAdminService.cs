@@ -1,4 +1,3 @@
-using AppointmentService.Application.Auth;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces.Services;
 using System.Net.Http.Headers;
@@ -67,8 +66,6 @@ public class KeycloakAdminService(
         try
         {
             await AssignRealmRoleAsync(keycloakId, role, ct);
-            if (role == Roles.Doctor)
-                await RemoveRealmRoleAsync(keycloakId, Roles.Patient, ct);
         }
         catch
         {
@@ -246,28 +243,6 @@ public class KeycloakAdminService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         var response = await httpClient.SendAsync(request, ct);
-        await EnsureKeycloakSuccessAsync(response, ct);
-    }
-
-    /// <summary>
-    /// Снимает realm-роль с пользователя.
-    /// </summary>
-    private async Task RemoveRealmRoleAsync(string keycloakId, string roleName, CancellationToken ct = default)
-    {
-        var adminToken = await GetAdminTokenAsync(ct);
-        var role = await GetRealmRoleAsync(adminToken, roleName, ct);
-
-        using var request = new HttpRequestMessage(
-            HttpMethod.Delete,
-            $"/admin/realms/{Realm}/users/{keycloakId}/role-mappings/realm")
-        {
-            Content = JsonContent.Create(new[] { role })
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-
-        var response = await httpClient.SendAsync(request, ct);
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            return;
         await EnsureKeycloakSuccessAsync(response, ct);
     }
 
