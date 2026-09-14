@@ -7,7 +7,7 @@ import { Page } from '../../../components/Page'
 import { sessionLabelFromProfile } from '../../../lib/format'
 
 export function DoctorHomePage() {
-  const { user, roles } = useAuth()
+  const { user } = useAuth()
   const name = sessionLabelFromProfile(user?.profile, 'пользователь')
 
   return (
@@ -15,7 +15,7 @@ export function DoctorHomePage() {
       title="Кабинет врача"
       description={
         <>
-          Здравствуйте, <strong>{name}</strong>. Роли: {roles.join(', ') || '—'}.
+          Здравствуйте, <strong>{name}</strong>.
         </>
       }
     >

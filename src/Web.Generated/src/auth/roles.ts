@@ -36,3 +36,11 @@ export function homePathForRoles(roles: string[]): string {
   if (hasPatientRole(roles)) return '/patient'
   return '/access-denied'
 }
+
+/** Подпись кабинета по тому же приоритету, что homePathForRoles. */
+export function cabinetRoleLabel(roles: string[]): string | null {
+  if (hasAdminRole(roles)) return 'администратор'
+  if (hasDoctorRole(roles)) return 'врач'
+  if (hasPatientRole(roles)) return 'пациент'
+  return null
+}

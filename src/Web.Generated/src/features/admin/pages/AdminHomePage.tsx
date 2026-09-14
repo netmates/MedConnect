@@ -8,7 +8,7 @@ import { Page } from '../../../components/Page'
 import { sessionLabelFromProfile } from '../../../lib/format'
 
 export function AdminHomePage() {
-  const { user, roles } = useAuth()
+  const { user } = useAuth()
   const name = sessionLabelFromProfile(user?.profile, 'пользователь')
 
   return (
@@ -16,8 +16,7 @@ export function AdminHomePage() {
       title="Админ-панель"
       description={
         <>
-          Вы вошли как <strong>{name}</strong>. Роли:{' '}
-          {roles.length > 0 ? roles.join(', ') : '—'}.
+          Вы вошли как <strong>{name}</strong>.
         </>
       }
     >

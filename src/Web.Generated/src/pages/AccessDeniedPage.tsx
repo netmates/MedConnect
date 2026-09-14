@@ -11,11 +11,12 @@ import {
 } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { homePathForRoles } from '../auth/roles'
+import { cabinetRoleLabel, homePathForRoles } from '../auth/roles'
 
 export function AccessDeniedPage() {
   const { roles, logout, user } = useAuth()
   const home = homePathForRoles(roles)
+  const roleLabel = cabinetRoleLabel(roles)
 
   return (
     <Box
@@ -36,8 +37,9 @@ export function AccessDeniedPage() {
           <Typography sx={{
             color: "text.secondary"
           }}>
-            Этот раздел недоступен для текущей роли. Сейчас:{' '}
-            {roles.length > 0 ? roles.join(', ') : 'ролей нет'}.
+            {roleLabel
+              ? `Этот раздел недоступен для текущей роли: ${roleLabel}.`
+              : 'Этот раздел недоступен: у учетной записи нет роли MedConnect.'}
           </Typography>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
             {user && home !== '/access-denied' && (
