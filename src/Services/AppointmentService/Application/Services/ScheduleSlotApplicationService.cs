@@ -10,6 +10,7 @@ using FluentValidation;
 namespace AppointmentService.Application.Services;
 
 public class ScheduleSlotApplicationService(
+    IAppointmentRepository appointmentRepository,
     IScheduleSlotRepository slotRepository,
     IDoctorRepository doctorRepository,
     IUnitOfWork unitOfWork,
@@ -119,6 +120,9 @@ public class ScheduleSlotApplicationService(
 
             if (slot.Status != SlotStatus.Available)
                 throw new BusinessRuleException("Удалить можно только свободный слот.");
+
+            if (await appointmentRepository.ExistsBySlotIdAsync(slot.Id, ct))
+                throw new BusinessRuleException("Нельзя удалить слот: к нему привязана запись.");
 
             await slotRepository.DeleteAsync(slot, ct);
 

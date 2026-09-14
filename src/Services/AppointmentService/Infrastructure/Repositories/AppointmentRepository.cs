@@ -87,21 +87,20 @@ public class AppointmentRepository(AppointmentDbContext context) : Repository<Ap
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Appointment>> GetActiveByDoctorIdAsync(
-        Guid doctorId,
-        CancellationToken ct = default)
+    public async Task<IReadOnlyList<Appointment>> GetActiveByDoctorIdAsync(Guid doctorId, CancellationToken ct = default)
         => await _context.Appointments
             .Where(a => a.DoctorId == doctorId
                     && (a.Status == AppointmentStatus.Created || a.Status == AppointmentStatus.Confirmed))
             .ToListAsync(ct);
 
-    public async Task<IReadOnlyList<Appointment>> GetActiveByPatientIdAsync(
-        Guid patientId,
-        CancellationToken ct = default)
+    public async Task<IReadOnlyList<Appointment>> GetActiveByPatientIdAsync(Guid patientId, CancellationToken ct = default)
         => await _context.Appointments
             .Where(a => a.PatientId == patientId
                     && (a.Status == AppointmentStatus.Created || a.Status == AppointmentStatus.Confirmed))
             .ToListAsync(ct);
+
+    public async Task<bool> ExistsBySlotIdAsync(Guid slotId, CancellationToken ct = default)
+        => await _context.Appointments.AnyAsync(a => a.SlotId == slotId, ct);
 
     public override Task DeleteAsync(Appointment entity, CancellationToken ct = default)
     {

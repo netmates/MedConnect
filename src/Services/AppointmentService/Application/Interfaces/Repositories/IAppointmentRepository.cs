@@ -40,13 +40,14 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// <summary>
     /// Активные записи врача (Created / Confirmed), без фильтра по времени слота.
     /// </summary>
-    Task<IReadOnlyList<Appointment>> GetActiveByDoctorIdAsync(
-        Guid doctorId,
-        CancellationToken ct = default);
+    Task<IReadOnlyList<Appointment>> GetActiveByDoctorIdAsync(Guid doctorId, CancellationToken ct = default);
     /// <summary>
     /// Активные записи пациента (Created / Confirmed), без фильтра по времени слота.
     /// </summary>
-    Task<IReadOnlyList<Appointment>> GetActiveByPatientIdAsync(
-        Guid patientId,
-        CancellationToken ct = default);
+    Task<IReadOnlyList<Appointment>> GetActiveByPatientIdAsync(Guid patientId, CancellationToken ct = default);
+    /// <summary>
+    /// Есть ли любая запись на этот слот (включая Cancelled и Completed).
+    /// Нужно перед удалением слота: FK Appointments.SlotId Restrict.
+    /// </summary>
+    Task<bool> ExistsBySlotIdAsync(Guid slotId, CancellationToken ct = default);
 }

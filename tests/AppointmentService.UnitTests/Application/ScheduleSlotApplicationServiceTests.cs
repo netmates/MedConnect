@@ -14,6 +14,7 @@ namespace AppointmentService.UnitTests.Application;
 
 public class ScheduleSlotApplicationServiceTests
 {
+    private readonly Mock<IAppointmentRepository> _appointments = new();
     private readonly Mock<IScheduleSlotRepository> _slots = new();
     private readonly Mock<IDoctorRepository> _doctors = new();
     private readonly Mock<IUnitOfWork> _uow = new();
@@ -35,6 +36,7 @@ public class ScheduleSlotApplicationServiceTests
             .ReturnsAsync(new ValidationResult());
 
         _sut = new ScheduleSlotApplicationService(
+            _appointments.Object,
             _slots.Object,
             _doctors.Object,
             _uow.Object,
@@ -427,6 +429,8 @@ public class ScheduleSlotApplicationServiceTests
             .ReturnsAsync(doctor);
         _slots.Setup(r => r.GetByIdWithLockAsync(slot.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(slot);
+        _appointments.Setup(r => r.ExistsBySlotIdAsync(slot.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
 
         // Act
         await _sut.DeleteAsync(slot.Id, doctor.KeycloakId, CancellationToken.None);
@@ -434,6 +438,29 @@ public class ScheduleSlotApplicationServiceTests
         // Assert
         _slots.Verify(r => r.DeleteAsync(slot, It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenCancelledAppointmentExists_ThrowsBusinessRule()
+    {
+        // Arrange
+        var doctor = CreateDoctor();
+        var slot = CreateFutureSlot(doctor.Id);
+        _doctors.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor);
+        _slots.Setup(r => r.GetByIdWithLockAsync(slot.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(slot);
+        _appointments.Setup(r => r.ExistsBySlotIdAsync(slot.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var ex = await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            _sut.DeleteAsync(slot.Id, doctor.KeycloakId, CancellationToken.None));
+
+        // Assert
+        Assert.Equal("Нельзя удалить слот: к нему привязана запись.", ex.Message);
+        _slots.Verify(r => r.DeleteAsync(It.IsAny<ScheduleSlot>(), It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // GetSchedule
