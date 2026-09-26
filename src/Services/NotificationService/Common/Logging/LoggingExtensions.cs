@@ -1,0 +1,25 @@
+using Serilog;
+
+namespace NotificationService.Common.Logging;
+
+public static class LoggingExtensions
+{
+    public static void AddNotificationSerilog(this IHostBuilder host)
+    {
+        host.UseSerilog((context, services, configuration) =>
+        {
+            configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+                .Enrich.WithProperty("ServiceName", "NotificationService")
+                .Enrich.WithProperty("EnvironmentName", context.HostingEnvironment.EnvironmentName);
+
+            if (context.HostingEnvironment.IsDevelopment())
+            {
+                var seqUrl = context.Configuration["Seq:ServerUrl"] ?? "http://localhost:5341";
+                configuration.WriteTo.Seq(seqUrl);
+            }
+        });
+    }
+}

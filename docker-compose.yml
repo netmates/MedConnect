@@ -51,6 +51,25 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
+  notification-service:
+    build:
+      context: .
+      dockerfile: src/Services/NotificationService/Dockerfile
+    ports:
+      - "5090:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Port: "5672"
+      RabbitMQ__Username: medconnect
+      RabbitMQ__Password: medconnect
+      Seq__ServerUrl: http://seq:80
+    depends_on:
+      - rabbitmq
+      - seq
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   keycloak_data:
