@@ -8,6 +8,7 @@ using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
 using FluentValidation.Results;
+using MedConnect.Messaging;
 using MedConnect.Shared.Events;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -45,6 +46,15 @@ public class AppointmentApplicationServiceTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<AppointmentCreatedPayload>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _publisher
+            .Setup(p => p.PublishAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<AppointmentCancelledPayload>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -563,6 +573,7 @@ public class AppointmentApplicationServiceTests
         // Assert
         Assert.Equal("Запись не найдена.", ex.Message);
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        VerifyAppointmentCancelledNotPublished();
     }
 
     [Fact]
@@ -589,6 +600,7 @@ public class AppointmentApplicationServiceTests
 
         // Assert
         Assert.Equal("Нет доступа к этой записи.", ex.Message);
+        VerifyAppointmentCancelledNotPublished();
     }
 
     [Fact]
@@ -614,6 +626,7 @@ public class AppointmentApplicationServiceTests
 
         // Assert
         Assert.Equal("Нельзя отменить запись в прошлом.", ex.Message);
+        VerifyAppointmentCancelledNotPublished();
     }
 
     [Fact]
@@ -640,6 +653,29 @@ public class AppointmentApplicationServiceTests
         Assert.Equal(AppointmentStatus.Cancelled, appointment.Status);
         Assert.Equal(SlotStatus.Available, slot.Status);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _publisher.Verify(p => p.PublishAsync(
+            EventTypes.AppointmentCancelled,
+            RoutingKeys.AppointmentCancelled,
+            It.Is<AppointmentCancelledPayload>(payload =>
+                payload.AppointmentId == appointment.Id &&
+                payload.PatientId == patient.Id &&
+                payload.DoctorId == doctor.Id &&
+                payload.SlotId == slot.Id &&
+                payload.CancelledByUserId == patient.Id &&
+                payload.CancelledByRole == ParticipantRoles.Patient &&
+                payload.CancelReason == "Пользователь отменил запись"),
+            It.Is<string?>(id => id == null),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private void VerifyAppointmentCancelledNotPublished()
+    {
+        _publisher.Verify(p => p.PublishAsync(
+            EventTypes.AppointmentCancelled,
+            It.IsAny<string>(),
+            It.IsAny<AppointmentCancelledPayload>(),
+            It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // Complete

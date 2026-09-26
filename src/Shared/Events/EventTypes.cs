@@ -3,12 +3,16 @@ namespace MedConnect.Shared.Events;
 public static class EventTypes
 {
     public const string AppointmentCreated = "AppointmentCreated";
+    public const string AppointmentCancelled = "AppointmentCancelled";
+    public const string MessageCreated = "MessageCreated";
     public const string ParticipantNameUpdated = "ParticipantNameUpdated";
 }
 
 public static class RoutingKeys
 {
     public const string AppointmentCreated = "appointments.appointment.created.v1";
+    public const string AppointmentCancelled = "appointments.appointment.cancelled.v1";
+    public const string MessageCreated = "communication.message.created.v1";
     public const string ParticipantNameUpdated = "participants.participant.name-updated.v1";
 }
 

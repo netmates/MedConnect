@@ -7,6 +7,7 @@ using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
+using MedConnect.Messaging;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;

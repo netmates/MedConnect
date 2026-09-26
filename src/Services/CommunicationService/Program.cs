@@ -48,7 +48,9 @@ builder.Services.AddScoped<UpdateChatParticipantNamesService>();
 // MongoDB: IMongoClient + IMongoDatabase из ConnectionStrings:Mongo и Mongo:Database
 builder.Services.AddMongo(builder.Configuration);
 
-// RabbitMQ: AppointmentCreated → EnsureChat; ParticipantNameUpdated → sync ФИО в чатах
+builder.Services.AddHttpContextAccessor();
+
+// RabbitMQ: consumer AppointmentCreated / ParticipantNameUpdated; publisher MessageCreated
 builder.Services.AddRabbitMqConsumer(builder.Configuration);
 
 // gRPC-клиент к AppointmentService: проверка записи перед открытием/созданием чата (AppointmentGrpc:Address)

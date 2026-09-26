@@ -1,7 +1,8 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
-namespace AppointmentService.Infrastructure.Messaging;
+namespace MedConnect.Messaging;
 
 public sealed class RabbitMqConnection(
     IOptions<RabbitMqOptions> options,
@@ -57,7 +58,6 @@ public sealed class RabbitMqConnection(
     public async ValueTask DisposeAsync()
     {
         await _gate.WaitAsync();
-
         try
         {
             if (_connection is not null)

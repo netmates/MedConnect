@@ -1,4 +1,3 @@
-using AppointmentService.Application.Auth;
 using AppointmentService.Application.Common;
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
@@ -9,6 +8,7 @@ using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
+using MedConnect.Messaging;
 using MedConnect.Shared.Events;
 
 namespace AppointmentService.Application.Services;
@@ -160,12 +160,14 @@ public class AppointmentApplicationService(
 
     public async Task CancelAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
     {
-        string cancelledBy;
+        Appointment appointment;
+        Guid cancelledByUserId;
+        string cancelledByRole;
 
         await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var appointment = await appointmentRepository.GetByIdWithLockAsync(appointmentId, ct)
+            appointment = await appointmentRepository.GetByIdWithLockAsync(appointmentId, ct)
                 ?? throw new NotFoundException("Запись не найдена.");
 
             var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
@@ -177,7 +179,8 @@ public class AppointmentApplicationService(
             if (!isPatientOwner && !isDoctorOwner)
                 throw new ForbiddenException("Нет доступа к этой записи.");
 
-            cancelledBy = isPatientOwner ? Roles.Patient : Roles.Doctor;
+            cancelledByUserId = isPatientOwner ? patient!.Id : doctor!.Id;
+            cancelledByRole = isPatientOwner ? ParticipantRoles.Patient : ParticipantRoles.Doctor;
 
             var slot = await slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
                 ?? throw new NotFoundException("Слот записи не найден.");
@@ -201,7 +204,34 @@ public class AppointmentApplicationService(
 
         logger.LogInformation(
             "Appointment cancelled: {AppointmentId}, CancelledBy={CancelledBy}",
-            appointmentId, cancelledBy);
+            appointmentId, cancelledByRole);
+
+        var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
+        try
+        {
+            await publisher.PublishAsync(
+                EventTypes.AppointmentCancelled,
+                RoutingKeys.AppointmentCancelled,
+                new AppointmentCancelledPayload
+                {
+                    AppointmentId = appointment.Id,
+                    PatientId = appointment.PatientId,
+                    DoctorId = appointment.DoctorId,
+                    SlotId = appointment.SlotId,
+                    CancelledByUserId = cancelledByUserId,
+                    CancelledByRole = cancelledByRole,
+                    CancelReason = "Пользователь отменил запись",
+                    CancelledAt = appointment.UpdatedAt
+                },
+                correlationId,
+                ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "Failed to publish AppointmentCancelled. AppointmentId={AppointmentId}",
+                appointment.Id);
+        }
     }
 
     public async Task CompleteAsync(Guid appointmentId, string keycloakId, CancellationToken ct)
