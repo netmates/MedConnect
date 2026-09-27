@@ -1,14 +1,13 @@
-using MedConnect.Messaging;
 using NotificationService.Common.Health;
 using NotificationService.Common.Logging;
+using NotificationService.Common.Messaging;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.AddNotificationSerilog();
 
-// Соединение с RabbitMQ при старте. Очереди объявят consumers на следующем шаге.
-builder.Services.AddRabbitMq(builder.Configuration, "NotificationService");
+builder.Services.AddNotificationConsumers(builder.Configuration);
 builder.Services.AddNotificationHealthChecks();
 
 var app = builder.Build();
