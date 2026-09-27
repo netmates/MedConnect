@@ -1,7 +1,4 @@
-using System.Text;
-using System.Text.Json;
 using MedConnect.Messaging;
-using MedConnect.Shared.Events;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -18,12 +15,6 @@ public sealed class NotificationQueueConsumer<TPayload>(
     ILogger<NotificationQueueConsumer<TPayload>> logger) : BackgroundService
 {
     private const ushort PrefetchCount = 10;
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true
-    };
 
     private readonly RabbitMqOptions _rabbitOptions = rabbitOptions.Value;
     private readonly NotificationQueueOptions _queueOptions = queueOptions.Value;
@@ -127,114 +118,64 @@ public sealed class NotificationQueueConsumer<TPayload>(
 
     private async Task OnReceivedAsync(object sender, BasicDeliverEventArgs ea)
     {
-        IntegrationEventEnvelope<JsonElement>? envelope;
-        try
-        {
-            var json = Encoding.UTF8.GetString(ea.Body.Span);
-            envelope = JsonSerializer.Deserialize<IntegrationEventEnvelope<JsonElement>>(json, JsonOptions);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(
-                ex,
-                "Integration event was dead-lettered. Reason={Reason}, Queue={Queue}, DeliveryTag={DeliveryTag}",
-                "invalid-json",
-                subscription.QueueName,
-                ea.DeliveryTag);
-            await NackAsync(ea.DeliveryTag);
-            return;
-        }
-
-        if (envelope is null)
-        {
-            logger.LogError(
-                "Integration event was dead-lettered. Reason={Reason}, Queue={Queue}, DeliveryTag={DeliveryTag}",
-                "invalid-json",
-                subscription.QueueName,
-                ea.DeliveryTag);
-            await NackAsync(ea.DeliveryTag);
-            return;
-        }
-
-        var hasPayload = envelope.Payload.ValueKind is not JsonValueKind.Undefined and not JsonValueKind.Null;
-        var decision = NotificationDeliveryDecision.Evaluate(
-            hasPayload,
-            envelope.EventType,
+        var result = await NotificationMessageProcessor.ProcessAsync<TPayload>(
+            ea.Body,
             subscription.EventType,
-            envelope.EventVersion);
+            handler.HandleAsync,
+            CancellationToken.None);
 
-        if (decision.DeadLetter)
+        if (result.DeadLetter)
         {
-            logger.LogError(
-                "Integration event was dead-lettered. Reason={Reason}, EventId={EventId}, EventType={EventType}, EventVersion={EventVersion}, Queue={Queue}",
-                decision.Reason,
-                envelope.EventId,
-                envelope.EventType,
-                envelope.EventVersion,
-                subscription.QueueName);
-            await NackAsync(ea.DeliveryTag);
+            LogDeadLetter(result, ea.DeliveryTag);
+            await NackAsync(ea.DeliveryTag, result.Requeue);
             return;
         }
 
-        TPayload? payload;
-        try
+        using (LogContext.PushProperty("CorrelationId", result.CorrelationId))
+        using (LogContext.PushProperty("EventId", result.EventId))
         {
-            payload = envelope.Payload.Deserialize<TPayload>(JsonOptions);
-        }
-        catch (JsonException ex)
-        {
-            logger.LogError(
-                ex,
-                "Integration event was dead-lettered. Reason={Reason}, EventId={EventId}, EventType={EventType}, Queue={Queue}",
-                "invalid-payload",
-                envelope.EventId,
-                envelope.EventType,
-                subscription.QueueName);
-            await NackAsync(ea.DeliveryTag);
-            return;
-        }
-
-        if (payload is null)
-        {
-            logger.LogError(
-                "Integration event was dead-lettered. Reason={Reason}, EventId={EventId}, EventType={EventType}, Queue={Queue}",
-                "empty-payload",
-                envelope.EventId,
-                envelope.EventType,
-                subscription.QueueName);
-            await NackAsync(ea.DeliveryTag);
-            return;
-        }
-
-        using (LogContext.PushProperty("CorrelationId", envelope.CorrelationId))
-        using (LogContext.PushProperty("EventId", envelope.EventId))
-        {
-            try
-            {
-                await handler.HandleAsync(payload, CancellationToken.None);
-
-                logger.LogInformation(
-                    "Integration event was consumed. EventId={EventId}, EventType={EventType}, Queue={Queue}, CorrelationId={CorrelationId}",
-                    envelope.EventId,
-                    envelope.EventType,
-                    subscription.QueueName,
-                    envelope.CorrelationId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(
-                    ex,
-                    "Integration event was dead-lettered. Reason={Reason}, EventId={EventId}, EventType={EventType}, Queue={Queue}",
-                    "processing-failed",
-                    envelope.EventId,
-                    envelope.EventType,
-                    subscription.QueueName);
-                await NackAsync(ea.DeliveryTag);
-                return;
-            }
+            logger.LogInformation(
+                "Integration event was consumed. EventId={EventId}, EventType={EventType}, Queue={Queue}, CorrelationId={CorrelationId}",
+                result.EventId,
+                result.EventType,
+                subscription.QueueName,
+                result.CorrelationId);
         }
 
         await AckAsync(ea.DeliveryTag);
+    }
+
+    private void LogDeadLetter(NotificationDeliveryResult result, ulong deliveryTag)
+    {
+        using var correlationScope = result.CorrelationId is null
+            ? null
+            : LogContext.PushProperty("CorrelationId", result.CorrelationId);
+        using var eventScope = result.EventId == Guid.Empty
+            ? null
+            : LogContext.PushProperty("EventId", result.EventId);
+
+        if (result.Error is null)
+        {
+            logger.LogError(
+                "Integration event was dead-lettered. Reason={Reason}, EventId={EventId}, EventType={EventType}, EventVersion={EventVersion}, Queue={Queue}, DeliveryTag={DeliveryTag}",
+                result.Reason,
+                result.EventId,
+                result.EventType,
+                result.EventVersion,
+                subscription.QueueName,
+                deliveryTag);
+            return;
+        }
+
+        logger.LogError(
+            result.Error,
+            "Integration event was dead-lettered. Reason={Reason}, EventId={EventId}, EventType={EventType}, EventVersion={EventVersion}, Queue={Queue}, DeliveryTag={DeliveryTag}",
+            result.Reason,
+            result.EventId,
+            result.EventType,
+            result.EventVersion,
+            subscription.QueueName,
+            deliveryTag);
     }
 
     private IChannel Channel =>
@@ -253,12 +194,12 @@ public sealed class NotificationQueueConsumer<TPayload>(
         }
     }
 
-    private async Task NackAsync(ulong deliveryTag)
+    private async Task NackAsync(ulong deliveryTag, bool requeue)
     {
         await _channelGate.WaitAsync(CancellationToken.None);
         try
         {
-            await Channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
+            await Channel.BasicNackAsync(deliveryTag, multiple: false, requeue: requeue);
         }
         finally
         {

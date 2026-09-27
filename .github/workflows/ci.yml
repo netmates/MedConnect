@@ -19,6 +19,7 @@ jobs:
           cache-dependency-path: |
             src/Services/AppointmentService/AppointmentService.csproj
             tests/AppointmentService.UnitTests/AppointmentService.UnitTests.csproj
+            tests/NotificationService.UnitTests/NotificationService.UnitTests.csproj
 
       - name: Restore
         run: >
@@ -36,6 +37,26 @@ jobs:
         run: >
           dotnet test
           tests/AppointmentService.UnitTests/AppointmentService.UnitTests.csproj
+          --configuration Release
+          --no-build
+          --verbosity normal
+
+      - name: Restore NotificationService tests
+        run: >
+          dotnet restore
+          tests/NotificationService.UnitTests/NotificationService.UnitTests.csproj
+
+      - name: Build NotificationService tests
+        run: >
+          dotnet build
+          tests/NotificationService.UnitTests/NotificationService.UnitTests.csproj
+          --configuration Release
+          --no-restore
+
+      - name: Test NotificationService
+        run: >
+          dotnet test
+          tests/NotificationService.UnitTests/NotificationService.UnitTests.csproj
           --configuration Release
           --no-build
           --verbosity normal
