@@ -9,12 +9,13 @@ using Serilog.Context;
 
 namespace NotificationService.Common.Messaging;
 
-public sealed class NotificationQueueConsumer(
+public sealed class NotificationQueueConsumer<TPayload>(
     RabbitMqConnection connection,
     IOptions<RabbitMqOptions> rabbitOptions,
     IOptions<NotificationQueueOptions> queueOptions,
     NotificationSubscription subscription,
-    ILogger<NotificationQueueConsumer> logger) : BackgroundService
+    INotificationHandler<TPayload> handler,
+    ILogger<NotificationQueueConsumer<TPayload>> logger) : BackgroundService
 {
     private const ushort PrefetchCount = 10;
 
@@ -175,11 +176,43 @@ public sealed class NotificationQueueConsumer(
             return;
         }
 
+        TPayload? payload;
+        try
+        {
+            payload = envelope.Payload.Deserialize<TPayload>(JsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            logger.LogError(
+                ex,
+                "Integration event was dead-lettered. Reason={Reason}, EventId={EventId}, EventType={EventType}, Queue={Queue}",
+                "invalid-payload",
+                envelope.EventId,
+                envelope.EventType,
+                subscription.QueueName);
+            await NackAsync(ea.DeliveryTag);
+            return;
+        }
+
+        if (payload is null)
+        {
+            logger.LogError(
+                "Integration event was dead-lettered. Reason={Reason}, EventId={EventId}, EventType={EventType}, Queue={Queue}",
+                "empty-payload",
+                envelope.EventId,
+                envelope.EventType,
+                subscription.QueueName);
+            await NackAsync(ea.DeliveryTag);
+            return;
+        }
+
         using (LogContext.PushProperty("CorrelationId", envelope.CorrelationId))
         using (LogContext.PushProperty("EventId", envelope.EventId))
         {
             try
             {
+                await handler.HandleAsync(payload, CancellationToken.None);
+
                 logger.LogInformation(
                     "Integration event was consumed. EventId={EventId}, EventType={EventType}, Queue={Queue}, CorrelationId={CorrelationId}",
                     envelope.EventId,

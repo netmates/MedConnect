@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using RabbitMQ.Client.Exceptions;
 
 namespace MedConnect.Messaging;
 
@@ -28,9 +30,34 @@ public static class MessagingServiceCollectionExtensions
         return services;
     }
 
-    private sealed class RabbitMqConnectionHostedService(RabbitMqConnection connection) : IHostedService
+    private sealed class RabbitMqConnectionHostedService(
+        RabbitMqConnection connection,
+        ILogger<RabbitMqConnectionHostedService> logger) : IHostedService
     {
-        public async Task StartAsync(CancellationToken ct) => await connection.GetConnectionAsync(ct);
+        private const int MaxAttempts = 15;
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
+
+        public async Task StartAsync(CancellationToken ct)
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    await connection.GetConnectionAsync(ct);
+                    return;
+                }
+                catch (BrokerUnreachableException ex) when (attempt < MaxAttempts)
+                {
+                    logger.LogWarning(
+                        "RabbitMQ is not ready (attempt {Attempt}/{MaxAttempts}): {Message}",
+                        attempt,
+                        MaxAttempts,
+                        ex.Message);
+
+                    await Task.Delay(RetryDelay, ct);
+                }
+            }
+        }
 
         public async Task StopAsync(CancellationToken ct) => await connection.DisposeAsync();
     }

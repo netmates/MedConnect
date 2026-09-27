@@ -1,12 +1,14 @@
 using NotificationService.Common.Health;
 using NotificationService.Common.Logging;
 using NotificationService.Common.Messaging;
+using NotificationService.Features.Notifications;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.AddNotificationSerilog();
 
+new NotificationModule().Register(builder.Services, builder.Configuration);
 builder.Services.AddNotificationConsumers(builder.Configuration);
 builder.Services.AddNotificationHealthChecks();
 
