@@ -50,6 +50,12 @@ services:
       RABBITMQ_DEFAULT_PASS: medconnect
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
 
   notification-service:
     build:
@@ -59,15 +65,16 @@ services:
       - "5090:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Port: "5672"
       RabbitMQ__Username: medconnect
       RabbitMQ__Password: medconnect
       Seq__ServerUrl: http://seq:80
     depends_on:
-      - rabbitmq
-      - seq
+      rabbitmq:
+        condition: service_healthy
+      seq:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
