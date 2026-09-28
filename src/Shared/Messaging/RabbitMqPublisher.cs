@@ -1,19 +1,18 @@
 using System.Text;
 using System.Text.Json;
-using AppointmentService.Application.Interfaces.Services;
 using MedConnect.Shared.Events;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
-namespace AppointmentService.Infrastructure.Messaging;
+namespace MedConnect.Messaging;
 
 public sealed class RabbitMqPublisher(
     RabbitMqConnection connection,
     IOptions<RabbitMqOptions> options,
-    ILogger<RabbitMqPublisher> logger) : IIntegrationEventPublisher
+    ILogger<RabbitMqPublisher> logger,
+    string eventSource) : IIntegrationEventPublisher
 {
-    private const string EventSource = "AppointmentService";
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -35,7 +34,7 @@ public sealed class RabbitMqPublisher(
             EventVersion = 1,
             OccurredAt = DateTime.UtcNow,
             CorrelationId = correlationId,
-            Source = EventSource,
+            Source = eventSource,
             Payload = payload
         };
 

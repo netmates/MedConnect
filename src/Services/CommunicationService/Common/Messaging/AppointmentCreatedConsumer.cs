@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using CommunicationService.Features.Chats;
+using MedConnect.Messaging;
 using MedConnect.Shared.Events;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
@@ -12,6 +13,7 @@ namespace CommunicationService.Common.Messaging;
 public sealed class AppointmentCreatedConsumer(
     RabbitMqConnection connection,
     IOptions<RabbitMqOptions> options,
+    IOptions<CommunicationQueueOptions> queues,
     IServiceScopeFactory scopeFactory,
     ILogger<AppointmentCreatedConsumer> logger) : BackgroundService
 {
@@ -22,6 +24,7 @@ public sealed class AppointmentCreatedConsumer(
     };
 
     private readonly RabbitMqOptions _options = options.Value;
+    private readonly CommunicationQueueOptions _queues = queues.Value;
     private IChannel? _channel;
     private CancellationToken _stoppingToken;
 
@@ -41,7 +44,7 @@ public sealed class AppointmentCreatedConsumer(
             cancellationToken: stoppingToken);
 
         await _channel.QueueDeclareAsync(
-            queue: _options.AppointmentCreatedQueue,
+            queue: _queues.AppointmentCreatedQueue,
             durable: true,
             exclusive: false,
             autoDelete: false,
@@ -49,7 +52,7 @@ public sealed class AppointmentCreatedConsumer(
             cancellationToken: stoppingToken);
 
         await _channel.QueueBindAsync(
-            queue: _options.AppointmentCreatedQueue,
+            queue: _queues.AppointmentCreatedQueue,
             exchange: _options.ExchangeName,
             routingKey: RoutingKeys.AppointmentCreated,
             arguments: null,
@@ -65,14 +68,14 @@ public sealed class AppointmentCreatedConsumer(
         consumer.ReceivedAsync += OnReceivedAsync;
 
         await _channel.BasicConsumeAsync(
-            queue: _options.AppointmentCreatedQueue,
+            queue: _queues.AppointmentCreatedQueue,
             autoAck: false,
             consumer: consumer,
             cancellationToken: stoppingToken);
 
         logger.LogInformation(
             "AppointmentCreated consumer started. Queue={Queue}, RoutingKey={RoutingKey}",
-            _options.AppointmentCreatedQueue,
+            _queues.AppointmentCreatedQueue,
             RoutingKeys.AppointmentCreated);
 
         try

@@ -1,4 +1,4 @@
-namespace AppointmentService.Application.Interfaces.Services;
+namespace MedConnect.Messaging;
 
 public interface IIntegrationEventPublisher
 {

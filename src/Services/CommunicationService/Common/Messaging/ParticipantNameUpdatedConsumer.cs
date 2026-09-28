@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using CommunicationService.Features.Chats;
+using MedConnect.Messaging;
 using MedConnect.Shared.Events;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
@@ -12,6 +13,7 @@ namespace CommunicationService.Common.Messaging;
 public sealed class ParticipantNameUpdatedConsumer(
     RabbitMqConnection connection,
     IOptions<RabbitMqOptions> options,
+    IOptions<CommunicationQueueOptions> queues,
     IServiceScopeFactory scopeFactory,
     ILogger<ParticipantNameUpdatedConsumer> logger) : BackgroundService
 {
@@ -22,6 +24,7 @@ public sealed class ParticipantNameUpdatedConsumer(
     };
 
     private readonly RabbitMqOptions _options = options.Value;
+    private readonly CommunicationQueueOptions _queues = queues.Value;
     private IChannel? _channel;
     private CancellationToken _stoppingToken;
 
@@ -41,7 +44,7 @@ public sealed class ParticipantNameUpdatedConsumer(
             cancellationToken: stoppingToken);
 
         await _channel.QueueDeclareAsync(
-            queue: _options.ParticipantNameUpdatedQueue,
+            queue: _queues.ParticipantNameUpdatedQueue,
             durable: true,
             exclusive: false,
             autoDelete: false,
@@ -49,7 +52,7 @@ public sealed class ParticipantNameUpdatedConsumer(
             cancellationToken: stoppingToken);
 
         await _channel.QueueBindAsync(
-            queue: _options.ParticipantNameUpdatedQueue,
+            queue: _queues.ParticipantNameUpdatedQueue,
             exchange: _options.ExchangeName,
             routingKey: RoutingKeys.ParticipantNameUpdated,
             arguments: null,
@@ -65,14 +68,14 @@ public sealed class ParticipantNameUpdatedConsumer(
         consumer.ReceivedAsync += OnReceivedAsync;
 
         await _channel.BasicConsumeAsync(
-            queue: _options.ParticipantNameUpdatedQueue,
+            queue: _queues.ParticipantNameUpdatedQueue,
             autoAck: false,
             consumer: consumer,
             cancellationToken: stoppingToken);
 
         logger.LogInformation(
             "ParticipantNameUpdated consumer started. Queue={Queue}, RoutingKey={RoutingKey}",
-            _options.ParticipantNameUpdatedQueue,
+            _queues.ParticipantNameUpdatedQueue,
             RoutingKeys.ParticipantNameUpdated);
 
         try
