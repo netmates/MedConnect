@@ -302,6 +302,7 @@ public class AppointmentApplicationService(
         logger.LogDebug(
             "Appointment access allowed. AppointmentId={AppointmentId}, KeycloakId={KeycloakId}",
             appointmentId, keycloakId);
+
         return ValidateAppointmentAccessResult.Allow(
             appointment.Id,
             appointment.PatientId,

@@ -16,15 +16,17 @@ import { Page } from '../../components/Page'
 import { formatApiError, formatDateTime } from '../../lib/format'
 import type { AppointmentDto } from '../../types/appointment'
 import type { CreateChatResponse, MessageResponse } from '../../types/chat'
+import { appendUniqueMessage, useChatHub } from './useChatHub'
 
 type ChatPageProps = {
   backTo: string
   backLabel: string
+  viewer: 'doctor' | 'patient'
 }
 
-export function ChatPage({ backTo, backLabel }: ChatPageProps) {
+export function ChatPage({ backTo, backLabel, viewer }: ChatPageProps) {
   const { appointmentId } = useParams<{ appointmentId: string }>()
-  const { user } = useAuth()
+  const { user, getAccessToken } = useAuth()
   const mySub = user?.profile?.sub ?? ''
   const [appointment, setAppointment] = useState<AppointmentDto | null>(null)
   const [chat, setChat] = useState<CreateChatResponse | null>(null)
@@ -62,13 +64,22 @@ export function ChatPage({ backTo, backLabel }: ChatPageProps) {
     }
   }, [appointmentId, loadMessages])
 
-  useEffect(() => {
+  const onLiveMessage = useCallback((message: MessageResponse) => {
+    setMessages((prev) => appendUniqueMessage(prev, message))
+  }, [])
+
+  const onHubReconnected = useCallback(() => {
     if (!chat) return
-    const timer = window.setInterval(() => {
-      void loadMessages(chat.id).catch(() => undefined)
-    }, 4000)
-    return () => window.clearInterval(timer)
+    void loadMessages(chat.id).catch((e) => setError(formatApiError(e)))
   }, [chat, loadMessages])
+
+  useChatHub({
+    chatId: chat?.id,
+    getAccessToken,
+    onMessage: onLiveMessage,
+    onReconnected: onHubReconnected,
+    onError: setError,
+  })
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -81,7 +92,7 @@ export function ChatPage({ backTo, backLabel }: ChatPageProps) {
     setError(null)
     try {
       const sent = await chatsApi.send(chat.id, { text: text.trim() })
-      setMessages((prev) => [...prev, sent])
+      setMessages((prev) => appendUniqueMessage(prev, sent))
       setText('')
     } catch (err) {
       setError(formatApiError(err))
@@ -90,14 +101,14 @@ export function ChatPage({ backTo, backLabel }: ChatPageProps) {
     }
   }
 
+  const doctorName = chat?.doctorName || appointment?.doctorFullName || ''
+  const patientName = chat?.patientName || appointment?.patientFullName || ''
+  const myName = viewer === 'doctor' ? doctorName : patientName
+  const otherName = viewer === 'doctor' ? patientName : doctorName
+
   return (
     <Page
       title="Чат по приему"
-      description={
-        appointment
-          ? `${appointment.doctorFullName} · ${appointment.patientFullName} · ${formatDateTime(appointment.startTime)}`
-          : undefined
-      }
       error={error}
       actions={
         <Button component={RouterLink} to={backTo}>
@@ -105,6 +116,27 @@ export function ChatPage({ backTo, backLabel }: ChatPageProps) {
         </Button>
       }
     >
+      {appointment && (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+            columnGap: 2,
+            alignItems: 'center',
+            color: 'text.secondary',
+          }}
+        >
+          <Typography variant="body1" noWrap sx={{ textAlign: 'left' }}>
+            {otherName}
+          </Typography>
+          <Typography variant="body1" sx={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+            {formatDateTime(appointment.startTime)}
+          </Typography>
+          <Typography variant="body1" noWrap sx={{ textAlign: 'right' }}>
+            {myName}
+          </Typography>
+        </Box>
+      )}
       <Paper
         variant="outlined"
         sx={{

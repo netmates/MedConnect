@@ -92,7 +92,11 @@ export function AppRouter() {
             <Route
               path="appointments/:appointmentId/chat"
               element={
-                <ChatPage backTo="/patient/appointments" backLabel="← К записям" />
+                <ChatPage
+                  backTo="/patient/appointments"
+                  backLabel="← К записям"
+                  viewer="patient"
+                />
               }
             />
           </Route>
@@ -106,7 +110,11 @@ export function AppRouter() {
             <Route
               path="appointments/:appointmentId/chat"
               element={
-                <ChatPage backTo="/doctor/appointments" backLabel="← К приемам" />
+                <ChatPage
+                  backTo="/doctor/appointments"
+                  backLabel="← К приемам"
+                  viewer="doctor"
+                />
               }
             />
           </Route>
