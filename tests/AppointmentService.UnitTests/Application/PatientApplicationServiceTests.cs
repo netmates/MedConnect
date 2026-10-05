@@ -42,7 +42,7 @@ public class PatientApplicationServiceTests
             _uow.Object,
             _keycloak.Object,
             _registerValidator.Object,
-            _updateValidator.Object,            
+            _updateValidator.Object,
             NullLogger<PatientApplicationService>.Instance,
             _publisher.Object,
             _httpContextAccessor.Object);

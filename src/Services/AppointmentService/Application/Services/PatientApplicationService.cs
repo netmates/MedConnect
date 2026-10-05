@@ -136,7 +136,6 @@ public class PatientApplicationService(
                 }
             }
 
-
             return MapToDto(patient);
         }
         catch (Exception ex)

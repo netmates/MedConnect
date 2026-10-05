@@ -2,7 +2,7 @@ namespace MedConnect.Messaging;
 
 public interface IIntegrationEventPublisher
 {
-    Task PublishAsync<TPayload>(
+    public Task PublishAsync<TPayload>(
         string eventType,
         string routingKey,
         TPayload payload,
