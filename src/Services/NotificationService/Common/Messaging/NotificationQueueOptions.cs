@@ -15,4 +15,7 @@ public sealed class NotificationQueueOptions
 
     [Required]
     public string MessageCreatedQueue { get; set; } = "notification.message-created.q";
+
+    [Range(1, ushort.MaxValue)]
+    public ushort PrefetchCount { get; set; } = 10;
 }

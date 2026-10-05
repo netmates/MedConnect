@@ -14,8 +14,6 @@ public sealed class NotificationQueueConsumer<TPayload>(
     INotificationHandler<TPayload> handler,
     ILogger<NotificationQueueConsumer<TPayload>> logger) : BackgroundService
 {
-    private const ushort PrefetchCount = 10;
-
     private readonly RabbitMqOptions _rabbitOptions = rabbitOptions.Value;
     private readonly NotificationQueueOptions _queueOptions = queueOptions.Value;
     private readonly SemaphoreSlim _channelGate = new(1, 1);
@@ -30,7 +28,7 @@ public sealed class NotificationQueueConsumer<TPayload>(
 
         await _channel.BasicQosAsync(
             prefetchSize: 0,
-            prefetchCount: PrefetchCount,
+            prefetchCount: _queueOptions.PrefetchCount,
             global: false,
             cancellationToken: stoppingToken);
 
