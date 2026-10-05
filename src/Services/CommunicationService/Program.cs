@@ -34,16 +34,11 @@ builder.Services.AddOpenApi(options =>
 // FluentValidation: IValidator<> из сборки
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// CreateChat: создать чат по appointment (идемпотентно)
-builder.Services.AddScoped<CreateChatHandler>();
-// GetChatHistory: история сообщений для участника чата
-builder.Services.AddScoped<GetChatHistoryHandler>();
+// Chats: CreateChat / GetChatHistory, EnsureChatService, consumer AppointmentCreated и ParticipantNameUpdated
+builder.Services.AddChatFeatures();
+
 // SendMessage: отправить сообщение в чат
 builder.Services.AddScoped<SendMessageHandler>();
-// Общий Mongo ensure-chat (HTTP CreateChat + AppointmentCreated consumer)
-builder.Services.AddScoped<EnsureChatService>();
-// Sync ФИО участников чата из RabbitMQ (ParticipantNameUpdated)
-builder.Services.AddScoped<UpdateChatParticipantNamesService>();
 
 // MongoDB: IMongoClient + IMongoDatabase из ConnectionStrings:Mongo и Mongo:Database
 builder.Services.AddMongo(builder.Configuration);
@@ -51,7 +46,7 @@ builder.Services.AddMongo(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 
 // RabbitMQ: consumer AppointmentCreated / ParticipantNameUpdated; publisher MessageCreated
-builder.Services.AddRabbitMqConsumer(builder.Configuration);
+builder.Services.AddCommunicationConsumers(builder.Configuration);
 
 // gRPC-клиент к AppointmentService: проверка записи перед открытием/созданием чата (AppointmentGrpc:Address)
 builder.Services.AddAppointmentGrpcClient(builder.Configuration);

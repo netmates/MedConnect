@@ -37,14 +37,4 @@ public sealed class ChatDocument
             CreatedAt = DateTime.UtcNow
         };
     }
-
-    public void UpdatePatientName(string patientName)
-    {
-        PatientName = patientName.Trim();
-    }
-
-    public void UpdateDoctorName(string doctorName)
-    {
-        DoctorName = doctorName.Trim();
-    }
 }

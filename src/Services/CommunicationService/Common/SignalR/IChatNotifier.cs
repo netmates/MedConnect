@@ -4,5 +4,5 @@ namespace CommunicationService.Common.SignalR;
 
 public interface IChatNotifier
 {
-    Task NotifyMessageAsync(MessageResponse message, CancellationToken ct = default);
+    public Task NotifyMessageAsync(MessageResponse message, CancellationToken ct = default);
 }
