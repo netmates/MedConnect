@@ -1,0 +1,18 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace NotificationService.Common.Messaging;
+
+public sealed class NotificationQueueOptions
+{
+    [Required]
+    public string DeadLetterExchangeName { get; set; } = "medconnect.dlx";
+
+    [Required]
+    public string AppointmentCreatedQueue { get; set; } = "notification.appointment-created.q";
+
+    [Required]
+    public string AppointmentCancelledQueue { get; set; } = "notification.appointment-cancelled.q";
+
+    [Required]
+    public string MessageCreatedQueue { get; set; } = "notification.message-created.q";
+}

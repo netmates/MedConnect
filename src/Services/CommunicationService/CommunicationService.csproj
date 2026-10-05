@@ -29,6 +29,7 @@
   <ItemGroup>
 	<Protobuf Include="..\..\Shared\Protos\appointment_access.proto" GrpcServices="Client" Link="Protos\appointment_access.proto" />
 	<Compile Include="..\..\Shared\Events\**\*.cs" Link="Events\%(Filename)%(Extension)" />
+	<Compile Include="..\..\Shared\Messaging\**\*.cs" Link="Messaging\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

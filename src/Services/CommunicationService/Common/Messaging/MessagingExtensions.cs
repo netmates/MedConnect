@@ -1,3 +1,5 @@
+using MedConnect.Messaging;
+
 namespace CommunicationService.Common.Messaging;
 
 public static class MessagingExtensions
@@ -6,13 +8,14 @@ public static class MessagingExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddRabbitMq(configuration, "CommunicationService");
+
         services
-            .AddOptions<RabbitMqOptions>()
+            .AddOptions<CommunicationQueueOptions>()
             .Bind(configuration.GetSection(RabbitMqOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        services.AddSingleton<RabbitMqConnection>();
         services.AddHostedService<AppointmentCreatedConsumer>();
         services.AddHostedService<ParticipantNameUpdatedConsumer>();
 

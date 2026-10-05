@@ -1,0 +1,34 @@
+using MedConnect.Shared.Events;
+using NotificationService.Common.Messaging;
+
+namespace NotificationService.Features.Notifications;
+
+public sealed class AppointmentCancelledHandler(INotificationSender sender)
+    : INotificationHandler<AppointmentCancelledPayload>
+{
+    public async Task HandleAsync(AppointmentCancelledPayload payload, CancellationToken cancellationToken)
+    {
+        var textPreview = string.IsNullOrWhiteSpace(payload.CancelReason)
+            ? $"Appointment {payload.AppointmentId} cancelled"
+            : payload.CancelReason;
+
+        await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient, textPreview), cancellationToken);
+        await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor, textPreview), cancellationToken);
+    }
+
+    private static NotificationMessage CreateMessage(
+        AppointmentCancelledPayload payload,
+        Guid recipientId,
+        string recipientRole,
+        string textPreview) =>
+        new()
+        {
+            EventType = EventTypes.AppointmentCancelled,
+            RecipientId = recipientId,
+            RecipientRole = recipientRole,
+            AppointmentId = payload.AppointmentId,
+            PatientId = payload.PatientId,
+            DoctorId = payload.DoctorId,
+            TextPreview = textPreview
+        };
+}
