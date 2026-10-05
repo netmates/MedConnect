@@ -7,11 +7,11 @@ public sealed class RabbitMqHealthCheck(RabbitMqConnection connection) : IHealth
 {
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
-        CancellationToken cancellationToken = default)
+        CancellationToken ct = default)
     {
         try
         {
-            var rabbitConnection = await connection.GetConnectionAsync(cancellationToken);
+            var rabbitConnection = await connection.GetConnectionAsync(ct);
             return rabbitConnection.IsOpen
                 ? HealthCheckResult.Healthy("RabbitMQ connection is open")
                 : HealthCheckResult.Unhealthy("RabbitMQ connection is closed");

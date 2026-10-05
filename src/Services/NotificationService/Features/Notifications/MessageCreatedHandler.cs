@@ -4,9 +4,9 @@ using NotificationService.Common.Messaging;
 namespace NotificationService.Features.Notifications;
 
 public sealed class MessageCreatedHandler(INotificationSender sender)
-    : INotificationHandler<MessageCreatedPayload>
+    : INotificationEventHandler<MessageCreatedPayload>
 {
-    public Task HandleAsync(MessageCreatedPayload payload, CancellationToken cancellationToken) =>
+    public Task HandleAsync(MessageCreatedPayload payload, CancellationToken ct) =>
         sender.SendAsync(
             new NotificationMessage
             {
@@ -17,5 +17,5 @@ public sealed class MessageCreatedHandler(INotificationSender sender)
                 MessageId = payload.MessageId,
                 TextPreview = payload.TextPreview
             },
-            cancellationToken);
+            ct);
 }

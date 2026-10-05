@@ -2,5 +2,5 @@ namespace NotificationService.Common.DependencyInjection;
 
 public interface IServiceModule
 {
-    void Register(IServiceCollection services, IConfiguration configuration);
+    public void Register(IServiceCollection services, IConfiguration configuration);
 }

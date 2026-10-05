@@ -11,7 +11,7 @@ public sealed class NotificationQueueConsumer<TPayload>(
     IOptions<RabbitMqOptions> rabbitOptions,
     IOptions<NotificationQueueOptions> queueOptions,
     NotificationSubscription subscription,
-    INotificationHandler<TPayload> handler,
+    INotificationEventHandler<TPayload> handler,
     ILogger<NotificationQueueConsumer<TPayload>> logger) : BackgroundService
 {
     private readonly RabbitMqOptions _rabbitOptions = rabbitOptions.Value;

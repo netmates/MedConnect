@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace NotificationService.Features.Notifications;
@@ -9,7 +8,7 @@ public sealed class ConfiguredNotificationSender(
     [FromKeyedServices(NotificationChannels.Email)] INotificationSender email,
     [FromKeyedServices(NotificationChannels.Sms)] INotificationSender sms) : INotificationSender
 {
-    public Task SendAsync(NotificationMessage message, CancellationToken cancellationToken)
+    public Task SendAsync(NotificationMessage message, CancellationToken ct)
     {
         var sender = options.Value.Channel switch
         {
@@ -20,6 +19,6 @@ public sealed class ConfiguredNotificationSender(
                 $"Unsupported notification channel '{options.Value.Channel}'.")
         };
 
-        return sender.SendAsync(message, cancellationToken);
+        return sender.SendAsync(message, ct);
     }
 }

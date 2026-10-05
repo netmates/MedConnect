@@ -53,7 +53,7 @@ public static class MessagingExtensions
             serviceProvider.GetRequiredService<IOptions<RabbitMqOptions>>(),
             serviceProvider.GetRequiredService<IOptions<NotificationQueueOptions>>(),
             subscription(queues),
-            serviceProvider.GetRequiredService<INotificationHandler<TPayload>>(),
+            serviceProvider.GetRequiredService<INotificationEventHandler<TPayload>>(),
             serviceProvider.GetRequiredService<ILogger<NotificationQueueConsumer<TPayload>>>());
     }
 }

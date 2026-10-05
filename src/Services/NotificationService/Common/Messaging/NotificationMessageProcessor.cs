@@ -17,7 +17,7 @@ public static class NotificationMessageProcessor
         ReadOnlyMemory<byte> body,
         string expectedEventType,
         Func<TPayload, CancellationToken, Task> handle,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
         IntegrationEventEnvelope<JsonElement>? envelope;
         try
@@ -61,7 +61,7 @@ public static class NotificationMessageProcessor
         {
             try
             {
-                await handle(payload, cancellationToken);
+                await handle(payload, ct);
             }
             catch (Exception ex)
             {

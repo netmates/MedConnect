@@ -4,16 +4,16 @@ using NotificationService.Common.Messaging;
 namespace NotificationService.Features.Notifications;
 
 public sealed class AppointmentCancelledHandler(INotificationSender sender)
-    : INotificationHandler<AppointmentCancelledPayload>
+    : INotificationEventHandler<AppointmentCancelledPayload>
 {
-    public async Task HandleAsync(AppointmentCancelledPayload payload, CancellationToken cancellationToken)
+    public async Task HandleAsync(AppointmentCancelledPayload payload, CancellationToken ct)
     {
         var textPreview = string.IsNullOrWhiteSpace(payload.CancelReason)
             ? $"Appointment {payload.AppointmentId} cancelled"
             : payload.CancelReason;
 
-        await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient, textPreview), cancellationToken);
-        await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor, textPreview), cancellationToken);
+        await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient, textPreview), ct);
+        await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor, textPreview), ct);
     }
 
     private static NotificationMessage CreateMessage(

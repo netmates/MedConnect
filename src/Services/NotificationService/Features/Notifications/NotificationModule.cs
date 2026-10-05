@@ -19,8 +19,8 @@ public sealed class NotificationModule : IServiceModule
         services.AddKeyedSingleton<INotificationSender, SmsNotificationSender>(NotificationChannels.Sms);
         services.AddSingleton<INotificationSender, ConfiguredNotificationSender>();
 
-        services.AddSingleton<INotificationHandler<AppointmentCreatedPayload>, AppointmentCreatedHandler>();
-        services.AddSingleton<INotificationHandler<AppointmentCancelledPayload>, AppointmentCancelledHandler>();
-        services.AddSingleton<INotificationHandler<MessageCreatedPayload>, MessageCreatedHandler>();
+        services.AddSingleton<INotificationEventHandler<AppointmentCreatedPayload>, AppointmentCreatedHandler>();
+        services.AddSingleton<INotificationEventHandler<AppointmentCancelledPayload>, AppointmentCancelledHandler>();
+        services.AddSingleton<INotificationEventHandler<MessageCreatedPayload>, MessageCreatedHandler>();
     }
 }

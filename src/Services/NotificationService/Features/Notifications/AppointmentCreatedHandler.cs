@@ -4,12 +4,12 @@ using NotificationService.Common.Messaging;
 namespace NotificationService.Features.Notifications;
 
 public sealed class AppointmentCreatedHandler(INotificationSender sender)
-    : INotificationHandler<AppointmentCreatedPayload>
+    : INotificationEventHandler<AppointmentCreatedPayload>
 {
-    public async Task HandleAsync(AppointmentCreatedPayload payload, CancellationToken cancellationToken)
+    public async Task HandleAsync(AppointmentCreatedPayload payload, CancellationToken ct)
     {
-        await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient), cancellationToken);
-        await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor), cancellationToken);
+        await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient), ct);
+        await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor), ct);
     }
 
     private static NotificationMessage CreateMessage(

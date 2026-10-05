@@ -2,7 +2,7 @@ namespace NotificationService.Features.Notifications;
 
 public abstract class LoggingNotificationSender(ILogger logger) : INotificationSender
 {
-    public Task SendAsync(NotificationMessage message, CancellationToken cancellationToken)
+    public Task SendAsync(NotificationMessage message, CancellationToken ct)
     {
         Log(message);
         return Task.CompletedTask;
