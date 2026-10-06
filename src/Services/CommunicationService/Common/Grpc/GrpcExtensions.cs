@@ -9,6 +9,9 @@ public static class GrpcExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // h2c: gRPC по http внутри сети compose (для контейнеров)
+        AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
         services.Configure<AppointmentAccessOptions>(configuration.GetSection(AppointmentAccessOptions.SectionName));
 
         services.AddGrpcClient<AppointmentAccess.AppointmentAccessClient>((sp, options) =>
