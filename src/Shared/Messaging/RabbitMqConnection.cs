@@ -13,20 +13,14 @@ public sealed class RabbitMqConnection(
 
     public async Task<IConnection> GetConnectionAsync(CancellationToken ct)
     {
-        if (_connection is { IsOpen: true })
+        if (_connection is not null)
             return _connection;
 
         await _gate.WaitAsync(ct);
         try
         {
-            if (_connection is { IsOpen: true })
-                return _connection;
-
             if (_connection is not null)
-            {
-                await _connection.DisposeAsync();
-                _connection = null;
-            }
+                return _connection;
 
             var factory = new ConnectionFactory
             {

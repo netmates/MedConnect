@@ -6,7 +6,7 @@ using RabbitMQ.Client;
 
 namespace MedConnect.Messaging;
 
-public sealed class RabbitMqPublisher(
+internal sealed class RabbitMqPublisher(
     RabbitMqConnection connection,
     IOptions<RabbitMqOptions> options,
     ILogger<RabbitMqPublisher> logger,
