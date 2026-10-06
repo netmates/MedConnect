@@ -51,6 +51,20 @@ docker compose up -d
 
 Дождитесь готовности Keycloak (первый старт и импорт realm могут занять минуту).
 
+`docker compose up -d` поднимает только инфраструктуру. Сервисы в этом режиме запускаются из IDE (раздел 3).
+
+Инфраструктура и все три сервиса:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.services.yml up -d --build
+```
+
+| Сервис               | URL                      |
+|----------------------|--------------------------|
+| AppointmentService   | http://localhost:5067    |
+| CommunicationService | http://localhost:5080    |
+| NotificationService  | http://localhost:5090    |
+
 ## 2. Secret для Admin API Keycloak (обязательно на каждой машине)
 
 Клиент `medconnect-admin-cli` используется AppointmentService для создания/блокировки пользователей.  
@@ -104,6 +118,18 @@ dotnet run
 - HTTPS: https://localhost:7280
 - OpenAPI / Scalar: `/scalar` (в Development)
 - gRPC к Appointment: `https://localhost:7246` (нужен trusted cert)
+
+### 3.3. NotificationService
+
+```powershell
+cd src/Services/NotificationService
+dotnet run
+```
+
+- HTTP: http://localhost:5090
+- HTTPS: https://localhost:7290
+
+Слушает очереди RabbitMQ. HTTP-проверки: `/health/live` и `/health/ready`.
 
 ## 4. SPA (`src/Web.Generated`)
 
@@ -173,5 +199,6 @@ dotnet test
 6. [ ] `dotnet user-secrets set "Keycloak:AdminClientSecret" "..."` в AppointmentService
 7. [ ] `dotnet run` в `AppointmentService`
 8. [ ] `dotnet run` в `CommunicationService`
-9. [ ] `npm install` + `npm run dev` в `src/Web.Generated`
-10. [ ] (опционально) Seq UI на :5341, RabbitMQ UI на :15672
+9. [ ] `dotnet run` в `NotificationService`
+10. [ ] `npm install` + `npm run dev` в `src/Web.Generated`
+11. [ ] (опционально) Seq UI на :5341, RabbitMQ UI на :15672
