@@ -17,9 +17,7 @@ public static class SendMessageEndpoint
                 HttpContext http,
                 CancellationToken ct) =>
         {
-            var validation = await validator.ValidateAsync(request, ct);
-            if (!validation.IsValid)
-                throw new ValidationException(validation.Errors);
+            await validator.ValidateAndThrowAsync(request, ct);
 
             var keycloakId = CurrentUser.GetKeycloakId(http.User);
             var message = await handler.HandleAsync(chatId, request, keycloakId, ct);

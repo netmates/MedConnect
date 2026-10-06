@@ -14,9 +14,7 @@ public static class CreateChatEndpoint
                 HttpContext http,
                 CancellationToken ct) =>
         {
-            var validation = await validator.ValidateAsync(request, ct);
-            if (!validation.IsValid)
-                throw new ValidationException(validation.Errors);
+            await validator.ValidateAndThrowAsync(request, ct);
 
             var keycloakId = CurrentUser.GetKeycloakId(http.User);
             var (chat, created) = await handler.HandleAsync(request.AppointmentId, keycloakId, ct);
