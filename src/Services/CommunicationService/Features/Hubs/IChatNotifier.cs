@@ -1,6 +1,6 @@
 using CommunicationService.Features.Messages;
 
-namespace CommunicationService.Common.SignalR;
+namespace CommunicationService.Features.Hubs;
 
 public interface IChatNotifier
 {

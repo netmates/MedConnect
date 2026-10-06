@@ -1,6 +1,6 @@
-using CommunicationService.Features.Hubs;
+using CommunicationService.Common.SignalR;
 
-namespace CommunicationService.Common.SignalR;
+namespace CommunicationService.Features.Hubs;
 
 public static class SignalRExtensions
 {

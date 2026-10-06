@@ -1,5 +1,5 @@
 using CommunicationService.Common.Auth;
-using CommunicationService.Common.SignalR;
+using CommunicationService.Features.Hubs;
 using FluentValidation;
 
 namespace CommunicationService.Features.Messages;

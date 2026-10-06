@@ -1,8 +1,8 @@
-using CommunicationService.Features.Hubs;
+using CommunicationService.Common.SignalR;
 using CommunicationService.Features.Messages;
 using Microsoft.AspNetCore.SignalR;
 
-namespace CommunicationService.Common.SignalR;
+namespace CommunicationService.Features.Hubs;
 
 /// <summary>
 /// Доставка ReceiveMessage в SignalR-группу чата.
