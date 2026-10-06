@@ -1,6 +1,6 @@
 using CommunicationService.Common.Auth;
 using CommunicationService.Common.Middleware;
-using MedConnect.Messaging;
+using MedConnect.Shared.Messaging;
 using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 using MongoDB.Driver;

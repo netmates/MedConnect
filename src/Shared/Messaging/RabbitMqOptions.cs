@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MedConnect.Messaging;
+namespace MedConnect.Shared.Messaging;
 
 public sealed class RabbitMqOptions
 {

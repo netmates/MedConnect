@@ -1,4 +1,4 @@
-using MedConnect.Messaging;
+using MedConnect.Shared.Messaging;
 
 namespace AppointmentService.Infrastructure.Messaging;
 

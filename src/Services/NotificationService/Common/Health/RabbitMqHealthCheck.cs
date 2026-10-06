@@ -1,4 +1,4 @@
-using MedConnect.Messaging;
+using MedConnect.Shared.Messaging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace NotificationService.Common.Health;

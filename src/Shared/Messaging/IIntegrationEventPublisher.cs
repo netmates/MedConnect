@@ -1,4 +1,4 @@
-namespace MedConnect.Messaging;
+namespace MedConnect.Shared.Messaging;
 
 public interface IIntegrationEventPublisher
 {

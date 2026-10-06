@@ -1,6 +1,6 @@
 using RabbitMQ.Client.Exceptions;
 
-namespace MedConnect.Messaging;
+namespace MedConnect.Shared.Messaging;
 
 public static class MessagingServiceCollectionExtensions
 {

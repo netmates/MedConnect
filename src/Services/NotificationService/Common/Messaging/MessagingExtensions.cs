@@ -1,4 +1,4 @@
-using MedConnect.Messaging;
+using MedConnect.Shared.Messaging;
 using MedConnect.Shared.Events;
 using Microsoft.Extensions.Options;
 

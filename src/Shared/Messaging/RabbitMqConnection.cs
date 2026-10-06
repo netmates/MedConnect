@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
-namespace MedConnect.Messaging;
+namespace MedConnect.Shared.Messaging;
 
 public sealed class RabbitMqConnection(
     IOptions<RabbitMqOptions> options,

@@ -1,4 +1,4 @@
-using MedConnect.Messaging;
+using MedConnect.Shared.Messaging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;

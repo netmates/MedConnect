@@ -6,7 +6,7 @@ using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
-using MedConnect.Messaging;
+using MedConnect.Shared.Messaging;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;

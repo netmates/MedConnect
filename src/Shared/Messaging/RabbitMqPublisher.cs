@@ -4,7 +4,7 @@ using MedConnect.Shared.Events;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
-namespace MedConnect.Messaging;
+namespace MedConnect.Shared.Messaging;
 
 internal sealed class RabbitMqPublisher(
     RabbitMqConnection connection,
