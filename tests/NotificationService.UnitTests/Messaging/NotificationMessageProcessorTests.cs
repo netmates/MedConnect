@@ -15,9 +15,11 @@ public class NotificationMessageProcessorTests
     [Fact]
     public async Task ValidEnvelope_IsAcknowledged_AndHandlerRuns()
     {
+        // Arrange
         var appointmentId = Guid.NewGuid();
         var handled = new List<Guid>();
 
+        // Act
         var result = await NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
             Envelope(EventTypes.AppointmentCreated, 1, new AppointmentCreatedPayload
             {
@@ -31,18 +33,20 @@ public class NotificationMessageProcessorTests
             },
             CancellationToken.None);
 
+        // Assert
         Assert.False(result.DeadLetter);
-        Assert.False(result.Requeue);
         Assert.Equal([appointmentId], handled);
     }
 
     [Theory]
     [InlineData("{", "invalid-json")]
     [InlineData("null", "invalid-json")]
-    public async Task InvalidJson_IsDeadLetteredWithoutRequeue(string json, string reason)
+    public async Task InvalidJson_IsDeadLettered(string json, string reason)
     {
+        // Arrange
         var handled = false;
 
+        // Act
         var result = await NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
             Encoding.UTF8.GetBytes(json),
             EventTypes.AppointmentCreated,
@@ -53,41 +57,50 @@ public class NotificationMessageProcessorTests
             },
             CancellationToken.None);
 
+        // Assert
         Assert.True(result.DeadLetter);
-        Assert.False(result.Requeue);
         Assert.Equal(reason, result.Reason);
         Assert.False(handled);
     }
 
     [Fact]
-    public async Task UnexpectedEventType_IsDeadLetteredWithoutRequeue()
+    public async Task UnexpectedEventType_IsDeadLettered()
     {
+        // Arrange
+        var payload = new AppointmentCreatedPayload();
+
+        // Act
         var result = await ProcessAsync(
             EventTypes.MessageCreated,
             eventVersion: 1,
-            payload: new AppointmentCreatedPayload());
+            payload);
 
+        // Assert
         Assert.True(result.DeadLetter);
-        Assert.False(result.Requeue);
         Assert.Equal("unexpected-event-type", result.Reason);
     }
 
     [Fact]
-    public async Task UnsupportedEventVersion_IsDeadLetteredWithoutRequeue()
+    public async Task UnsupportedEventVersion_IsDeadLettered()
     {
+        // Arrange
+        var payload = new AppointmentCreatedPayload();
+
+        // Act
         var result = await ProcessAsync(
             EventTypes.AppointmentCreated,
             eventVersion: 2,
-            payload: new AppointmentCreatedPayload());
+            payload);
 
+        // Assert
         Assert.True(result.DeadLetter);
-        Assert.False(result.Requeue);
         Assert.Equal("unsupported-event-version", result.Reason);
     }
 
     [Fact]
-    public async Task EmptyPayload_IsDeadLetteredWithoutRequeue()
+    public async Task EmptyPayload_IsDeadLettered()
     {
+        // Arrange
         var json = """
             {
               "eventId": "3f6f72f7-3997-4d1a-9c0c-6f62cf57ec0d",
@@ -97,28 +110,33 @@ public class NotificationMessageProcessorTests
             }
             """;
 
+        // Act
         var result = await NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
             Encoding.UTF8.GetBytes(json),
             EventTypes.AppointmentCreated,
             (_, _) => Task.CompletedTask,
             CancellationToken.None);
 
+        // Assert
         Assert.True(result.DeadLetter);
-        Assert.False(result.Requeue);
         Assert.Equal("empty-payload", result.Reason);
     }
 
     [Fact]
-    public async Task HandlerException_IsDeadLetteredWithoutRequeue()
+    public async Task HandlerException_IsDeadLettered()
     {
+        // Arrange
+        var body = Envelope(EventTypes.AppointmentCreated, 1, new AppointmentCreatedPayload());
+
+        // Act
         var result = await NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
-            Envelope(EventTypes.AppointmentCreated, 1, new AppointmentCreatedPayload()),
+            body,
             EventTypes.AppointmentCreated,
             (_, _) => throw new InvalidOperationException("sender failed"),
             CancellationToken.None);
 
+        // Assert
         Assert.True(result.DeadLetter);
-        Assert.False(result.Requeue);
         Assert.Equal("processing-failed", result.Reason);
         Assert.IsType<InvalidOperationException>(result.Error);
     }

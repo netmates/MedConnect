@@ -14,10 +14,13 @@ public class NotificationHandlerTests
     [InlineData(NotificationChannels.Sms, "SMS notification would be sent.")]
     public async Task AppointmentCreated_UsesConfiguredChannel(string channel, string messagePrefix)
     {
+        // Arrange
         var (handler, logs) = CreateCreatedHandler(channel);
 
+        // Act
         await handler.HandleAsync(CreatedPayload(), CancellationToken.None);
 
+        // Assert
         Assert.Equal(2, logs.Entries.Count);
         Assert.All(logs.Entries, entry =>
         {
@@ -29,11 +32,14 @@ public class NotificationHandlerTests
     [Fact]
     public async Task AppointmentCreated_LogsPatientAndDoctor()
     {
+        // Arrange
         var payload = CreatedPayload();
         var (handler, logs) = CreateCreatedHandler(NotificationChannels.Fake);
 
+        // Act
         await handler.HandleAsync(payload, CancellationToken.None);
 
+        // Assert
         var patient = logs.Entries.Single(entry => Equals(entry.Property("RecipientRole"), ParticipantRoles.Patient));
         var doctor = logs.Entries.Single(entry => Equals(entry.Property("RecipientRole"), ParticipantRoles.Doctor));
 
@@ -47,6 +53,7 @@ public class NotificationHandlerTests
     [Fact]
     public async Task AppointmentCancelled_LogsPatientAndDoctor()
     {
+        // Arrange
         var payload = new AppointmentCancelledPayload
         {
             AppointmentId = Guid.NewGuid(),
@@ -57,8 +64,10 @@ public class NotificationHandlerTests
         var (sender, logs) = CreateSender(NotificationChannels.Fake);
         var handler = new AppointmentCancelledHandler(sender);
 
+        // Act
         await handler.HandleAsync(payload, CancellationToken.None);
 
+        // Assert
         Assert.Equal(2, logs.Entries.Count);
         Assert.All(logs.Entries, entry =>
         {
@@ -72,6 +81,7 @@ public class NotificationHandlerTests
     [Fact]
     public async Task MessageCreated_LogsRecipient()
     {
+        // Arrange
         var payload = new MessageCreatedPayload
         {
             MessageId = Guid.NewGuid(),
@@ -83,8 +93,10 @@ public class NotificationHandlerTests
         var (sender, logs) = CreateSender(NotificationChannels.Fake);
         var handler = new MessageCreatedHandler(sender);
 
+        // Act
         await handler.HandleAsync(payload, CancellationToken.None);
 
+        // Assert
         var entry = Assert.Single(logs.Entries);
         Assert.Equal(NotificationChannels.Fake, entry.Property("Channel"));
         Assert.Equal(EventTypes.MessageCreated, entry.Property("EventType"));
