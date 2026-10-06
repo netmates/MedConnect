@@ -4,6 +4,7 @@ using CommunicationService.Common.Health;
 using CommunicationService.Common.Logging;
 using CommunicationService.Common.Messaging;
 using CommunicationService.Common.Middleware;
+using MedConnect.Shared.Http;
 using CommunicationService.Common.OpenApi;
 using CommunicationService.Common.Persistence;
 using CommunicationService.Features;

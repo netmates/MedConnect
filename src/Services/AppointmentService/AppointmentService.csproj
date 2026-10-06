@@ -33,6 +33,7 @@
 	<Compile Include="..\..\Shared\Events\**\*.cs" Link="Events\%(Filename)%(Extension)" />
 	<Compile Include="..\..\Shared\Messaging\**\*.cs" Link="Messaging\%(Filename)%(Extension)" />
 	<Compile Include="..\..\Shared\Auth\**\*.cs" Link="Auth\%(Filename)%(Extension)" />
+	<Compile Include="..\..\Shared\Http\**\*.cs" Link="Http\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

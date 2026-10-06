@@ -1,5 +1,5 @@
 using AppointmentService.Application.Auth;
-using AppointmentService.Application.Common;
+using MedConnect.Shared.Http;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;

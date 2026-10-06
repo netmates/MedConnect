@@ -1,5 +1,5 @@
 using CommunicationService.Common.Auth;
-using CommunicationService.Common.Middleware;
+using MedConnect.Shared.Http;
 using MedConnect.Shared.Messaging;
 using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
@@ -46,7 +46,7 @@ public sealed class SendMessageHandler(
         CancellationToken ct)
     {
         var isPatient = message.SenderRole == Roles.Patient;
-        var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdMiddleware.ItemKey] as string;
+        var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
 
         try
         {

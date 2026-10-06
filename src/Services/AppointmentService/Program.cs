@@ -1,4 +1,5 @@
 using AppointmentService.API.Middleware;
+using MedConnect.Shared.Http;
 using AppointmentService.API.OpenApi;
 using AppointmentService.API.Grpc;
 using AppointmentService.Application.Extensions;

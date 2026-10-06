@@ -1,26 +1,29 @@
 using Serilog.Context;
 
-namespace CommunicationService.Common.Middleware;
+namespace MedConnect.Shared.Http;
 
-public sealed class CorrelationIdMiddleware(RequestDelegate next)
+public static class CorrelationIdKeys
 {
     public const string HeaderName = "X-Correlation-ID";
     public const string ItemKey = "CorrelationId";
+}
 
+public sealed class CorrelationIdMiddleware(RequestDelegate next)
+{
     public async Task InvokeAsync(HttpContext context)
     {
         var correlationId = GetOrCreateCorrelationId(context);
 
-        context.Items[ItemKey] = correlationId;
+        context.Items[CorrelationIdKeys.ItemKey] = correlationId;
 
         context.Response.OnStarting(() =>
         {
-            if (!context.Response.Headers.ContainsKey(HeaderName))
-                context.Response.Headers[HeaderName] = correlationId;
+            if (!context.Response.Headers.ContainsKey(CorrelationIdKeys.HeaderName))
+                context.Response.Headers[CorrelationIdKeys.HeaderName] = correlationId;
             return Task.CompletedTask;
         });
 
-        using (LogContext.PushProperty(ItemKey, correlationId))
+        using (LogContext.PushProperty(CorrelationIdKeys.ItemKey, correlationId))
         {
             await next(context);
         }
@@ -28,7 +31,7 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
 
     private static string GetOrCreateCorrelationId(HttpContext context)
     {
-        if (context.Request.Headers.TryGetValue(HeaderName, out var values))
+        if (context.Request.Headers.TryGetValue(CorrelationIdKeys.HeaderName, out var values))
         {
             var incoming = values.FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(incoming))
