@@ -1,6 +1,6 @@
 using CommunicationService.Common.Persistence;
 
-namespace CommunicationService.Features.Messages;
+namespace CommunicationService.Features;
 
 public sealed record MessageResponse(
     Guid Id,

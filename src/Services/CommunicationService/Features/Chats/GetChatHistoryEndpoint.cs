@@ -1,5 +1,4 @@
 using CommunicationService.Common.Auth;
-using CommunicationService.Features.Messages;
 
 namespace CommunicationService.Features.Chats;
 

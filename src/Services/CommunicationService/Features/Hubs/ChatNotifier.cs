@@ -1,5 +1,4 @@
 using CommunicationService.Common.SignalR;
-using CommunicationService.Features.Messages;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CommunicationService.Features.Hubs;

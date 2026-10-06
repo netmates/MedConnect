@@ -1,5 +1,3 @@
-using CommunicationService.Features.Messages;
-
 namespace CommunicationService.Features.Hubs;
 
 public interface IChatNotifier
