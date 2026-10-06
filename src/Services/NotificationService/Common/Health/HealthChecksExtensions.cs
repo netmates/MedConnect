@@ -22,7 +22,7 @@ public static class HealthChecksExtensions
         return services;
     }
 
-    public static Task WriteHealthJson(HttpContext context, HealthReport report)
+    private static Task WriteHealthJson(HttpContext context, HealthReport report)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
 

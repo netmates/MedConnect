@@ -16,7 +16,10 @@ public static class LoggingExtensions
                 .Enrich.WithProperty("EnvironmentName", context.HostingEnvironment.EnvironmentName);
 
             if (context.HostingEnvironment.IsDevelopment())
-                configuration.WriteTo.Seq("http://localhost:5341");
+            {
+                var seqUrl = context.Configuration["Seq:ServerUrl"] ?? "http://localhost:5341";
+                configuration.WriteTo.Seq(seqUrl);
+            }
         });
     }
 }
