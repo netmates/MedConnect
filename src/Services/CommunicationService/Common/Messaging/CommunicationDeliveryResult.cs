@@ -33,8 +33,7 @@ public sealed record CommunicationDeliveryResult
         IntegrationEventEnvelope<JsonElement> envelope,
         bool deadLetter,
         string? reason,
-        Exception? error) =>
-        new()
+        Exception? error) => new()
         {
             DeadLetter = deadLetter,
             Reason = reason,

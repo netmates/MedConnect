@@ -1,5 +1,7 @@
+using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AppointmentService.Infrastructure;
@@ -25,8 +27,16 @@ public sealed class UnitOfWork(AppointmentDbContext context) : IUnitOfWork
         if (_transaction is null)
             throw new InvalidOperationException("Транзакция не была начата.");
 
-        await SaveChangesInternalAsync(ct);
-        await _transaction.CommitAsync(ct);
+        try
+        {
+            await SaveChangesInternalAsync(ct);
+            await _transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateException ex) when (PostgresExceptionHelper.IsUniqueViolation(ex))
+        {
+            throw new ConflictException("Операция конфликтует с текущим состоянием данных.");
+        }
+
         await _transaction.DisposeAsync();
         _transaction = null;
     }

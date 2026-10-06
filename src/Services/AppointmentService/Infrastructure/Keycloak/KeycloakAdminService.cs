@@ -57,7 +57,7 @@ public sealed class KeycloakAdminService(
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await httpClient.SendAsync(request, ct);
+        using var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
 
         var location = response.Headers.Location?.ToString()
@@ -102,7 +102,7 @@ public sealed class KeycloakAdminService(
             $"/admin/realms/{Realm}/users/{keycloakId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await httpClient.SendAsync(request, ct);
+        using var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
 
         logger.LogInformation("Keycloak user deleted: {KeycloakId}", keycloakId);
@@ -126,7 +126,7 @@ public sealed class KeycloakAdminService(
         using var getRequest = new HttpRequestMessage(HttpMethod.Get, userPath);
         getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var getResponse = await httpClient.SendAsync(getRequest, ct);
+        using var getResponse = await httpClient.SendAsync(getRequest, ct);
         await EnsureKeycloakSuccessAsync(getResponse, ct);
 
         await using var stream = await getResponse.Content.ReadAsStreamAsync(ct);
@@ -141,7 +141,7 @@ public sealed class KeycloakAdminService(
         };
         putRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var putResponse = await httpClient.SendAsync(putRequest, ct);
+        using var putResponse = await httpClient.SendAsync(putRequest, ct);
         await EnsureKeycloakSuccessAsync(putResponse, ct);
     }
 
@@ -153,7 +153,7 @@ public sealed class KeycloakAdminService(
         using var getRequest = new HttpRequestMessage(HttpMethod.Get, userPath);
         getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var getResponse = await httpClient.SendAsync(getRequest, ct);
+        using var getResponse = await httpClient.SendAsync(getRequest, ct);
         await EnsureKeycloakSuccessAsync(getResponse, ct);
 
         await using var stream = await getResponse.Content.ReadAsStreamAsync(ct);
@@ -169,7 +169,7 @@ public sealed class KeycloakAdminService(
         };
         putRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var putResponse = await httpClient.SendAsync(putRequest, ct);
+        using var putResponse = await httpClient.SendAsync(putRequest, ct);
         await EnsureKeycloakSuccessAsync(putResponse, ct);
 
         logger.LogInformation(
@@ -190,7 +190,7 @@ public sealed class KeycloakAdminService(
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await httpClient.SendAsync(request, ct);
+        using var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
     }
 
@@ -216,7 +216,7 @@ public sealed class KeycloakAdminService(
             Content = tokenRequest
         };
 
-        var response = await httpClient.SendAsync(request, ct);
+        using var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
@@ -244,7 +244,7 @@ public sealed class KeycloakAdminService(
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await httpClient.SendAsync(request, ct);
+        using var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
     }
 
@@ -258,7 +258,7 @@ public sealed class KeycloakAdminService(
             $"/admin/realms/{Realm}/roles/{roleName}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var response = await httpClient.SendAsync(request, ct);
+        using var response = await httpClient.SendAsync(request, ct);
         await EnsureKeycloakSuccessAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
     }
