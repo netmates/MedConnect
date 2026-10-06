@@ -9,8 +9,7 @@ public static class MongoConsumerRetry
     private static readonly TimeSpan[] Delays =
     [
         TimeSpan.Zero,
-        TimeSpan.FromSeconds(2),
-        TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(2)
     ];
 
     public static bool IsTransientMongo(Exception ex) =>

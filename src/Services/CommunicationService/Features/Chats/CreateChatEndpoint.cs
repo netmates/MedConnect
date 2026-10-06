@@ -24,7 +24,7 @@ public static class CreateChatEndpoint
             var body = CreateChatResponse.From(chat);
 
             return created
-                ? Results.Created($"/api/chats/{chat.Id}", body)
+                ? Results.Created($"/api/chats/{chat.Id}/messages", body)
                 : Results.Ok(body);
         })
             .WithName("CreateChat")

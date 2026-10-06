@@ -39,8 +39,8 @@ public sealed class AppointmentAccessClient(
             };
         }
 
-        if (!Guid.TryParse(response.PatientId, out var patientGuid) ||
-            !Guid.TryParse(response.DoctorId, out var doctorGuid))
+        if (!Guid.TryParse(response.PatientId, out var patientId) ||
+            !Guid.TryParse(response.DoctorId, out var doctorId))
         {
             throw new BusinessRuleException("Сервис записей вернул некорректные идентификаторы.");
         }
@@ -48,8 +48,8 @@ public sealed class AppointmentAccessClient(
         return new AppointmentAccessInfo
         {
             AppointmentId = appointmentId,
-            PatientId = patientGuid,
-            DoctorId = doctorGuid,
+            PatientId = patientId,
+            DoctorId = doctorId,
             PatientKeycloakId = response.PatientKeycloakId,
             DoctorKeycloakId = response.DoctorKeycloakId,
             PatientName = response.PatientName,

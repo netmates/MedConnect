@@ -3,8 +3,6 @@ namespace CommunicationService.Common.Auth;
 public sealed class KeycloakOptions
 {
     public const string SectionName = "Keycloak";
-    public const string AdminClientIdKey = "AdminClientId";
-    public const string AdminClientSecretKey = "AdminClientSecret";
 
     public string Authority { get; set; } = string.Empty;
     public string Audience { get; set; } = string.Empty;
@@ -17,8 +15,10 @@ public static class KeycloakConfiguration
     public static string GetRequired(IConfiguration configuration, string key)
     {
         var path = $"{KeycloakOptions.SectionName}:{key}";
-        return configuration[path]
-            ?? throw new InvalidOperationException($"{path} не задан.");
+        var value = configuration[path];
+        if (string.IsNullOrWhiteSpace(value))
+            throw new InvalidOperationException($"{path} не задан.");
+        return value;
     }
 
     public static Uri GetRealmUri(IConfiguration configuration)
