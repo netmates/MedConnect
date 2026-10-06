@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Serilog.Context;
 
-namespace CommunicationService.Common.Middleware;
+namespace MedConnect.Shared.Http;
 
 public sealed class UserIdLogContextMiddleware(RequestDelegate next)
 {
