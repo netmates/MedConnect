@@ -1,3 +1,4 @@
+using CommunicationService.Common.Auth;
 using CommunicationService.Common.Messaging;
 using MedConnect.Shared.Events;
 
@@ -15,6 +16,8 @@ public static class ChatsServiceCollectionExtensions
         services.AddScoped<EnsureChatService>();
         // Sync ФИО участников чата из RabbitMQ (ParticipantNameUpdated)
         services.AddScoped<UpdateChatParticipantNamesService>();
+        // История, отправка и JoinChat: участник чата, запись еще открыта
+        services.AddScoped<ChatAccessService>();
 
         // RabbitMQ consumers: создать чат при записи; синхронизировать ФИО участников в чатах
         services.AddSingleton<ICommunicationEventHandler<AppointmentCreatedPayload>, AppointmentCreatedChatHandler>();

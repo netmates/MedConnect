@@ -1,11 +1,9 @@
 using CommunicationService.Common.Auth;
-using CommunicationService.Common.Exceptions;
 using CommunicationService.Common.Middleware;
 using MedConnect.Messaging;
 using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 using MongoDB.Driver;
-using CommunicationService.Common.Grpc;
 
 namespace CommunicationService.Features.Messages;
 
@@ -14,12 +12,9 @@ public sealed class SendMessageHandler(
     IIntegrationEventPublisher publisher,
     IHttpContextAccessor httpContextAccessor,
     ILogger<SendMessageHandler> logger,
-    AppointmentAccessClient appointmentAccess)
+    ChatAccessService chatAccess)
 {
     private const int TextPreviewMaxLength = 120;
-
-    private readonly IMongoCollection<ChatDocument> _chats =
-        db.GetCollection<ChatDocument>(MongoCollections.Chats);
 
     private readonly IMongoCollection<MessageDocument> _messages =
         db.GetCollection<MessageDocument>(MongoCollections.Messages);
@@ -30,11 +25,7 @@ public sealed class SendMessageHandler(
         string currentKeycloakId,
         CancellationToken ct)
     {
-        var chat = await _chats.Find(x => x.Id == chatId).FirstOrDefaultAsync(ct)
-            ?? throw new NotFoundException($"Чат {chatId} не найден.");
-
-        ChatAccess.EnsureParticipant(chat, currentKeycloakId);
-        await appointmentAccess.ValidateAsync(chat.AppointmentId, currentKeycloakId, ct);
+        var chat = await chatAccess.RequireOpenParticipantAsync(chatId, currentKeycloakId, ct);
 
         var senderRole = currentKeycloakId == chat.PatientKeycloakId
             ? Roles.Patient

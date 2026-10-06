@@ -1,11 +1,8 @@
 using CommunicationService.Common.Auth;
 using CommunicationService.Common.Exceptions;
-using CommunicationService.Common.Grpc;
-using CommunicationService.Common.Persistence;
 using CommunicationService.Common.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using MongoDB.Driver;
 
 namespace CommunicationService.Features.Hubs;
 
@@ -13,10 +10,8 @@ namespace CommunicationService.Features.Hubs;
 /// Real-time чат: Join/Leave.
 /// </summary>
 [Authorize(Roles = Roles.PatientOrDoctor)]
-public sealed class ChatHub(IMongoDatabase db, AppointmentAccessClient appointmentAccess) : Hub
+public sealed class ChatHub(ChatAccessService chatAccess) : Hub
 {
-    private readonly IMongoCollection<ChatDocument> _chats = db.GetCollection<ChatDocument>(MongoCollections.Chats);
-
     /// <summary>
     /// Войти в группу чата (только участник).
     /// </summary>
@@ -25,12 +20,8 @@ public sealed class ChatHub(IMongoDatabase db, AppointmentAccessClient appointme
         try
         {
             var keycloakId = CurrentUser.GetKeycloakId(Context.User!);
-            var chat = await _chats.Find(x => x.Id == chatId)
-                .FirstOrDefaultAsync(Context.ConnectionAborted)
-                ?? throw new NotFoundException($"Чат {chatId} не найден.");
 
-            ChatAccess.EnsureParticipant(chat, keycloakId);
-            await appointmentAccess.ValidateAsync(chat.AppointmentId, keycloakId, Context.ConnectionAborted);
+            await chatAccess.RequireOpenParticipantAsync(chatId, keycloakId, Context.ConnectionAborted);
 
             await Groups.AddToGroupAsync(
                 Context.ConnectionId,
