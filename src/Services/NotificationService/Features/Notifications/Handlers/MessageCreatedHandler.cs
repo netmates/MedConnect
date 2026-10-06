@@ -1,7 +1,8 @@
 using MedConnect.Shared.Events;
 using NotificationService.Common.Messaging;
+using NotificationService.Features.Notifications.Senders;
 
-namespace NotificationService.Features.Notifications;
+namespace NotificationService.Features.Notifications.Handlers;
 
 public sealed class MessageCreatedHandler(INotificationSender sender)
     : INotificationEventHandler<MessageCreatedPayload>

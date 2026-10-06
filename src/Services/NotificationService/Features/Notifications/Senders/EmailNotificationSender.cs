@@ -1,4 +1,4 @@
-namespace NotificationService.Features.Notifications;
+namespace NotificationService.Features.Notifications.Senders;
 
 public sealed class EmailNotificationSender(ILogger<EmailNotificationSender> logger) : LoggingNotificationSender(logger)
 {

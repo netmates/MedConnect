@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace NotificationService.Features.Notifications;
+namespace NotificationService.Features.Notifications.Senders;
 
 public sealed class ConfiguredNotificationSender(
     IOptions<NotificationOptions> options,

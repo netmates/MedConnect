@@ -1,4 +1,4 @@
-namespace NotificationService.Features.Notifications;
+namespace NotificationService.Features.Notifications.Senders;
 
 public sealed class SmsNotificationSender(ILogger<SmsNotificationSender> logger) : LoggingNotificationSender(logger)
 {

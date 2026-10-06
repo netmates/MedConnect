@@ -1,4 +1,4 @@
-namespace NotificationService.Features.Notifications;
+namespace NotificationService.Features.Notifications.Senders;
 
 public sealed class FakeNotificationSender(ILogger<FakeNotificationSender> logger) : LoggingNotificationSender(logger)
 {

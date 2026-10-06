@@ -1,6 +1,8 @@
 using MedConnect.Shared.Events;
 using Microsoft.Extensions.Options;
 using NotificationService.Features.Notifications;
+using NotificationService.Features.Notifications.Handlers;
+using NotificationService.Features.Notifications.Senders;
 
 namespace NotificationService.UnitTests.Notifications;
 
