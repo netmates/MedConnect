@@ -1,4 +1,4 @@
-using AppointmentService.Infrastructure.Keycloak;
+using MedConnect.Shared.Auth;
 using Scalar.AspNetCore;
 
 namespace AppointmentService.API.OpenApi;

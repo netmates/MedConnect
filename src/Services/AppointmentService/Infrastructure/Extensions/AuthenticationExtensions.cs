@@ -1,4 +1,3 @@
-using AppointmentService.Infrastructure.Keycloak;
 using MedConnect.Shared.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;

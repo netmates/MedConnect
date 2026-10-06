@@ -1,4 +1,4 @@
-using AppointmentService.Infrastructure.Keycloak;
+using MedConnect.Shared.Auth;
 using AppointmentService.Infrastructure.Persistence;
 using MedConnect.Shared.Health;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;

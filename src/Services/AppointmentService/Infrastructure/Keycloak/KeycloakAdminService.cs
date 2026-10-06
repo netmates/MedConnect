@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces.Services;
+using MedConnect.Shared.Auth;
 
 namespace AppointmentService.Infrastructure.Keycloak;
 
@@ -16,15 +17,17 @@ public sealed class KeycloakAdminService(
 {
     private const int TokenExpiryBufferSeconds = 30;
     private const int DefaultTokenLifetimeSeconds = 60;
+    private const string AdminClientIdKey = "AdminClientId";
+    private const string AdminClientSecretKey = "AdminClientSecret";
 
     private string Realm =>
         KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Realm));
 
     private string AdminClientId =>
-        KeycloakConfiguration.GetRequired(configuration, KeycloakOptions.AdminClientIdKey);
+        KeycloakConfiguration.GetRequired(configuration, AdminClientIdKey);
 
     private string AdminClientSecret =>
-        KeycloakConfiguration.GetRequired(configuration, KeycloakOptions.AdminClientSecretKey);
+        KeycloakConfiguration.GetRequired(configuration, AdminClientSecretKey);
 
     public async Task<string> CreateUserAsync(
         string email,

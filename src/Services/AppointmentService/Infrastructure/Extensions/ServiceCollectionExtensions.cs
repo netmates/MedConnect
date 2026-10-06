@@ -2,6 +2,7 @@ using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Infrastructure.Keycloak;
+using MedConnect.Shared.Auth;
 using AppointmentService.Infrastructure.Messaging;
 using AppointmentService.Infrastructure.Persistence;
 using AppointmentService.Infrastructure.Repositories;

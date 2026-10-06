@@ -1,10 +1,8 @@
-namespace AppointmentService.Infrastructure.Keycloak;
+namespace MedConnect.Shared.Auth;
 
 public sealed class KeycloakOptions
 {
     public const string SectionName = "Keycloak";
-    public const string AdminClientIdKey = "AdminClientId";
-    public const string AdminClientSecretKey = "AdminClientSecret";
 
     public string Authority { get; set; } = string.Empty;
     public string Audience { get; set; } = string.Empty;
