@@ -1,6 +1,6 @@
 using CommunicationService.Common.Auth;
 
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.History;
 
 public static class GetChatHistoryEndpoint
 {

@@ -1,6 +1,6 @@
 using CommunicationService.Common.Persistence;
 
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.Create;
 
 public sealed record CreateChatResponse(
     Guid Id,

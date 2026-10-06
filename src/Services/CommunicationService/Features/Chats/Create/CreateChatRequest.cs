@@ -1,3 +1,3 @@
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.Create;
 
 public sealed record CreateChatRequest(Guid AppointmentId);

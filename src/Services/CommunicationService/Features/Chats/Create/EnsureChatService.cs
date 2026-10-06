@@ -1,7 +1,7 @@
 using CommunicationService.Common.Persistence;
 using MongoDB.Driver;
 
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.Create;
 
 public sealed class EnsureChatService(IMongoDatabase db)
 {

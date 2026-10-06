@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.Create;
 
 public sealed class CreateChatValidator : AbstractValidator<CreateChatRequest>
 {

@@ -10,6 +10,15 @@ public sealed class ChatAccessService(IMongoDatabase db, AppointmentAccessClient
     private readonly IMongoCollection<ChatDocument> _chats =
         db.GetCollection<ChatDocument>(MongoCollections.Chats);
 
+    private static void EnsureParticipant(ChatDocument chat, string currentKeycloakId)
+    {
+        if (currentKeycloakId != chat.PatientKeycloakId
+            && currentKeycloakId != chat.DoctorKeycloakId)
+        {
+            throw new ForbiddenException("Нет доступа к этому чату.");
+        }
+    }
+
     public async Task<ChatDocument> RequireOpenParticipantAsync(
         Guid chatId,
         string currentKeycloakId,
@@ -18,7 +27,7 @@ public sealed class ChatAccessService(IMongoDatabase db, AppointmentAccessClient
         var chat = await _chats.Find(x => x.Id == chatId).FirstOrDefaultAsync(ct)
             ?? throw new NotFoundException($"Чат {chatId} не найден.");
 
-        ChatAccess.EnsureParticipant(chat, currentKeycloakId);
+        EnsureParticipant(chat, currentKeycloakId);
         await appointmentAccess.ValidateAsync(chat.AppointmentId, currentKeycloakId, ct);
 
         return chat;

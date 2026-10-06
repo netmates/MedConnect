@@ -2,7 +2,7 @@ using CommunicationService.Common.Auth;
 using CommunicationService.Common.Persistence;
 using MongoDB.Driver;
 
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.History;
 
 public sealed class GetChatHistoryHandler(IMongoDatabase db, ChatAccessService chatAccess)
 {

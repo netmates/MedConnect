@@ -7,6 +7,8 @@ namespace CommunicationService.Common.Messaging;
 
 public static class CommunicationMessageProcessor
 {
+    private const int SupportedEventVersion = 1;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -34,7 +36,7 @@ public static class CommunicationMessageProcessor
             return CommunicationDeliveryResult.Reject("invalid-json");
 
         var hasPayload = envelope.Payload.ValueKind is not JsonValueKind.Undefined and not JsonValueKind.Null;
-        var decision = CommunicationDeliveryDecision.Evaluate(
+        var decision = Evaluate(
             hasPayload,
             envelope.EventType,
             expectedEventType,
@@ -70,5 +72,28 @@ public static class CommunicationMessageProcessor
         }
 
         return CommunicationDeliveryResult.Acknowledge(envelope);
+    }
+
+    private static DeliveryDecision Evaluate(
+        bool hasPayload,
+        string? eventType,
+        string expectedEventType,
+        int eventVersion)
+    {
+        if (!hasPayload)
+            return new DeliveryDecision(true, "empty-payload");
+
+        if (!string.Equals(eventType, expectedEventType, StringComparison.Ordinal))
+            return new DeliveryDecision(true, "unexpected-event-type");
+
+        if (eventVersion != SupportedEventVersion)
+            return new DeliveryDecision(true, "unsupported-event-version");
+
+        return DeliveryDecision.Ack;
+    }
+
+    private readonly record struct DeliveryDecision(bool DeadLetter, string? Reason)
+    {
+        public static DeliveryDecision Ack { get; } = new(false, null);
     }
 }

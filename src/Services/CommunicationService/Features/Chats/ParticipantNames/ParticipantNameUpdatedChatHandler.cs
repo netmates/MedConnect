@@ -2,11 +2,11 @@ using CommunicationService.Common.Messaging;
 using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.ParticipantNames;
 
-public sealed class SyncChatParticipantNamesHandler(
+public sealed class ParticipantNameUpdatedChatHandler(
     IServiceScopeFactory scopeFactory,
-    ILogger<SyncChatParticipantNamesHandler> logger) : ICommunicationEventHandler<ParticipantNameUpdatedPayload>
+    ILogger<ParticipantNameUpdatedChatHandler> logger) : ICommunicationEventHandler<ParticipantNameUpdatedPayload>
 {
     public async Task HandleAsync(ParticipantNameUpdatedPayload payload, CancellationToken ct)
     {

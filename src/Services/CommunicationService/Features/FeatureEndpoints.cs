@@ -1,5 +1,6 @@
 using CommunicationService.Common.Auth;
-using CommunicationService.Features.Chats;
+using CommunicationService.Features.Chats.Create;
+using CommunicationService.Features.Chats.History;
 using CommunicationService.Features.Messages;
 using Microsoft.AspNetCore.Authorization;
 

@@ -2,7 +2,7 @@ using CommunicationService.Common.Messaging;
 using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.Create;
 
 public sealed class AppointmentCreatedChatHandler(
     IServiceScopeFactory scopeFactory,

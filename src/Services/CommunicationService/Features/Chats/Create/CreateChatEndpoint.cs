@@ -1,7 +1,7 @@
 using CommunicationService.Common.Auth;
 using FluentValidation;
 
-namespace CommunicationService.Features.Chats;
+namespace CommunicationService.Features.Chats.Create;
 
 public static class CreateChatEndpoint
 {
