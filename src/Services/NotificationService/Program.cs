@@ -1,5 +1,5 @@
 using NotificationService.Common.Health;
-using NotificationService.Common.Logging;
+using MedConnect.Shared.Logging;
 using NotificationService.Common.Messaging;
 using NotificationService.Features.Notifications;
 using Serilog;
@@ -7,7 +7,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // Serilog вместо стандартного провайдера логирования (конфиг из appsettings + enrichers)
-builder.Host.AddNotificationSerilog();
+builder.Host.AddMedConnectSerilog("NotificationService");
 
 // Каналы уведомлений (Fake / Email / Sms) и обработчики AppointmentCreated, AppointmentCancelled, MessageCreated
 new NotificationModule().Register(builder.Services, builder.Configuration);

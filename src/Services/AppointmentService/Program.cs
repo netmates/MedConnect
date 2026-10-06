@@ -4,6 +4,7 @@ using AppointmentService.API.OpenApi;
 using AppointmentService.API.Grpc;
 using AppointmentService.Application.Extensions;
 using AppointmentService.Infrastructure.Extensions;
+using MedConnect.Shared.Logging;
 using AppointmentService.Infrastructure.Persistence;
 using AppointmentService.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // Serilog вместо стандартного провайдера логирования (конфиг из appsettings + enrichers)
-builder.Host.AddAppointmentSerilog();
+builder.Host.AddMedConnectSerilog("AppointmentService");
 
 builder.Services.AddControllers();
 

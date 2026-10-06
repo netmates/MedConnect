@@ -1,10 +1,10 @@
 using Serilog;
 
-namespace NotificationService.Common.Logging;
+namespace MedConnect.Shared.Logging;
 
-public static class LoggingExtensions
+public static class SerilogExtensions
 {
-    public static void AddNotificationSerilog(this IHostBuilder host)
+    public static void AddMedConnectSerilog(this IHostBuilder host, string serviceName)
     {
         host.UseSerilog((context, services, configuration) =>
         {
@@ -12,7 +12,7 @@ public static class LoggingExtensions
                 .ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services)
                 .Enrich.FromLogContext()
-                .Enrich.WithProperty("ServiceName", "NotificationService")
+                .Enrich.WithProperty("ServiceName", serviceName)
                 .Enrich.WithProperty("EnvironmentName", context.HostingEnvironment.EnvironmentName);
 
             if (context.HostingEnvironment.IsDevelopment())

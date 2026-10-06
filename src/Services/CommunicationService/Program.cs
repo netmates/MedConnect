@@ -1,7 +1,7 @@
 using CommunicationService.Common.Auth;
 using CommunicationService.Common.Grpc;
 using CommunicationService.Common.Health;
-using CommunicationService.Common.Logging;
+using MedConnect.Shared.Logging;
 using CommunicationService.Common.Messaging;
 using CommunicationService.Common.Middleware;
 using MedConnect.Shared.Http;
@@ -18,7 +18,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // Serilog вместо стандартного провайдера логирования (конфиг из appsettings + enrichers)
-builder.Host.AddCommunicationSerilog();
+builder.Host.AddMedConnectSerilog("CommunicationService");
 
 builder.Services.AddAuthorization();
 
