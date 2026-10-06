@@ -59,8 +59,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithEmptyOrWhitespaceLastName_Fails(string lastName)
     {
         // Arrange
-        var dto = ValidDto();
-        dto.LastName = lastName;
+        var dto = ValidDto() with { LastName = lastName };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -77,8 +76,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithLastNameTooLong_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.LastName = new string('а', Patient.MaxLastNameLength + 1);
+        var dto = ValidDto() with { LastName = new string('а', Patient.MaxLastNameLength + 1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -98,8 +96,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithEmptyOrWhitespaceFirstName_Fails(string firstName)
     {
         // Arrange
-        var dto = ValidDto();
-        dto.FirstName = firstName;
+        var dto = ValidDto() with { FirstName = firstName };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -116,8 +113,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithFirstNameTooLong_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.FirstName = new string('а', Patient.MaxFirstNameLength + 1);
+        var dto = ValidDto() with { FirstName = new string('а', Patient.MaxFirstNameLength + 1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -135,8 +131,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithMiddleNameTooLong_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.MiddleName = new string('а', Patient.MaxMiddleNameLength + 1);
+        var dto = ValidDto() with { MiddleName = new string('а', Patient.MaxMiddleNameLength + 1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -157,8 +152,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithInvalidPhone_Fails(string phone)
     {
         // Arrange
-        var dto = ValidDto();
-        dto.Phone = phone;
+        var dto = ValidDto() with { Phone = phone };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -179,8 +173,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithValidPhoneFormats_Passes(string phone)
     {
         // Arrange
-        var dto = ValidDto();
-        dto.Phone = phone;
+        var dto = ValidDto() with { Phone = phone };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -193,8 +186,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithPhoneTooLong_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.Phone = new string('9', Patient.MaxPhoneLength + 1);
+        var dto = ValidDto() with { Phone = new string('9', Patient.MaxPhoneLength + 1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -211,8 +203,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithFutureDateOfBirth_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.DateOfBirth = DateTime.UtcNow.AddDays(1);
+        var dto = ValidDto() with { DateOfBirth = DateTime.UtcNow.AddDays(1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -228,8 +219,7 @@ public class RegisterPatientValidatorTests
     [Fact]
     public void Validate_WithDateOfBirthTooOld_Fails()
     {
-        var dto = ValidDto();
-        dto.DateOfBirth = Patient.MinDateOfBirth;
+        var dto = ValidDto() with { DateOfBirth = Patient.MinDateOfBirth };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -246,8 +236,7 @@ public class RegisterPatientValidatorTests
     public void Validate_WithValidDateOfBirth_Passes()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.DateOfBirth = Patient.MinDateOfBirth.AddDays(1);
+        var dto = ValidDto() with { DateOfBirth = Patient.MinDateOfBirth.AddDays(1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);

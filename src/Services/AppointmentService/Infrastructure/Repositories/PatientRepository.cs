@@ -1,11 +1,11 @@
-﻿using AppointmentService.Application.Interfaces.Repositories;
+using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentService.Infrastructure.Repositories;
 
-public class PatientRepository(AppointmentDbContext context) : Repository<Patient>(context), IPatientRepository
+public sealed class PatientRepository(AppointmentDbContext context) : Repository<Patient>(context), IPatientRepository
 {
     public async Task<Patient?> GetByKeycloakIdAsync(string keycloakId, CancellationToken ct = default)
         => await _context.Patients

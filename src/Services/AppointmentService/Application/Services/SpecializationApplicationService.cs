@@ -8,7 +8,7 @@ using FluentValidation;
 
 namespace AppointmentService.Application.Services;
 
-public class SpecializationApplicationService(
+public sealed class SpecializationApplicationService(
     ISpecializationRepository specializationRepository,
     IUnitOfWork unitOfWork,
     IValidator<CreateSpecializationDto> createSpecializationValidator,

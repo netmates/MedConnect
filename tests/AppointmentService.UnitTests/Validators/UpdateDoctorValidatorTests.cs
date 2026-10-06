@@ -38,8 +38,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithNullMiddleName_Passes()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.MiddleName = null;
+        var dto = ValidDto() with { MiddleName = null };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -54,8 +53,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithEmptyOrWhitespaceLastName_Fails(string lastName)
     {
         // Arrange
-        var dto = ValidDto();
-        dto.LastName = lastName;
+        var dto = ValidDto() with { LastName = lastName };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -72,8 +70,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithLastNameTooLong_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.LastName = new string('а', Doctor.MaxLastNameLength + 1);
+        var dto = ValidDto() with { LastName = new string('а', Doctor.MaxLastNameLength + 1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -93,8 +90,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithEmptyOrWhitespaceFirstName_Fails(string firstName)
     {
         // Arrange
-        var dto = ValidDto();
-        dto.FirstName = firstName;
+        var dto = ValidDto() with { FirstName = firstName };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -111,8 +107,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithFirstNameTooLong_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.FirstName = new string('а', Doctor.MaxFirstNameLength + 1);
+        var dto = ValidDto() with { FirstName = new string('а', Doctor.MaxFirstNameLength + 1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -130,8 +125,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithMiddleNameTooLong_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.MiddleName = new string('а', Doctor.MaxMiddleNameLength + 1);
+        var dto = ValidDto() with { MiddleName = new string('а', Doctor.MaxMiddleNameLength + 1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -164,8 +158,7 @@ public class UpdateDoctorValidatorTests
         string expectedMessage)
     {
         // Arrange
-        var dto = ValidDto();
-        dto.ExperienceYears = experienceYears;
+        var dto = ValidDto() with { ExperienceYears = experienceYears };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -184,8 +177,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithEmptyOrWhitespaceDescription_Fails(string description)
     {
         // Arrange
-        var dto = ValidDto();
-        dto.Description = description;
+        var dto = ValidDto() with { Description = description };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -202,8 +194,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithDescriptionTooLong_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.Description = new string('а', Doctor.MaxDescriptionLength + 1);
+        var dto = ValidDto() with { Description = new string('а', Doctor.MaxDescriptionLength + 1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -221,8 +212,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithEmptySpecializationIds_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.SpecializationIds = [];
+        var dto = ValidDto() with { SpecializationIds = [] };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -239,8 +229,7 @@ public class UpdateDoctorValidatorTests
     public void Validate_WithEmptyGuidInSpecializationIds_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.SpecializationIds = [Guid.Empty];
+        var dto = ValidDto() with { SpecializationIds = [Guid.Empty] };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -258,8 +247,7 @@ public class UpdateDoctorValidatorTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        var dto = ValidDto();
-        dto.SpecializationIds = [id, id];
+        var dto = ValidDto() with { SpecializationIds = [id, id] };
 
         // Act
         ValidationResult result = _validator.Validate(dto);

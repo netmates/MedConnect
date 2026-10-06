@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace AppointmentService.Infrastructure.Persistence.Configurations;
 
-public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
+public sealed class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
 {
     public void Configure(EntityTypeBuilder<Doctor> builder)
     {

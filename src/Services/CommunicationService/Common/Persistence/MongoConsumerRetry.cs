@@ -5,11 +5,12 @@ namespace CommunicationService.Common.Persistence;
 public static class MongoConsumerRetry
 {
     private const int MaxAttempts = 3;
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
 
     private static readonly TimeSpan[] Delays =
     [
         TimeSpan.Zero,
-        TimeSpan.FromSeconds(2)
+        RetryDelay
     ];
 
     private static bool IsTransientMongo(Exception ex) =>

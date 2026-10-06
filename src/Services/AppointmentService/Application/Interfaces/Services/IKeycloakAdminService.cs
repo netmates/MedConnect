@@ -5,7 +5,7 @@ public interface IKeycloakAdminService
     /// <summary>
     /// Создает пользователя в Keycloak и возвращает его KeycloakId.
     /// </summary>
-    Task<string> CreateUserAsync(
+    public Task<string> CreateUserAsync(
         string email,
         string temporaryPassword,
         string role,
@@ -15,21 +15,21 @@ public interface IKeycloakAdminService
     /// <summary>
     /// Удаляет пользователя в Keycloak по KeycloakId.
     /// </summary>
-    Task DeleteUserAsync(string keycloakId, CancellationToken ct = default);
+    public Task DeleteUserAsync(string keycloakId, CancellationToken ct = default);
     /// <summary>
     /// Блокирует пользователя (enabled = false).
     /// </summary>
-    Task DisableUserAsync(string keycloakId, CancellationToken ct = default);
+    public Task DisableUserAsync(string keycloakId, CancellationToken ct = default);
     /// <summary>
     /// Разблокирует пользователя (enabled = true).
     /// </summary>
-    Task EnableUserAsync(string keycloakId, CancellationToken ct = default);
+    public Task EnableUserAsync(string keycloakId, CancellationToken ct = default);
     /// <summary>
     /// Сбрасывает пароль пользователя.
     /// </summary>
-    Task ResetPasswordAsync(string keycloakId, string newPassword, CancellationToken ct = default);
+    public Task ResetPasswordAsync(string keycloakId, string newPassword, CancellationToken ct = default);
     /// <summary>
     /// Обновляет имя и фамилию пользователя в Keycloak.
     /// </summary>
-    Task UpdateUserNameAsync(string keycloakId, string firstName, string lastName, CancellationToken ct = default);
+    public Task UpdateUserNameAsync(string keycloakId, string firstName, string lastName, CancellationToken ct = default);
 }

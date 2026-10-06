@@ -1,7 +1,7 @@
 namespace AppointmentService.Application.DTOs.ScheduleSlot;
 
-public class UpdateScheduleSlotDto
+public sealed record UpdateScheduleSlotDto
 {
-    public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; }
+    public DateTime StartTime { get; init; }
+    public DateTime EndTime { get; init; }
 }

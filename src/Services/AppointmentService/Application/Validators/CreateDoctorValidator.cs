@@ -1,10 +1,10 @@
-﻿using AppointmentService.Application.DTOs.Doctor;
+using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
 
-public class CreateDoctorValidator : AbstractValidator<CreateDoctorDto>
+public sealed class CreateDoctorValidator : AbstractValidator<CreateDoctorDto>
 {
     public CreateDoctorValidator()
     {

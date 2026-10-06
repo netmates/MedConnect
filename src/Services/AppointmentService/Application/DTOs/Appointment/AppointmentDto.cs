@@ -1,17 +1,17 @@
 namespace AppointmentService.Application.DTOs.Appointment;
 
-public class AppointmentDto
+public sealed record AppointmentDto
 {
-    public Guid Id { get; set; }
-    public Guid PatientId { get; set; }
-    public Guid DoctorId { get; set; }
-    public Guid SlotId { get; set; }
-    public string? Reason { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public string DoctorFullName { get; set; } = string.Empty;
-    public string PatientFullName { get; set; } = string.Empty;
-    public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; }
+    public Guid Id { get; init; }
+    public Guid PatientId { get; init; }
+    public Guid DoctorId { get; init; }
+    public Guid SlotId { get; init; }
+    public string? Reason { get; init; }
+    public string Status { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
+    public string DoctorFullName { get; init; } = string.Empty;
+    public string PatientFullName { get; init; } = string.Empty;
+    public DateTime StartTime { get; init; }
+    public DateTime EndTime { get; init; }
 }

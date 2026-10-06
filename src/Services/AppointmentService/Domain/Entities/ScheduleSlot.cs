@@ -3,7 +3,7 @@ using AppointmentService.Domain.Exceptions;
 
 namespace AppointmentService.Domain.Entities;
 
-public class ScheduleSlot
+public sealed class ScheduleSlot
 {
     public const int MinDurationMinutes = 15;
     public const int MaxDurationMinutes = 120;

@@ -1,14 +1,14 @@
-﻿namespace AppointmentService.Application.DTOs.Patient;
+namespace AppointmentService.Application.DTOs.Patient;
 
-public class PatientDto
+public sealed record PatientDto
 {
-    public Guid Id { get; set; }
-    public string KeycloakId { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string FirstName { get; set; } = string.Empty;
-    public string? MiddleName { get; set; }
-    public string? Phone { get; set; }
-    public DateTime? DateOfBirth { get; set; }
-    public bool IsActive { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public Guid Id { get; init; }
+    public string KeycloakId { get; init; } = string.Empty;
+    public string LastName { get; init; } = string.Empty;
+    public string FirstName { get; init; } = string.Empty;
+    public string? MiddleName { get; init; }
+    public string? Phone { get; init; }
+    public DateTime? DateOfBirth { get; init; }
+    public bool IsActive { get; init; }
+    public DateTime CreatedAt { get; init; }
 }

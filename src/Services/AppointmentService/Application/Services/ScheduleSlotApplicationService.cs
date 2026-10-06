@@ -9,7 +9,7 @@ using FluentValidation;
 
 namespace AppointmentService.Application.Services;
 
-public class ScheduleSlotApplicationService(
+public sealed class ScheduleSlotApplicationService(
     IAppointmentRepository appointmentRepository,
     IScheduleSlotRepository slotRepository,
     IDoctorRepository doctorRepository,

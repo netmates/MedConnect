@@ -14,7 +14,7 @@ using MedConnect.Shared.Events;
 
 namespace AppointmentService.Application.Services;
 
-public class DoctorApplicationService(
+public sealed class DoctorApplicationService(
     IDoctorRepository doctorRepository,
     ISpecializationRepository specializationRepository,
     IAppointmentRepository appointmentRepository,

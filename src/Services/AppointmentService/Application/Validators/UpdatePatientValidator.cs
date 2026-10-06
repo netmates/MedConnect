@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
 
-public class UpdatePatientValidator : AbstractValidator<UpdatePatientDto>
+public sealed class UpdatePatientValidator : AbstractValidator<UpdatePatientDto>
 {
     public UpdatePatientValidator()
     {

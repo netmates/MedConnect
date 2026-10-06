@@ -1,5 +1,5 @@
-﻿namespace AppointmentService.Application.Exceptions;
+namespace AppointmentService.Application.Exceptions;
 
-public class BusinessRuleException(string message) : Exception(message)
+public sealed class BusinessRuleException(string message) : Exception(message)
 {
 }

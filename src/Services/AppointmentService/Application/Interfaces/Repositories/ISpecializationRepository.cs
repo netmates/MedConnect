@@ -1,4 +1,4 @@
-﻿using AppointmentService.Domain.Entities;
+using AppointmentService.Domain.Entities;
 
 namespace AppointmentService.Application.Interfaces.Repositories;
 
@@ -8,5 +8,5 @@ public interface ISpecializationRepository : IRepository<Specialization>
     /// Проверить наличие врачей с данной специализацией.
     /// Используется перед удалением записи из справочника.
     /// </summary>
-    Task<bool> HasAnyDoctorsAsync(Guid specializationId, CancellationToken ct = default);
+    public Task<bool> HasAnyDoctorsAsync(Guid specializationId, CancellationToken ct = default);
 }

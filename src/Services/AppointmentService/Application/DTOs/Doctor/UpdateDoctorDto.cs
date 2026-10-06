@@ -1,11 +1,11 @@
-﻿namespace AppointmentService.Application.DTOs.Doctor;
+namespace AppointmentService.Application.DTOs.Doctor;
 
-public class UpdateDoctorDto
+public sealed record UpdateDoctorDto
 {
-    public string LastName { get; set; } = string.Empty;
-    public string FirstName { get; set; } = string.Empty;
-    public string? MiddleName { get; set; }
-    public string Description { get; set; } = string.Empty;
-    public int ExperienceYears { get; set; }
-    public List<Guid> SpecializationIds { get; set; } = [];
+    public string LastName { get; init; } = string.Empty;
+    public string FirstName { get; init; } = string.Empty;
+    public string? MiddleName { get; init; }
+    public string Description { get; init; } = string.Empty;
+    public int ExperienceYears { get; init; }
+    public List<Guid> SpecializationIds { get; init; } = [];
 }

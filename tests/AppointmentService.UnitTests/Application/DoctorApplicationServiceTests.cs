@@ -380,8 +380,7 @@ public class DoctorApplicationServiceTests
         _doctors.Setup(r => r.GetWithSpecializationsAsync(doctor.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doctor);
 
-        var dto = ValidUpdateDto();
-        dto.SpecializationIds = [];
+        var dto = ValidUpdateDto() with { SpecializationIds = [] };
 
         // Act
         var ex = await Assert.ThrowsAsync<BusinessRuleException>(() =>

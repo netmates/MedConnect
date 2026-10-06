@@ -1,6 +1,6 @@
 namespace AppointmentService.Application.DTOs.Doctor;
 
-public class ResetPasswordDto
+public sealed record ResetPasswordDto
 {
-    public string NewPassword { get; set; } = string.Empty;
+    public string NewPassword { get; init; } = string.Empty;
 }

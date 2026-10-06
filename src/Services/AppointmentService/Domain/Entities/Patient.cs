@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace AppointmentService.Domain.Entities;
 
-public class Patient
+public sealed class Patient
 {
     public const int MaxKeycloakIdLength = 255;
     public const int MaxLastNameLength = 100;

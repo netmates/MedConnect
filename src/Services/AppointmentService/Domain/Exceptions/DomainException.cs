@@ -1,5 +1,5 @@
-﻿namespace AppointmentService.Domain.Exceptions;
+namespace AppointmentService.Domain.Exceptions;
 
-public class DomainException(string message) : Exception(message)
+public sealed class DomainException(string message) : Exception(message)
 {
 }

@@ -2,8 +2,8 @@ namespace AppointmentService.Infrastructure.Keycloak;
 
 public interface IKeycloakTokenCache
 {
-    bool TryGetValid(out string token);
-    void Set(string token, DateTime expiresAt);
+    public bool TryGetValid(out string token);
+    public void Set(string token, DateTime expiresAt);
 }
 
 public sealed class KeycloakTokenCache : IKeycloakTokenCache

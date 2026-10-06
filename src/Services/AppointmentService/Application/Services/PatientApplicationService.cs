@@ -12,7 +12,7 @@ using MedConnect.Shared.Events;
 
 namespace AppointmentService.Application.Services;
 
-public class PatientApplicationService(
+public sealed class PatientApplicationService(
     IPatientRepository patientRepository,
     IUnitOfWork unitOfWork,
     IKeycloakAdminService keycloakAdminService,

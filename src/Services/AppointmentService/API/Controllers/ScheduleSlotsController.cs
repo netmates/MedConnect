@@ -10,7 +10,7 @@ namespace AppointmentService.API.Controllers;
 
 [ApiController]
 [Route("api/slots")]
-public class ScheduleSlotsController(IScheduleSlotApplicationService service) : ControllerBase
+public sealed class ScheduleSlotsController(IScheduleSlotApplicationService service) : ControllerBase
 {
     /// <summary>GET /api/slots — полное расписание текущего врача.</summary>
     [HttpGet]

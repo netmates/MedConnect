@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
 
-public class CreateScheduleSlotValidator : AbstractValidator<CreateScheduleSlotDto>
+public sealed class CreateScheduleSlotValidator : AbstractValidator<CreateScheduleSlotDto>
 {
     public CreateScheduleSlotValidator()
     {

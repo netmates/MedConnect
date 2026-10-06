@@ -1,19 +1,21 @@
-using AppointmentService.Application.Exceptions;
-using AppointmentService.Application.Interfaces.Services;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using AppointmentService.Application.Exceptions;
+using AppointmentService.Application.Interfaces.Services;
 
 namespace AppointmentService.Infrastructure.Keycloak;
 
-public class KeycloakAdminService(
+public sealed class KeycloakAdminService(
     HttpClient httpClient,
     IConfiguration configuration,
     ILogger<KeycloakAdminService> logger,
     IKeycloakTokenCache tokenCache) : IKeycloakAdminService
 {
     private const int TokenExpiryBufferSeconds = 30;
+    private const int DefaultTokenLifetimeSeconds = 60;
 
     private string Realm =>
         KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Realm));
@@ -219,7 +221,7 @@ public class KeycloakAdminService(
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
         var token = json.GetProperty("access_token").GetString()!;
-        var expiresIn = json.TryGetProperty("expires_in", out var exp) ? exp.GetInt32() : 60;
+        var expiresIn = json.TryGetProperty("expires_in", out var exp) ? exp.GetInt32() : DefaultTokenLifetimeSeconds;
         var expiresAt = DateTime.UtcNow.AddSeconds(Math.Max(expiresIn - TokenExpiryBufferSeconds, 1));
 
         tokenCache.Set(token, expiresAt);
@@ -273,13 +275,14 @@ public class KeycloakAdminService(
             "Keycloak request failed. StatusCode={StatusCode}, Body={Body}",
             status, body);
 
-        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+        if (response.StatusCode == HttpStatusCode.Conflict)
             throw new ConflictException("Операция конфликтует с текущим состоянием данных.");
 
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        if (response.StatusCode == HttpStatusCode.NotFound)
             throw new NotFoundException("Запрашиваемый объект не найден.");
 
-        if (status >= 400 && status < 500)
+        if (response.StatusCode >= HttpStatusCode.BadRequest
+            && response.StatusCode < HttpStatusCode.InternalServerError)
             throw new BusinessRuleException($"Ошибка выполнения операции ({status}).");
 
         response.EnsureSuccessStatusCode();

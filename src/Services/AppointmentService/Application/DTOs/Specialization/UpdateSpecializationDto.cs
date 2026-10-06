@@ -1,6 +1,6 @@
 namespace AppointmentService.Application.DTOs.Specialization;
 
-public class UpdateSpecializationDto
+public sealed record UpdateSpecializationDto
 {
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
 }

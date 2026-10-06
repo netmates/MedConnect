@@ -1,10 +1,10 @@
-﻿using AppointmentService.Domain.Entities;
+using AppointmentService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace AppointmentService.Infrastructure.Persistence.Configurations;
 
-public class ScheduleSlotConfiguration : IEntityTypeConfiguration<ScheduleSlot>
+public sealed class ScheduleSlotConfiguration : IEntityTypeConfiguration<ScheduleSlot>
 {
     public void Configure(EntityTypeBuilder<ScheduleSlot> builder)
     {

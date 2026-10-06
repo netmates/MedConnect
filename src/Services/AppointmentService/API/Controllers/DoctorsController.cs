@@ -8,7 +8,7 @@ namespace AppointmentService.API.Controllers;
 [ApiController]
 [Route("api/doctors")]
 [Authorize]
-public class DoctorsController(IDoctorApplicationService service) : ControllerBase
+public sealed class DoctorsController(IDoctorApplicationService service) : ControllerBase
 {
     /// <summary>GET /api/doctors — список активных врачей, опционально с фильтром по специализации.</summary>
     [HttpGet]

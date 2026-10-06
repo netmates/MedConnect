@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
 
-public class UpdateScheduleSlotValidator : AbstractValidator<UpdateScheduleSlotDto>
+public sealed class UpdateScheduleSlotValidator : AbstractValidator<UpdateScheduleSlotDto>
 {
     public UpdateScheduleSlotValidator()
     {

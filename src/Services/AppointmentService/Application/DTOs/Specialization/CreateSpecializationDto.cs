@@ -1,6 +1,6 @@
 namespace AppointmentService.Application.DTOs.Specialization;
 
-public class CreateSpecializationDto
+public sealed record CreateSpecializationDto
 {
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
 }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentService.Infrastructure.Repositories;
 
-public class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>(context), IDoctorRepository
+public sealed class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>(context), IDoctorRepository
 {
     public async Task<IReadOnlyList<Doctor>> GetBySpecializationAsync(Guid specializationId, CancellationToken ct = default)
         => await _context.Doctors

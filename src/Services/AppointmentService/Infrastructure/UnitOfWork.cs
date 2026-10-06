@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AppointmentService.Infrastructure;
 
-public class UnitOfWork(AppointmentDbContext context) : IUnitOfWork
+public sealed class UnitOfWork(AppointmentDbContext context) : IUnitOfWork
 {
     private IDbContextTransaction? _transaction;
 

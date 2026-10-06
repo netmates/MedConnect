@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
 
-public class RegisterPatientValidator : AbstractValidator<RegisterPatientDto>
+public sealed class RegisterPatientValidator : AbstractValidator<RegisterPatientDto>
 {
     public RegisterPatientValidator()
     {

@@ -11,7 +11,7 @@ namespace AppointmentService.API.Controllers;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = Roles.Admin)]
-public class AdminController(
+public sealed class AdminController(
     ISpecializationApplicationService specializationService,
     IDoctorApplicationService doctorService,
     IAdminPatientApplicationService patientService) : ControllerBase

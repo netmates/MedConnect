@@ -34,8 +34,7 @@ public class CreateAppointmentValidatorTests
     public void Validate_WithEmptySlotId_Fails()
     {
         // Arrange
-        var dto = ValidDto();
-        dto.SlotId = Guid.Empty;
+        var dto = ValidDto() with { SlotId = Guid.Empty };
 
         // Act
         ValidationResult result = _validator.Validate(dto);

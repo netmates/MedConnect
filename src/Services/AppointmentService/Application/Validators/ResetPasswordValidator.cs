@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
 
-public class ResetPasswordValidator : AbstractValidator<ResetPasswordDto>
+public sealed class ResetPasswordValidator : AbstractValidator<ResetPasswordDto>
 {
     private const int MinPasswordLength = 8;
 

@@ -8,7 +8,7 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// <summary>
     /// Получить записи пациента. Опционально: status, период по Slot.StartTime (from / to).
     /// </summary>
-    Task<IReadOnlyList<Appointment>> GetByPatientIdAsync(
+    public Task<IReadOnlyList<Appointment>> GetByPatientIdAsync(
         Guid patientId,
         AppointmentStatus? status = null,
         DateTime? from = null,
@@ -17,7 +17,7 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// <summary>
     /// Получить записи врача. Опционально: status, период по Slot.StartTime (from / to).
     /// </summary>
-    Task<IReadOnlyList<Appointment>> GetByDoctorIdAsync(
+    public Task<IReadOnlyList<Appointment>> GetByDoctorIdAsync(
         Guid doctorId,
         AppointmentStatus? status = null,
         DateTime? from = null,
@@ -26,28 +26,28 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// <summary>
     /// Получить запись по id с Doctor, Patient, Slot.
     /// </summary>
-    Task<Appointment?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
+    public Task<Appointment?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
     /// <summary>
     /// Найти запись, привязанную к конкретному слоту; нужно для проверки, занят ли слот.
     /// </summary>
-    Task<Appointment?> GetBySlotIdAsync(Guid slotId, CancellationToken ct = default);
+    public Task<Appointment?> GetBySlotIdAsync(Guid slotId, CancellationToken ct = default);
     /// <summary>
     /// Получить запись на прием с пессимистической блокировкой.
     /// Защита от race condition: при одновременной отмене, изменении или обработке одной и той же записи
     /// второй запрос будет ждать, пока первый не завершит транзакцию; вызывается только внутри открытой транзакции.
     /// </summary>
-    Task<Appointment?> GetByIdWithLockAsync(Guid id, CancellationToken ct = default);
+    public Task<Appointment?> GetByIdWithLockAsync(Guid id, CancellationToken ct = default);
     /// <summary>
     /// Активные записи врача (Created / Confirmed), без фильтра по времени слота.
     /// </summary>
-    Task<IReadOnlyList<Appointment>> GetActiveByDoctorIdAsync(Guid doctorId, CancellationToken ct = default);
+    public Task<IReadOnlyList<Appointment>> GetActiveByDoctorIdAsync(Guid doctorId, CancellationToken ct = default);
     /// <summary>
     /// Активные записи пациента (Created / Confirmed), без фильтра по времени слота.
     /// </summary>
-    Task<IReadOnlyList<Appointment>> GetActiveByPatientIdAsync(Guid patientId, CancellationToken ct = default);
+    public Task<IReadOnlyList<Appointment>> GetActiveByPatientIdAsync(Guid patientId, CancellationToken ct = default);
     /// <summary>
     /// Есть ли любая запись на этот слот (включая Cancelled и Completed).
     /// Нужно перед удалением слота: FK Appointments.SlotId Restrict.
     /// </summary>
-    Task<bool> ExistsBySlotIdAsync(Guid slotId, CancellationToken ct = default);
+    public Task<bool> ExistsBySlotIdAsync(Guid slotId, CancellationToken ct = default);
 }

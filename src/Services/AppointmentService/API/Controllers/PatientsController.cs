@@ -10,7 +10,7 @@ namespace AppointmentService.API.Controllers;
 [ApiController]
 [Route("api/patients")]
 [Authorize(Roles = Roles.Patient)]
-public class PatientsController(IPatientApplicationService service) : ControllerBase
+public sealed class PatientsController(IPatientApplicationService service) : ControllerBase
 {
     /// <summary>POST /api/patients/register — зарегистрировать или получить профиль пациента.</summary>
     [HttpPost("register")]

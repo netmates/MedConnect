@@ -1,10 +1,10 @@
-﻿using AppointmentService.Application.DTOs.Specialization;
+using AppointmentService.Application.DTOs.Specialization;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
 
-public class UpdateSpecializationValidator : AbstractValidator<UpdateSpecializationDto>
+public sealed class UpdateSpecializationValidator : AbstractValidator<UpdateSpecializationDto>
 {
     public UpdateSpecializationValidator()
     {

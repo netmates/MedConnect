@@ -1,8 +1,8 @@
-﻿using AppointmentService.Domain.Exceptions;
+using AppointmentService.Domain.Exceptions;
 
 namespace AppointmentService.Domain.Entities;
 
-public class Specialization
+public sealed class Specialization
 {
     public const int MaxNameLength = 200;
 

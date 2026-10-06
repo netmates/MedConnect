@@ -1,5 +1,5 @@
-﻿namespace AppointmentService.Application.Exceptions;
+namespace AppointmentService.Application.Exceptions;
 
-public class NotFoundException(string message) : Exception(message)
+public sealed class NotFoundException(string message) : Exception(message)
 {
 }

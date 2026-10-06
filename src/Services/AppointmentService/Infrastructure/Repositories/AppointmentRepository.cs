@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentService.Infrastructure.Repositories;
 
-public class AppointmentRepository(AppointmentDbContext context) : Repository<Appointment>(context), IAppointmentRepository
+public sealed class AppointmentRepository(AppointmentDbContext context) : Repository<Appointment>(context), IAppointmentRepository
 {
     public async Task<IReadOnlyList<Appointment>> GetByPatientIdAsync(
         Guid patientId,

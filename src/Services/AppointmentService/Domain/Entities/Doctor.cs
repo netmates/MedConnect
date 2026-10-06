@@ -1,8 +1,8 @@
-﻿using AppointmentService.Domain.Exceptions;
+using AppointmentService.Domain.Exceptions;
 
 namespace AppointmentService.Domain.Entities;
 
-public class Doctor
+public sealed class Doctor
 {
     public const int MaxKeycloakIdLength = 255;
     public const int MaxLastNameLength = 100;

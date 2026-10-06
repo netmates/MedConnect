@@ -1,8 +1,8 @@
-﻿using AppointmentService.Domain.Exceptions;
+using AppointmentService.Domain.Exceptions;
 
 namespace AppointmentService.Domain.Entities;
 
-public class DoctorSpecialization
+public sealed class DoctorSpecialization
 {
     public Guid DoctorId { get; private set; }
     public Guid SpecializationId { get; private set; }

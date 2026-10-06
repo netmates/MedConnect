@@ -1,7 +1,7 @@
-﻿namespace AppointmentService.Application.DTOs.Appointment;
+namespace AppointmentService.Application.DTOs.Appointment;
 
-public class CreateAppointmentDto
+public sealed record CreateAppointmentDto
 {
-    public Guid SlotId { get; set; }
-    public string? Reason { get; set; }
+    public Guid SlotId { get; init; }
+    public string? Reason { get; init; }
 }

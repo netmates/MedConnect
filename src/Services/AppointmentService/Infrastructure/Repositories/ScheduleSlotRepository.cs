@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentService.Infrastructure.Repositories;
 
-public class ScheduleSlotRepository(AppointmentDbContext context) : Repository<ScheduleSlot>(context), IScheduleSlotRepository
+public sealed class ScheduleSlotRepository(AppointmentDbContext context) : Repository<ScheduleSlot>(context), IScheduleSlotRepository
 {
     public async Task<IReadOnlyList<ScheduleSlot>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct = default)
         => await _context.ScheduleSlots

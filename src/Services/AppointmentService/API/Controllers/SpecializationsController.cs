@@ -8,7 +8,7 @@ namespace AppointmentService.API.Controllers;
 [ApiController]
 [Route("api/specializations")]
 [Authorize]
-public class SpecializationsController(ISpecializationApplicationService service) : ControllerBase
+public sealed class SpecializationsController(ISpecializationApplicationService service) : ControllerBase
 {
     /// <summary>GET /api/specializations — список всех специализаций (для поиска врача).</summary>
     [HttpGet]

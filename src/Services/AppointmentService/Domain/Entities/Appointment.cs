@@ -3,7 +3,7 @@ using AppointmentService.Domain.Exceptions;
 
 namespace AppointmentService.Domain.Entities;
 
-public class Appointment
+public sealed class Appointment
 {
     public const int MaxReasonLength = 500;
 
