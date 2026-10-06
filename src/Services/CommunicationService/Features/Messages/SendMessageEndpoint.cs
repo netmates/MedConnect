@@ -35,7 +35,8 @@ public static class SendMessageEndpoint
             .Produces(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status403Forbidden);
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status503ServiceUnavailable);
 
         return group;
     }

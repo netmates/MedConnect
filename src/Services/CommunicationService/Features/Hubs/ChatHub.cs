@@ -1,5 +1,6 @@
 using CommunicationService.Common.Auth;
 using CommunicationService.Common.Exceptions;
+using CommunicationService.Common.Grpc;
 using CommunicationService.Common.Persistence;
 using CommunicationService.Common.SignalR;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +13,7 @@ namespace CommunicationService.Features.Hubs;
 /// Real-time чат: Join/Leave.
 /// </summary>
 [Authorize(Roles = Roles.PatientOrDoctor)]
-public sealed class ChatHub(IMongoDatabase db) : Hub
+public sealed class ChatHub(IMongoDatabase db, AppointmentAccessClient appointmentAccess) : Hub
 {
     private readonly IMongoCollection<ChatDocument> _chats = db.GetCollection<ChatDocument>(MongoCollections.Chats);
 
@@ -29,6 +30,7 @@ public sealed class ChatHub(IMongoDatabase db) : Hub
                 ?? throw new NotFoundException($"Чат {chatId} не найден.");
 
             ChatAccess.EnsureParticipant(chat, keycloakId);
+            await appointmentAccess.ValidateAsync(chat.AppointmentId, keycloakId, Context.ConnectionAborted);
 
             await Groups.AddToGroupAsync(
                 Context.ConnectionId,
@@ -40,6 +42,10 @@ public sealed class ChatHub(IMongoDatabase db) : Hub
             throw new HubException(ex.Message);
         }
         catch (ForbiddenException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+        catch (ServiceUnavailableException ex)
         {
             throw new HubException(ex.Message);
         }

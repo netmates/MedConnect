@@ -5,6 +5,7 @@ using MedConnect.Messaging;
 using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 using MongoDB.Driver;
+using CommunicationService.Common.Grpc;
 
 namespace CommunicationService.Features.Messages;
 
@@ -12,7 +13,8 @@ public sealed class SendMessageHandler(
     IMongoDatabase db,
     IIntegrationEventPublisher publisher,
     IHttpContextAccessor httpContextAccessor,
-    ILogger<SendMessageHandler> logger)
+    ILogger<SendMessageHandler> logger,
+    AppointmentAccessClient appointmentAccess)
 {
     private const int TextPreviewMaxLength = 120;
 
@@ -33,6 +35,7 @@ public sealed class SendMessageHandler(
             ?? throw new NotFoundException($"Чат {chatId} не найден.");
 
         ChatAccess.EnsureParticipant(chat, currentKeycloakId);
+        await appointmentAccess.ValidateAsync(chat.AppointmentId, currentKeycloakId, ct);
 
         if (senderRole == Roles.Patient && currentKeycloakId != chat.PatientKeycloakId)
             throw new ForbiddenException($"Роль {Roles.Patient} не совпадает с участником чата.");

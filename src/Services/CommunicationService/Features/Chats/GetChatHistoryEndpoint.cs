@@ -24,7 +24,8 @@ public static class GetChatHistoryEndpoint
             .WithSummary("История сообщений чата")
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status403Forbidden);
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status503ServiceUnavailable);
 
         return group;
     }
