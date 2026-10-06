@@ -125,7 +125,7 @@ public sealed class CommunicationQueueConsumer<TPayload>(
         if (result.DeadLetter)
         {
             LogDeadLetter(result, ea.DeliveryTag);
-            await NackAsync(ea.DeliveryTag, result.Requeue);
+            await NackAsync(ea.DeliveryTag);
             return;
         }
 
@@ -192,12 +192,12 @@ public sealed class CommunicationQueueConsumer<TPayload>(
         }
     }
 
-    private async Task NackAsync(ulong deliveryTag, bool requeue)
+    private async Task NackAsync(ulong deliveryTag)
     {
         await _channelGate.WaitAsync(CancellationToken.None);
         try
         {
-            await Channel.BasicNackAsync(deliveryTag, multiple: false, requeue: requeue);
+            await Channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
         }
         finally
         {

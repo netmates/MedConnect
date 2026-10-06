@@ -13,8 +13,6 @@ public sealed record CommunicationDeliveryResult
     public int EventVersion { get; private init; }
     public string? CorrelationId { get; private init; }
 
-    public bool Requeue => false;
-
     public static CommunicationDeliveryResult Acknowledge(IntegrationEventEnvelope<JsonElement> envelope) =>
         FromEnvelope(envelope, deadLetter: false, reason: null, error: null);
 
