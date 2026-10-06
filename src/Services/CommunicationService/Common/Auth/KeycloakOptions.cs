@@ -22,7 +22,7 @@ public static class KeycloakConfiguration
         return value;
     }
 
-    public static Uri GetRealmUri(IConfiguration configuration)
+    private static Uri GetRealmUri(IConfiguration configuration)
     {
         var adminApiUrl = GetRequired(configuration, nameof(KeycloakOptions.AdminApiUrl));
         var realm = GetRequired(configuration, nameof(KeycloakOptions.Realm));

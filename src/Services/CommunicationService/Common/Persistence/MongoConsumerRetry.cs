@@ -4,7 +4,7 @@ namespace CommunicationService.Common.Persistence;
 
 public static class MongoConsumerRetry
 {
-    public const int MaxAttempts = 3;
+    private const int MaxAttempts = 3;
 
     private static readonly TimeSpan[] Delays =
     [
@@ -12,7 +12,7 @@ public static class MongoConsumerRetry
         TimeSpan.FromSeconds(2)
     ];
 
-    public static bool IsTransientMongo(Exception ex) =>
+    private static bool IsTransientMongo(Exception ex) =>
         ex is MongoException or TimeoutException;
 
     public static async Task ExecuteAsync(

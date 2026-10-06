@@ -4,7 +4,7 @@ namespace CommunicationService.Features.Messages;
 
 public sealed class SendMessageValidator : AbstractValidator<SendMessageRequest>
 {
-    public const int MaxTextLength = 2000;
+    private const int MaxTextLength = 2000;
 
     public SendMessageValidator()
     {
