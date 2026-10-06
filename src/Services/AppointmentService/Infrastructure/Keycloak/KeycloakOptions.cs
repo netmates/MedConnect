@@ -10,6 +10,7 @@ public sealed class KeycloakOptions
     public string Audience { get; set; } = string.Empty;
     public string AdminApiUrl { get; set; } = string.Empty;
     public string Realm { get; set; } = string.Empty;
+    public bool RequireHttpsMetadata { get; set; } = true;
 }
 
 public static class KeycloakConfiguration

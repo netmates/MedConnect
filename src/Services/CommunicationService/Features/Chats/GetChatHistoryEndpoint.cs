@@ -23,6 +23,8 @@ public static class GetChatHistoryEndpoint
             .WithName("GetChatHistory")
             .WithSummary("История сообщений чата")
             .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status503ServiceUnavailable);

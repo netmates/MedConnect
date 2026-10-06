@@ -21,7 +21,7 @@ public static class AuthenticationExtensions
             {
                 options.Authority = KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Authority));
                 options.Audience = KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Audience));
-                options.RequireHttpsMetadata = false;
+                options.RequireHttpsMetadata = configuration.GetValue($"{KeycloakOptions.SectionName}:RequireHttpsMetadata", true);
                 options.MapInboundClaims = false;
 
                 options.TokenValidationParameters = new TokenValidationParameters
