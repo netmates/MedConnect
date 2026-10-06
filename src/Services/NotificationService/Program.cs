@@ -6,16 +6,23 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Serilog вместо стандартного провайдера логирования (конфиг из appsettings + enrichers)
 builder.Host.AddNotificationSerilog();
 
+// Каналы уведомлений (Fake / Email / Sms) и обработчики AppointmentCreated, AppointmentCancelled, MessageCreated
 new NotificationModule().Register(builder.Services, builder.Configuration);
+
+// RabbitMQ: consumer трех очередей уведомлений
 builder.Services.AddNotificationConsumers(builder.Configuration);
+
+// Health checks: self (live) + RabbitMQ (ready)
 builder.Services.AddNotificationHealthChecks();
 
 var app = builder.Build();
 
 try
 {
+    // Эндпоинты /health/live (процесс) и /health/ready (RabbitMQ)
     app.MapNotificationHealthChecks();
 
     await app.RunAsync();
