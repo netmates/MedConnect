@@ -1,6 +1,7 @@
 using MedConnect.Shared.Http;
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
+using MedConnect.Shared.Auth;
 using AppointmentService.Application.Helpers;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;

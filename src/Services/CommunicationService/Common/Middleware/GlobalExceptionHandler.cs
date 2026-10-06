@@ -1,4 +1,5 @@
 using CommunicationService.Common.Exceptions;
+using MedConnect.Shared.Auth;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 

@@ -1,4 +1,4 @@
-using CommunicationService.Common.Auth;
+using MedConnect.Shared.Auth;
 
 namespace CommunicationService.Features.Chats.History;
 

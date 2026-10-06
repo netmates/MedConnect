@@ -1,5 +1,6 @@
 using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Application.Exceptions;
+using MedConnect.Shared.Auth;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Services;

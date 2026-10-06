@@ -1,4 +1,5 @@
 using CommunicationService.Common.Exceptions;
+using MedConnect.Shared.Auth;
 using CommunicationService.Common.Grpc;
 using CommunicationService.Common.Persistence;
 using MongoDB.Driver;

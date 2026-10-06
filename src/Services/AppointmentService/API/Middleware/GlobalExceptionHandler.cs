@@ -1,4 +1,5 @@
 using AppointmentService.Application.Exceptions;
+using MedConnect.Shared.Auth;
 using AppointmentService.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;

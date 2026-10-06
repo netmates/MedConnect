@@ -1,7 +1,6 @@
-using CommunicationService.Common.Exceptions;
 using System.Security.Claims;
 
-namespace CommunicationService.Common.Auth;
+namespace MedConnect.Shared.Auth;
 
 public static class CurrentUser
 {

@@ -1,4 +1,5 @@
 using CommunicationService.Common.Auth;
+using MedConnect.Shared.Auth;
 using CommunicationService.Common.Exceptions;
 using CommunicationService.Common.SignalR;
 using Microsoft.AspNetCore.Authorization;

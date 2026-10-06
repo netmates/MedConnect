@@ -1,4 +1,4 @@
-using CommunicationService.Common.Auth;
+using MedConnect.Shared.Auth;
 using FluentValidation;
 
 namespace CommunicationService.Features.Chats.Create;

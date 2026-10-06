@@ -1,4 +1,4 @@
-using AppointmentService.API.Auth;
+using MedConnect.Shared.Auth;
 using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Application.Interfaces.Services;

@@ -1,6 +1,5 @@
 using System.Security.Claims;
-using CommunicationService.Common.Auth;
-using CommunicationService.Common.Exceptions;
+using MedConnect.Shared.Auth;
 
 namespace CommunicationService.UnitTests.Auth;
 
