@@ -4,18 +4,17 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Serilog.Context;
 
-namespace NotificationService.Common.Messaging;
+namespace MedConnect.Shared.Consuming;
 
-public sealed class NotificationQueueConsumer<TPayload>(
+public sealed class QueueConsumer<TPayload>(
     RabbitMqConnection connection,
     IOptions<RabbitMqOptions> rabbitOptions,
-    IOptions<NotificationQueueOptions> queueOptions,
-    NotificationSubscription subscription,
-    INotificationEventHandler<TPayload> handler,
-    ILogger<NotificationQueueConsumer<TPayload>> logger) : BackgroundService
+    IConsumerQueueSettings queueSettings,
+    QueueSubscription subscription,
+    IIntegrationEventHandler<TPayload> handler,
+    ILogger<QueueConsumer<TPayload>> logger) : BackgroundService
 {
     private readonly RabbitMqOptions _rabbitOptions = rabbitOptions.Value;
-    private readonly NotificationQueueOptions _queueOptions = queueOptions.Value;
     private readonly SemaphoreSlim _channelGate = new(1, 1);
     private IChannel? _channel;
 
@@ -28,7 +27,7 @@ public sealed class NotificationQueueConsumer<TPayload>(
 
         await _channel.BasicQosAsync(
             prefetchSize: 0,
-            prefetchCount: _queueOptions.PrefetchCount,
+            prefetchCount: queueSettings.PrefetchCount,
             global: false,
             cancellationToken: stoppingToken);
 
@@ -42,7 +41,7 @@ public sealed class NotificationQueueConsumer<TPayload>(
             cancellationToken: stoppingToken);
 
         logger.LogInformation(
-            "Notification consumer started. Queue={Queue}, RoutingKey={RoutingKey}, DeadLetterQueue={DeadLetterQueue}",
+            "Queue consumer started. Queue={Queue}, RoutingKey={RoutingKey}, DeadLetterQueue={DeadLetterQueue}",
             subscription.QueueName,
             subscription.RoutingKey,
             subscription.DeadLetterQueueName);
@@ -70,7 +69,7 @@ public sealed class NotificationQueueConsumer<TPayload>(
             cancellationToken: ct);
 
         await channel.ExchangeDeclareAsync(
-            exchange: _queueOptions.DeadLetterExchangeName,
+            exchange: queueSettings.DeadLetterExchangeName,
             type: ExchangeType.Direct,
             durable: true,
             autoDelete: false,
@@ -87,14 +86,14 @@ public sealed class NotificationQueueConsumer<TPayload>(
 
         await channel.QueueBindAsync(
             queue: subscription.DeadLetterQueueName,
-            exchange: _queueOptions.DeadLetterExchangeName,
+            exchange: queueSettings.DeadLetterExchangeName,
             routingKey: subscription.DeadLetterQueueName,
             arguments: null,
             cancellationToken: ct);
 
         var queueArguments = new Dictionary<string, object?>
         {
-            ["x-dead-letter-exchange"] = _queueOptions.DeadLetterExchangeName,
+            ["x-dead-letter-exchange"] = queueSettings.DeadLetterExchangeName,
             ["x-dead-letter-routing-key"] = subscription.DeadLetterQueueName
         };
 
@@ -116,7 +115,7 @@ public sealed class NotificationQueueConsumer<TPayload>(
 
     private async Task OnReceivedAsync(object sender, BasicDeliverEventArgs ea)
     {
-        var result = await NotificationMessageProcessor.ProcessAsync<TPayload>(
+        var result = await QueueMessageProcessor.ProcessAsync<TPayload>(
             ea.Body,
             subscription.EventType,
             handler.HandleAsync,
@@ -143,7 +142,7 @@ public sealed class NotificationQueueConsumer<TPayload>(
         await AckAsync(ea.DeliveryTag);
     }
 
-    private void LogDeadLetter(NotificationDeliveryResult result, ulong deliveryTag)
+    private void LogDeadLetter(DeliveryResult result, ulong deliveryTag)
     {
         using var correlationScope = result.CorrelationId is null
             ? null

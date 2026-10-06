@@ -1,11 +1,11 @@
 using System.Text;
 using System.Text.Json;
+using MedConnect.Shared.Consuming;
 using MedConnect.Shared.Events;
-using NotificationService.Common.Messaging;
 
 namespace NotificationService.UnitTests.Messaging;
 
-public class NotificationMessageProcessorTests
+public class QueueMessageProcessorTests
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -20,7 +20,7 @@ public class NotificationMessageProcessorTests
         var handled = new List<Guid>();
 
         // Act
-        var result = await NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
+        var result = await QueueMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
             Envelope(EventTypes.AppointmentCreated, 1, new AppointmentCreatedPayload
             {
                 AppointmentId = appointmentId
@@ -47,7 +47,7 @@ public class NotificationMessageProcessorTests
         var handled = false;
 
         // Act
-        var result = await NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
+        var result = await QueueMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
             Encoding.UTF8.GetBytes(json),
             EventTypes.AppointmentCreated,
             (_, _) =>
@@ -111,7 +111,7 @@ public class NotificationMessageProcessorTests
             """;
 
         // Act
-        var result = await NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
+        var result = await QueueMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
             Encoding.UTF8.GetBytes(json),
             EventTypes.AppointmentCreated,
             (_, _) => Task.CompletedTask,
@@ -129,7 +129,7 @@ public class NotificationMessageProcessorTests
         var body = Envelope(EventTypes.AppointmentCreated, 1, new AppointmentCreatedPayload());
 
         // Act
-        var result = await NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
+        var result = await QueueMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
             body,
             EventTypes.AppointmentCreated,
             (_, _) => throw new InvalidOperationException("sender failed"),
@@ -141,11 +141,11 @@ public class NotificationMessageProcessorTests
         Assert.IsType<InvalidOperationException>(result.Error);
     }
 
-    private static Task<NotificationDeliveryResult> ProcessAsync(
+    private static Task<DeliveryResult> ProcessAsync(
         string eventType,
         int eventVersion,
         AppointmentCreatedPayload payload) =>
-        NotificationMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
+        QueueMessageProcessor.ProcessAsync<AppointmentCreatedPayload>(
             Envelope(eventType, eventVersion, payload),
             EventTypes.AppointmentCreated,
             (_, _) => Task.CompletedTask,

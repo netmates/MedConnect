@@ -1,5 +1,6 @@
 using MedConnect.Shared.Messaging;
 using MedConnect.Shared.Events;
+using MedConnect.Shared.Consuming;
 using Microsoft.Extensions.Options;
 
 namespace CommunicationService.Common.Messaging;
@@ -20,14 +21,14 @@ public static class MessagingExtensions
 
         services.AddHostedService(sp => CreateConsumer<AppointmentCreatedPayload>(
             sp,
-            options => new CommunicationSubscription(
+            options => new QueueSubscription(
                 options.AppointmentCreatedQueue,
                 RoutingKeys.AppointmentCreated,
                 EventTypes.AppointmentCreated)));
 
         services.AddHostedService(sp => CreateConsumer<ParticipantNameUpdatedPayload>(
             sp,
-            options => new CommunicationSubscription(
+            options => new QueueSubscription(
                 options.ParticipantNameUpdatedQueue,
                 RoutingKeys.ParticipantNameUpdated,
                 EventTypes.ParticipantNameUpdated)));
@@ -35,18 +36,18 @@ public static class MessagingExtensions
         return services;
     }
 
-    private static CommunicationQueueConsumer<TPayload> CreateConsumer<TPayload>(
+    private static QueueConsumer<TPayload> CreateConsumer<TPayload>(
         IServiceProvider serviceProvider,
-        Func<CommunicationQueueOptions, CommunicationSubscription> subscription)
+        Func<CommunicationQueueOptions, QueueSubscription> subscription)
     {
         var queues = serviceProvider.GetRequiredService<IOptions<CommunicationQueueOptions>>().Value;
 
-        return new CommunicationQueueConsumer<TPayload>(
+        return new QueueConsumer<TPayload>(
             serviceProvider.GetRequiredService<RabbitMqConnection>(),
             serviceProvider.GetRequiredService<IOptions<RabbitMqOptions>>(),
-            serviceProvider.GetRequiredService<IOptions<CommunicationQueueOptions>>(),
+            queues,
             subscription(queues),
-            serviceProvider.GetRequiredService<ICommunicationEventHandler<TPayload>>(),
-            serviceProvider.GetRequiredService<ILogger<CommunicationQueueConsumer<TPayload>>>());
+            serviceProvider.GetRequiredService<IIntegrationEventHandler<TPayload>>(),
+            serviceProvider.GetRequiredService<ILogger<QueueConsumer<TPayload>>>());
     }
 }

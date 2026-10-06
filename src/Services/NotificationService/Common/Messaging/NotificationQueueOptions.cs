@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using MedConnect.Shared.Consuming;
 
 namespace NotificationService.Common.Messaging;
 
-public sealed class NotificationQueueOptions
+public sealed class NotificationQueueOptions : IConsumerQueueSettings
 {
     [Required]
     public string DeadLetterExchangeName { get; set; } = "medconnect.dlx";

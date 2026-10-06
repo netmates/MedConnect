@@ -1,5 +1,6 @@
 using MedConnect.Shared.Messaging;
 using MedConnect.Shared.Events;
+using MedConnect.Shared.Consuming;
 using Microsoft.Extensions.Options;
 
 namespace NotificationService.Common.Messaging;
@@ -20,21 +21,21 @@ public static class MessagingExtensions
 
         services.AddHostedService(sp => CreateConsumer<AppointmentCreatedPayload>(
             sp,
-            options => new NotificationSubscription(
+            options => new QueueSubscription(
                 options.AppointmentCreatedQueue,
                 RoutingKeys.AppointmentCreated,
                 EventTypes.AppointmentCreated)));
 
         services.AddHostedService(sp => CreateConsumer<AppointmentCancelledPayload>(
             sp,
-            options => new NotificationSubscription(
+            options => new QueueSubscription(
                 options.AppointmentCancelledQueue,
                 RoutingKeys.AppointmentCancelled,
                 EventTypes.AppointmentCancelled)));
 
         services.AddHostedService(sp => CreateConsumer<MessageCreatedPayload>(
             sp,
-            options => new NotificationSubscription(
+            options => new QueueSubscription(
                 options.MessageCreatedQueue,
                 RoutingKeys.MessageCreated,
                 EventTypes.MessageCreated)));
@@ -42,18 +43,18 @@ public static class MessagingExtensions
         return services;
     }
 
-    private static NotificationQueueConsumer<TPayload> CreateConsumer<TPayload>(
+    private static QueueConsumer<TPayload> CreateConsumer<TPayload>(
         IServiceProvider serviceProvider,
-        Func<NotificationQueueOptions, NotificationSubscription> subscription)
+        Func<NotificationQueueOptions, QueueSubscription> subscription)
     {
         var queues = serviceProvider.GetRequiredService<IOptions<NotificationQueueOptions>>().Value;
 
-        return new NotificationQueueConsumer<TPayload>(
+        return new QueueConsumer<TPayload>(
             serviceProvider.GetRequiredService<RabbitMqConnection>(),
             serviceProvider.GetRequiredService<IOptions<RabbitMqOptions>>(),
-            serviceProvider.GetRequiredService<IOptions<NotificationQueueOptions>>(),
+            queues,
             subscription(queues),
-            serviceProvider.GetRequiredService<INotificationEventHandler<TPayload>>(),
-            serviceProvider.GetRequiredService<ILogger<NotificationQueueConsumer<TPayload>>>());
+            serviceProvider.GetRequiredService<IIntegrationEventHandler<TPayload>>(),
+            serviceProvider.GetRequiredService<ILogger<QueueConsumer<TPayload>>>());
     }
 }

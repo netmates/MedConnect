@@ -1,11 +1,11 @@
+using MedConnect.Shared.Consuming;
 using MedConnect.Shared.Events;
-using NotificationService.Common.Messaging;
 using NotificationService.Features.Notifications.Senders;
 
 namespace NotificationService.Features.Notifications.Handlers;
 
 public sealed class AppointmentCancelledHandler(INotificationSender sender)
-    : INotificationEventHandler<AppointmentCancelledPayload>
+    : IIntegrationEventHandler<AppointmentCancelledPayload>
 {
     public async Task HandleAsync(AppointmentCancelledPayload payload, CancellationToken ct)
     {

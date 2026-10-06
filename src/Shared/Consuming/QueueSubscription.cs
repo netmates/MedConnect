@@ -1,6 +1,9 @@
-namespace NotificationService.Common.Messaging;
+namespace MedConnect.Shared.Consuming;
 
-public sealed record NotificationSubscription(string QueueName, string RoutingKey, string EventType)
+public sealed record QueueSubscription(
+    string QueueName,
+    string RoutingKey,
+    string EventType)
 {
     private const string QueueSuffix = ".q";
     private const string DeadLetterSuffix = ".dlq";

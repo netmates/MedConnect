@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using MedConnect.Shared.Consuming;
 
 namespace CommunicationService.Common.Messaging;
 
-public sealed class CommunicationQueueOptions
+public sealed class CommunicationQueueOptions : IConsumerQueueSettings
 {
     [Required]
     public string DeadLetterExchangeName { get; set; } = "medconnect.dlx";

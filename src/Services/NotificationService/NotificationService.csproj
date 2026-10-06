@@ -17,6 +17,7 @@
     <Compile Include="..\..\Shared\Messaging\**\*.cs" Link="Messaging\%(Filename)%(Extension)" />
     <Compile Include="..\..\Shared\Health\**\*.cs" Link="Health\%(Filename)%(Extension)" />
     <Compile Include="..\..\Shared\Logging\**\*.cs" Link="Logging\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Consuming\**\*.cs" Link="Consuming\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

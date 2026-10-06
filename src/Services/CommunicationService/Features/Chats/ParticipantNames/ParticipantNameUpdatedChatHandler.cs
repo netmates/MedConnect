@@ -1,4 +1,4 @@
-using CommunicationService.Common.Messaging;
+using MedConnect.Shared.Consuming;
 using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 
@@ -6,7 +6,7 @@ namespace CommunicationService.Features.Chats.ParticipantNames;
 
 public sealed class ParticipantNameUpdatedChatHandler(
     IServiceScopeFactory scopeFactory,
-    ILogger<ParticipantNameUpdatedChatHandler> logger) : ICommunicationEventHandler<ParticipantNameUpdatedPayload>
+    ILogger<ParticipantNameUpdatedChatHandler> logger) : IIntegrationEventHandler<ParticipantNameUpdatedPayload>
 {
     public async Task HandleAsync(ParticipantNameUpdatedPayload payload, CancellationToken ct)
     {

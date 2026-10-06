@@ -1,4 +1,4 @@
-using CommunicationService.Common.Messaging;
+using MedConnect.Shared.Consuming;
 using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 
@@ -6,7 +6,7 @@ namespace CommunicationService.Features.Chats.Create;
 
 public sealed class AppointmentCreatedChatHandler(
     IServiceScopeFactory scopeFactory,
-    ILogger<AppointmentCreatedChatHandler> logger) : ICommunicationEventHandler<AppointmentCreatedPayload>
+    ILogger<AppointmentCreatedChatHandler> logger) : IIntegrationEventHandler<AppointmentCreatedPayload>
 {
     public Task HandleAsync(AppointmentCreatedPayload payload, CancellationToken ct) =>
         MongoConsumerRetry.ExecuteAsync(async ct =>

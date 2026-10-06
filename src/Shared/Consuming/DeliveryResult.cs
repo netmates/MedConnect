@@ -1,9 +1,9 @@
 using System.Text.Json;
 using MedConnect.Shared.Events;
 
-namespace CommunicationService.Common.Messaging;
+namespace MedConnect.Shared.Consuming;
 
-public sealed record CommunicationDeliveryResult
+public sealed record DeliveryResult
 {
     public bool DeadLetter { get; private init; }
     public string? Reason { get; private init; }
@@ -13,15 +13,15 @@ public sealed record CommunicationDeliveryResult
     public int EventVersion { get; private init; }
     public string? CorrelationId { get; private init; }
 
-    public static CommunicationDeliveryResult Acknowledge(IntegrationEventEnvelope<JsonElement> envelope) =>
+    public static DeliveryResult Acknowledge(IntegrationEventEnvelope<JsonElement> envelope) =>
         FromEnvelope(envelope, deadLetter: false, reason: null, error: null);
 
-    public static CommunicationDeliveryResult Reject(
+    public static DeliveryResult Reject(
         string reason,
         Exception? error = null,
         IntegrationEventEnvelope<JsonElement>? envelope = null) =>
         envelope is null
-            ? new CommunicationDeliveryResult
+            ? new DeliveryResult
             {
                 DeadLetter = true,
                 Reason = reason,
@@ -29,7 +29,7 @@ public sealed record CommunicationDeliveryResult
             }
             : FromEnvelope(envelope, deadLetter: true, reason: reason, error: error);
 
-    private static CommunicationDeliveryResult FromEnvelope(
+    private static DeliveryResult FromEnvelope(
         IntegrationEventEnvelope<JsonElement> envelope,
         bool deadLetter,
         string? reason,

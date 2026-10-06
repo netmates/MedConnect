@@ -34,6 +34,7 @@
 	<Compile Include="..\..\Shared\Http\**\*.cs" Link="Http\%(Filename)%(Extension)" />
 	<Compile Include="..\..\Shared\Health\**\*.cs" Link="Health\%(Filename)%(Extension)" />
 	<Compile Include="..\..\Shared\Logging\**\*.cs" Link="Logging\%(Filename)%(Extension)" />
+	<Compile Include="..\..\Shared\Consuming\**\*.cs" Link="Consuming\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>
