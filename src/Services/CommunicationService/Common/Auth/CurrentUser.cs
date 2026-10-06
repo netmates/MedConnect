@@ -13,15 +13,4 @@ public static class CurrentUser
 
         return sub;
     }
-
-    public static string GetSenderRole(ClaimsPrincipal user)
-    {
-        if (user.IsInRole(Roles.Doctor))
-            return Roles.Doctor;
-
-        if (user.IsInRole(Roles.Patient))
-            return Roles.Patient;
-
-        throw new ForbiddenException($"Нужна роль {Roles.Patient} или {Roles.Doctor}.");
-    }
 }

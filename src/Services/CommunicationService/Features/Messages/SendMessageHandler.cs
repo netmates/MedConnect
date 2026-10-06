@@ -28,7 +28,6 @@ public sealed class SendMessageHandler(
         Guid chatId,
         SendMessageRequest request,
         string currentKeycloakId,
-        string senderRole,
         CancellationToken ct)
     {
         var chat = await _chats.Find(x => x.Id == chatId).FirstOrDefaultAsync(ct)
@@ -37,10 +36,9 @@ public sealed class SendMessageHandler(
         ChatAccess.EnsureParticipant(chat, currentKeycloakId);
         await appointmentAccess.ValidateAsync(chat.AppointmentId, currentKeycloakId, ct);
 
-        if (senderRole == Roles.Patient && currentKeycloakId != chat.PatientKeycloakId)
-            throw new ForbiddenException($"Роль {Roles.Patient} не совпадает с участником чата.");
-        if (senderRole == Roles.Doctor && currentKeycloakId != chat.DoctorKeycloakId)
-            throw new ForbiddenException($"Роль {Roles.Doctor} не совпадает с участником чата.");
+        var senderRole = currentKeycloakId == chat.PatientKeycloakId
+            ? Roles.Patient
+            : Roles.Doctor;
 
         var message = MessageDocument.Create(chat.Id, currentKeycloakId, senderRole, request.Text);
 

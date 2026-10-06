@@ -22,8 +22,7 @@ public static class SendMessageEndpoint
                 throw new ValidationException(validation.Errors);
 
             var keycloakId = CurrentUser.GetKeycloakId(http.User);
-            var role = CurrentUser.GetSenderRole(http.User);
-            var message = await handler.HandleAsync(chatId, request, keycloakId, role, ct);
+            var message = await handler.HandleAsync(chatId, request, keycloakId, ct);
 
             var body = MessageResponse.From(message);
             await notifier.NotifyMessageAsync(body, ct);
