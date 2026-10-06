@@ -8,15 +8,24 @@ public sealed class AppointmentCreatedHandler(INotificationSender sender)
 {
     public async Task HandleAsync(AppointmentCreatedPayload payload, CancellationToken ct)
     {
-        await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient), ct);
-        await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor), ct);
+        var when = payload.StartTime.ToString("dd.MM.yyyy HH:mm");
+
+        await sender.SendAsync(
+            CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient,
+                $"Вы записаны к врачу {payload.DoctorName} на {when} UTC."),
+            ct);
+
+        await sender.SendAsync(
+            CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor,
+                $"Пациент {payload.PatientName} записался на {when} UTC."),
+            ct);
     }
 
     private static NotificationMessage CreateMessage(
         AppointmentCreatedPayload payload,
         Guid recipientId,
-        string recipientRole) =>
-        new()
+        string recipientRole,
+        string textPreview) => new()
         {
             EventType = EventTypes.AppointmentCreated,
             RecipientId = recipientId,
@@ -24,6 +33,6 @@ public sealed class AppointmentCreatedHandler(INotificationSender sender)
             AppointmentId = payload.AppointmentId,
             PatientId = payload.PatientId,
             DoctorId = payload.DoctorId,
-            TextPreview = $"Appointment {payload.AppointmentId} created"
+            TextPreview = textPreview
         };
 }
