@@ -1,4 +1,4 @@
-name: CI AppointmentService
+name: CI MedConnect
 
 on:
   push:
@@ -19,24 +19,47 @@ jobs:
           cache-dependency-path: |
             src/Services/AppointmentService/AppointmentService.csproj
             tests/AppointmentService.UnitTests/AppointmentService.UnitTests.csproj
+            src/Services/CommunicationService/CommunicationService.csproj
+            tests/CommunicationService.UnitTests/CommunicationService.UnitTests.csproj
+            src/Services/NotificationService/NotificationService.csproj
             tests/NotificationService.UnitTests/NotificationService.UnitTests.csproj
 
-      - name: Restore
+      - name: Restore AppointmentService tests
         run: >
           dotnet restore
           tests/AppointmentService.UnitTests/AppointmentService.UnitTests.csproj
 
-      - name: Build
+      - name: Build AppointmentService tests
         run: >
           dotnet build
           tests/AppointmentService.UnitTests/AppointmentService.UnitTests.csproj
           --configuration Release
           --no-restore
 
-      - name: Test
+      - name: Test AppointmentService
         run: >
           dotnet test
           tests/AppointmentService.UnitTests/AppointmentService.UnitTests.csproj
+          --configuration Release
+          --no-build
+          --verbosity normal
+
+      - name: Restore CommunicationService tests
+        run: >
+          dotnet restore
+          tests/CommunicationService.UnitTests/CommunicationService.UnitTests.csproj
+
+      - name: Build CommunicationService tests
+        run: >
+          dotnet build
+          tests/CommunicationService.UnitTests/CommunicationService.UnitTests.csproj
+          --configuration Release
+          --no-restore
+
+      - name: Test CommunicationService
+        run: >
+          dotnet test
+          tests/CommunicationService.UnitTests/CommunicationService.UnitTests.csproj
           --configuration Release
           --no-build
           --verbosity normal
