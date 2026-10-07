@@ -8,6 +8,5 @@ public sealed class AppointmentCancelledPayload
     public Guid SlotId { get; init; }
     public Guid CancelledByUserId { get; init; }
     public string CancelledByRole { get; init; } = string.Empty;
-    public string? CancelReason { get; init; }
     public DateTime CancelledAt { get; init; }
 }

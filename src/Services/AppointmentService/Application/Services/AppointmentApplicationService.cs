@@ -221,7 +221,6 @@ public sealed class AppointmentApplicationService(
                     SlotId = appointment.SlotId,
                     CancelledByUserId = cancelledByUserId,
                     CancelledByRole = cancelledByRole,
-                    CancelReason = "Пользователь отменил запись",
                     CancelledAt = appointment.UpdatedAt
                 },
                 correlationId,

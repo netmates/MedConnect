@@ -663,8 +663,7 @@ public class AppointmentApplicationServiceTests
                 payload.DoctorId == doctor.Id &&
                 payload.SlotId == slot.Id &&
                 payload.CancelledByUserId == patient.Id &&
-                payload.CancelledByRole == ParticipantRoles.Patient &&
-                payload.CancelReason == "Пользователь отменил запись"),
+                payload.CancelledByRole == ParticipantRoles.Patient),
             It.Is<string?>(id => id == null),
             It.IsAny<CancellationToken>()), Times.Once);
     }

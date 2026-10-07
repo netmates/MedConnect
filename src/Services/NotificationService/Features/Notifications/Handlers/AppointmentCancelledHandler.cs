@@ -9,9 +9,7 @@ public sealed class AppointmentCancelledHandler(INotificationSender sender)
 {
     public async Task HandleAsync(AppointmentCancelledPayload payload, CancellationToken ct)
     {
-        var textPreview = string.IsNullOrWhiteSpace(payload.CancelReason)
-            ? "Запись отменена."
-            : payload.CancelReason;
+        const string textPreview = "Пользователь отменил запись";
 
         await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient, textPreview), ct);
         await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor, textPreview), ct);

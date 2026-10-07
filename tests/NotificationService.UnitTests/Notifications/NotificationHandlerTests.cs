@@ -58,8 +58,7 @@ public class NotificationHandlerTests
         {
             AppointmentId = Guid.NewGuid(),
             PatientId = Guid.NewGuid(),
-            DoctorId = Guid.NewGuid(),
-            CancelReason = "Пациент отменил запись"
+            DoctorId = Guid.NewGuid()
         };
         var (sender, logs) = CreateSender(NotificationChannels.Fake);
         var handler = new AppointmentCancelledHandler(sender);
@@ -73,7 +72,7 @@ public class NotificationHandlerTests
         {
             AssertAppointmentFields(entry, payload.AppointmentId, payload.PatientId, payload.DoctorId);
             Assert.Equal(EventTypes.AppointmentCancelled, entry.Property("EventType"));
-            Assert.Equal(payload.CancelReason, entry.Property("TextPreview"));
+            Assert.Equal("Пользователь отменил запись", entry.Property("TextPreview"));
             Assert.Equal(NotificationChannels.Fake, entry.Property("Channel"));
         });
     }
