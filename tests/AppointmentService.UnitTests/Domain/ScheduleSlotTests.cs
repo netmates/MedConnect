@@ -292,6 +292,39 @@ public class ScheduleSlotTests
     }
 
     [Fact]
+    public void ReleaseAfterCancellation_WhenFutureBooked_Frees()
+    {
+        var slot = CreateValid();
+        slot.Book();
+
+        slot.ReleaseAfterCancellation(Start.AddHours(-1));
+
+        Assert.Equal(SlotStatus.Available, slot.Status);
+    }
+
+    [Fact]
+    public void ReleaseAfterCancellation_WhenPastBooked_Consumes()
+    {
+        var slot = CreateValid();
+        slot.Book();
+
+        slot.ReleaseAfterCancellation(Start.AddMinutes(1));
+
+        Assert.Equal(SlotStatus.Consumed, slot.Status);
+    }
+
+    [Fact]
+    public void ReleaseAfterCancellation_WhenAvailable_Throws()
+    {
+        var slot = CreateValid();
+
+        var ex = Assert.Throws<DomainException>(() =>
+            slot.ReleaseAfterCancellation(Start.AddHours(-1)));
+
+        Assert.Equal("Освободить можно только забронированный слот.", ex.Message);
+    }
+
+    [Fact]
     public void Book_Free_Book_HappyPath()
     {
         // Arrange

@@ -6,7 +6,6 @@ using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
-using AppointmentService.Domain.Enums;
 using FluentValidation;
 using MedConnect.Shared.Messaging;
 using MedConnect.Shared.Events;
@@ -16,7 +15,7 @@ namespace AppointmentService.Application.Services;
 public sealed class AdminPatientApplicationService(
     IPatientRepository patientRepository,
     IAppointmentRepository appointmentRepository,
-    IScheduleSlotRepository slotRepository,
+    IActiveAppointmentCancellation activeAppointmentCancellation,
     IUnitOfWork unitOfWork,
     IKeycloakAdminService keycloakAdminService,
     IValidator<UpdatePatientDto> updatePatientValidator,
@@ -142,7 +141,7 @@ public sealed class AdminPatientApplicationService(
         try
         {
             var activeAppointments = await appointmentRepository.GetActiveByPatientIdAsync(patient.Id, ct);
-            cancelledCount = await CancelActiveAppointmentsAsync(activeAppointments, ct);
+            cancelledCount = await activeAppointmentCancellation.CancelAsync(activeAppointments, ct);
 
             patient.Deactivate();
             await patientRepository.UpdateAsync(patient, ct);
@@ -221,45 +220,6 @@ public sealed class AdminPatientApplicationService(
         logger.LogInformation(
             "Patient activated: {PatientId}, KeycloakId={KeycloakId}",
             id, keycloakId);
-    }
-
-    /// <summary>
-    /// Отменяет Created/Confirmed. Слот: будущий Booked → Free, прошлый/идущий Booked → Consume.
-    /// </summary>
-    private async Task<int> CancelActiveAppointmentsAsync(
-        IReadOnlyList<Appointment> appointments,
-        CancellationToken ct)
-    {
-        var cancelled = 0;
-        var now = DateTime.UtcNow;
-
-        foreach (var item in appointments)
-        {
-            var appointment = await appointmentRepository.GetByIdWithLockAsync(item.Id, ct);
-            if (appointment is null) continue;
-
-            if (appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.Completed)
-                continue;
-
-            var slot = await slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
-                ?? throw new NotFoundException("Слот записи не найден.");
-
-            appointment.Cancel();
-            await appointmentRepository.UpdateAsync(appointment, ct);
-            cancelled++;
-
-            if (slot.Status == SlotStatus.Booked)
-            {
-                if (slot.StartTime > now)
-                    slot.Free();
-                else
-                    slot.Consume();
-
-                await slotRepository.UpdateAsync(slot, ct);
-            }
-        }
-
-        return cancelled;
     }
 
     private static PatientDto MapToDto(Patient p) => new()

@@ -66,6 +66,14 @@ public sealed class ScheduleSlot
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void ReleaseAfterCancellation(DateTime utcNow)
+    {
+        if (StartTime > utcNow)
+            Free();
+        else
+            Consume();
+    }
+
     public void Update(DateTime startTime, DateTime endTime)
     {
         if (Status != SlotStatus.Available)

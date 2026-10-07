@@ -52,7 +52,7 @@ public class DoctorApplicationServiceTests
             _doctors.Object,
             _specializations.Object,
             _appointments.Object,
-            _slots.Object,
+            new ActiveAppointmentCancellation(_appointments.Object, _slots.Object),
             _uow.Object,
             _keycloak.Object,
             _createValidator.Object,

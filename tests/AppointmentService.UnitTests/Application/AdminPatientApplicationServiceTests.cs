@@ -40,7 +40,7 @@ public class AdminPatientApplicationServiceTests
         _sut = new AdminPatientApplicationService(
             _patients.Object,
             _appointments.Object,
-            _slots.Object,
+            new ActiveAppointmentCancellation(_appointments.Object, _slots.Object),
             _uow.Object,
             _keycloak.Object,
             _updateValidator.Object,

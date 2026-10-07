@@ -7,7 +7,6 @@ using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
-using AppointmentService.Domain.Enums;
 using FluentValidation;
 using MedConnect.Shared.Messaging;
 using MedConnect.Shared.Events;
@@ -18,7 +17,7 @@ public sealed class DoctorApplicationService(
     IDoctorRepository doctorRepository,
     ISpecializationRepository specializationRepository,
     IAppointmentRepository appointmentRepository,
-    IScheduleSlotRepository slotRepository,
+    IActiveAppointmentCancellation activeAppointmentCancellation,
     IUnitOfWork unitOfWork,
     IKeycloakAdminService keycloakAdminService,
     IValidator<CreateDoctorDto> createDoctorValidator,
@@ -255,7 +254,7 @@ public sealed class DoctorApplicationService(
         try
         {
             var activeAppointments = await appointmentRepository.GetActiveByDoctorIdAsync(doctor.Id, ct);
-            cancelledCount = await CancelActiveAppointmentsAsync(activeAppointments, ct);
+            cancelledCount = await activeAppointmentCancellation.CancelAsync(activeAppointments, ct);
 
             doctor.Deactivate();
             await doctorRepository.UpdateAsync(doctor, ct);
@@ -350,45 +349,6 @@ public sealed class DoctorApplicationService(
         logger.LogInformation(
             "Doctor password reset: {DoctorId}, KeycloakId={KeycloakId}",
             id, doctor.KeycloakId);
-    }
-
-    /// <summary>
-    /// Отменяет Created/Confirmed. Слот: будущий Booked → Free, прошлый/идущий Booked → Consume.
-    /// </summary>
-    private async Task<int> CancelActiveAppointmentsAsync(
-        IReadOnlyList<Appointment> appointments,
-        CancellationToken ct)
-    {
-        var cancelled = 0;
-        var now = DateTime.UtcNow;
-
-        foreach (var item in appointments)
-        {
-            var appointment = await appointmentRepository.GetByIdWithLockAsync(item.Id, ct);
-            if (appointment is null) continue;
-
-            if (appointment.Status is AppointmentStatus.Cancelled or AppointmentStatus.Completed)
-                continue;
-
-            var slot = await slotRepository.GetByIdWithLockAsync(appointment.SlotId, ct)
-                ?? throw new NotFoundException("Слот записи не найден.");
-
-            appointment.Cancel();
-            await appointmentRepository.UpdateAsync(appointment, ct);
-            cancelled++;
-
-            if (slot.Status == SlotStatus.Booked)
-            {
-                if (slot.StartTime > now)
-                    slot.Free();
-                else
-                    slot.Consume();
-
-                await slotRepository.UpdateAsync(slot, ct);
-            }
-        }
-
-        return cancelled;
     }
 
     private static DoctorDto MapToDto(Doctor d) => new()
