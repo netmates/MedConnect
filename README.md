@@ -184,8 +184,24 @@ UI: http://localhost:3000 (порт в `vite.config.ts`, совпадает с `
 
 ## 6. Тесты
 
+### 6.1. AppointmentService
+
 ```powershell
 cd tests/AppointmentService.UnitTests
+dotnet test
+```
+
+### 6.2. CommunicationService
+
+```powershell
+cd tests/CommunicationService.UnitTests
+dotnet test
+```
+
+### 6.3. NotificationService
+
+```powershell
+cd tests/NotificationService.UnitTests
 dotnet test
 ```
 

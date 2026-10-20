@@ -67,6 +67,30 @@ export function formatDateTime(value: string): string {
   })
 }
 
+/** Один день: дата один раз. Разные дни: дата у начала и у конца. */
+export function formatDateTimeRange(startValue: string, endValue: string): string {
+  const start = new Date(startValue)
+  const end = new Date(endValue)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return `${formatDateTime(startValue)} — ${formatDateTime(endValue)}`
+  }
+
+  const sameDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate()
+
+  if (!sameDay) {
+    return `${formatDateTime(startValue)} — ${formatDateTime(endValue)}`
+  }
+
+  const endTime = end.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return `${formatDateTime(startValue)} — ${endTime}`
+}
+
 export function toLocalInputValue(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''

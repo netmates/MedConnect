@@ -371,27 +371,6 @@ public class DoctorApplicationServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenSpecializationIdsEmpty_ThrowsBusinessRule()
-    {
-        // Arrange
-        var doctor = CreateDoctor();
-        var existing = CreateSpecialization();
-        AttachSpecialization(doctor, existing);
-        _doctors.Setup(r => r.GetWithSpecializationsAsync(doctor.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(doctor);
-
-        var dto = ValidUpdateDto() with { SpecializationIds = [] };
-
-        // Act
-        var ex = await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            _sut.UpdateAsync(doctor.Id, dto, CancellationToken.None));
-
-        // Assert
-        Assert.Equal("Врач должен иметь хотя бы одну специализацию.", ex.Message);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
     public async Task UpdateAsync_WhenValid_SyncsSpecializationsAndReturnsDto()
     {
         // Arrange

@@ -6,7 +6,7 @@ public interface IActiveAppointmentCancellation
 {
     /// <summary>
     /// Отменяет переданные записи внутри уже открытой транзакции.
-    /// Слот Booked: будущий освобождается, начавшийся или прошедший потребляется.
+    /// Слот Booked: будущий освобождается (Free), начавшийся или прошедший потребляется (Consume).
     /// </summary>
     public Task<int> CancelAsync(IReadOnlyList<Appointment> appointments, CancellationToken ct);
 }

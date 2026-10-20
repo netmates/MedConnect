@@ -165,9 +165,6 @@ public sealed class DoctorApplicationService(
                 .ToHashSet();
             var desiredIds = dto.SpecializationIds.ToHashSet();
 
-            if (desiredIds.Count == 0)
-                throw new BusinessRuleException("Врач должен иметь хотя бы одну специализацию.");
-
             var toAdd = desiredIds.Except(currentIds);
             var toRemove = currentIds.Except(desiredIds);
 

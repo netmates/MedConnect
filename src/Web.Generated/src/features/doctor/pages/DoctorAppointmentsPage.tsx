@@ -21,7 +21,7 @@ import { Page } from '../../../components/Page'
 import {
   appointmentStatusLabel,
   formatApiError,
-  formatDateTime,
+  formatDateTimeRange,
 } from '../../../lib/format'
 import type { AppointmentDto } from '../../../types/appointment'
 
@@ -99,7 +99,7 @@ export function DoctorAppointmentsPage() {
             <TableRow key={item.id} hover>
               <TableCell>{item.patientFullName}</TableCell>
               <TableCell>
-                {formatDateTime(item.startTime)} — {formatDateTime(item.endTime)}
+                {formatDateTimeRange(item.startTime, item.endTime)}
               </TableCell>
               <TableCell>{appointmentStatusLabel(item.status)}</TableCell>
               <TableCell>{item.reason ?? '—'}</TableCell>

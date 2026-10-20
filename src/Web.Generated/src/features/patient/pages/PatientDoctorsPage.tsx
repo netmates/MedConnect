@@ -22,7 +22,7 @@ import { slotsApi } from '../../../api/slotsApi'
 import { Page } from '../../../components/Page'
 import {
   formatApiError,
-  formatDateTime,
+  formatDateTimeRange,
   fullName,
   slotStatusLabel,
   todayDateInput,
@@ -31,10 +31,12 @@ import type { DoctorDto } from '../../../types/doctor'
 import type { ScheduleSlotDto } from '../../../types/slot'
 import type { SpecializationDto } from '../../../types/specialization'
 
+const specAll = 'all'
+
 export function PatientDoctorsPage() {
   const [specs, setSpecs] = useState<SpecializationDto[]>([])
   const [doctors, setDoctors] = useState<DoctorDto[]>([])
-  const [specId, setSpecId] = useState('')
+  const [specId, setSpecId] = useState(specAll)
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorDto | null>(null)
   const [date, setDate] = useState(todayDateInput())
   const [slots, setSlots] = useState<ScheduleSlotDto[]>([])
@@ -48,7 +50,7 @@ export function PatientDoctorsPage() {
     try {
       const [specializations, list] = await Promise.all([
         catalogSpecializationsApi.list(),
-        catalogDoctorsApi.list(specId || undefined),
+        catalogDoctorsApi.list(specId === specAll ? undefined : specId),
       ])
       setSpecs(specializations)
       setDoctors(list)
@@ -129,7 +131,7 @@ export function PatientDoctorsPage() {
         }}
         sx={{ maxWidth: 320 }}
       >
-        <MenuItem value="">Все</MenuItem>
+        <MenuItem value={specAll}>Все</MenuItem>
         {specs.map((s) => (
           <MenuItem key={s.id} value={s.id}>
             {s.name}
@@ -213,7 +215,7 @@ export function PatientDoctorsPage() {
               {slots.map((slot) => (
                 <TableRow key={slot.id} hover>
                   <TableCell>
-                    {formatDateTime(slot.startTime)} — {formatDateTime(slot.endTime)}
+                    {formatDateTimeRange(slot.startTime, slot.endTime)}
                   </TableCell>
                   <TableCell>{slotStatusLabel(slot.status)}</TableCell>
                   <TableCell align="right">

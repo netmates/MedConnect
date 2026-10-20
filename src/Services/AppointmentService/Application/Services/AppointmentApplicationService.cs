@@ -58,15 +58,12 @@ public sealed class AppointmentApplicationService(
         var appointment = await appointmentRepository.GetByIdWithDetailsAsync(appointmentId, ct)
             ?? throw new NotFoundException("Запись не найдена.");
 
-        var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
-        if (patient is not null && appointment.PatientId == patient.Id)
-            return MapToDto(appointment);
+        var isPatient = appointment.Patient.KeycloakId == keycloakId;
+        var isDoctor = appointment.Doctor.KeycloakId == keycloakId;
+        if (!isPatient && !isDoctor)
+            throw new ForbiddenException("Нет доступа к этой записи.");
 
-        var doctor = await doctorRepository.GetByKeycloakIdAsync(keycloakId, ct);
-        if (doctor is not null && appointment.DoctorId == doctor.Id)
-            return MapToDto(appointment);
-
-        throw new ForbiddenException("Нет доступа к этой записи.");
+        return MapToDto(appointment);
     }
 
     public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto, string keycloakId, CancellationToken ct)

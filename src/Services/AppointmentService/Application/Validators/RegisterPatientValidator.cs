@@ -37,10 +37,10 @@ public sealed class RegisterPatientValidator : AbstractValidator<RegisterPatient
 
         RuleFor(x => x.DateOfBirth)
             .Cascade(CascadeMode.Stop)
-            .LessThan(DateTime.UtcNow)
-                .WithMessage("Дата рождения не может быть в будущем.")
-            .GreaterThan(Patient.MinDateOfBirth)
-                .WithMessage("Некорректная дата рождения.")
+            .Must(date => date!.Value.Date >= Patient.MinDateOfBirth.Date)
+                .WithMessage($"Дата рождения не может быть раньше {Patient.MinDateOfBirth:yyyy-MM-dd}.")
+            .Must(date => date!.Value.Date < DateTime.UtcNow.Date)
+                .WithMessage("Дата рождения должна быть в прошлом.")
             .When(x => x.DateOfBirth.HasValue);
     }
 }

@@ -228,8 +228,6 @@ public class AppointmentApplicationServiceTests
 
         _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(appointment);
-        _patients.Setup(r => r.GetByKeycloakIdAsync(patient.KeycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(patient);
 
         // Act
         var result = await _sut.GetByIdAsync(
@@ -250,10 +248,6 @@ public class AppointmentApplicationServiceTests
 
         _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(appointment);
-        _patients.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Patient?)null);
-        _doctors.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(doctor);
 
         // Act
         var result = await _sut.GetByIdAsync(
@@ -275,10 +269,6 @@ public class AppointmentApplicationServiceTests
 
         _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(appointment);
-        _patients.Setup(r => r.GetByKeycloakIdAsync(stranger.KeycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(stranger);
-        _doctors.Setup(r => r.GetByKeycloakIdAsync(stranger.KeycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Doctor?)null);
 
         // Act
         var ex = await Assert.ThrowsAsync<ForbiddenException>(() =>

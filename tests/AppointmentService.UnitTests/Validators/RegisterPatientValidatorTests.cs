@@ -213,13 +213,13 @@ public class RegisterPatientValidatorTests
         Assert.Contains(
             result.Errors,
             e => e.PropertyName == nameof(RegisterPatientDto.DateOfBirth)
-                 && e.ErrorMessage == "Дата рождения не может быть в будущем.");
+                 && e.ErrorMessage == "Дата рождения должна быть в прошлом.");
     }
 
     [Fact]
     public void Validate_WithDateOfBirthTooOld_Fails()
     {
-        var dto = ValidDto() with { DateOfBirth = Patient.MinDateOfBirth };
+        var dto = ValidDto() with { DateOfBirth = Patient.MinDateOfBirth.AddDays(-1) };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -229,14 +229,14 @@ public class RegisterPatientValidatorTests
         Assert.Contains(
             result.Errors,
             e => e.PropertyName == nameof(RegisterPatientDto.DateOfBirth)
-                 && e.ErrorMessage == "Некорректная дата рождения.");
+                 && e.ErrorMessage == $"Дата рождения не может быть раньше {Patient.MinDateOfBirth:yyyy-MM-dd}.");
     }
 
     [Fact]
     public void Validate_WithValidDateOfBirth_Passes()
     {
         // Arrange
-        var dto = ValidDto() with { DateOfBirth = Patient.MinDateOfBirth.AddDays(1) };
+        var dto = ValidDto() with { DateOfBirth = Patient.MinDateOfBirth };
 
         // Act
         ValidationResult result = _validator.Validate(dto);

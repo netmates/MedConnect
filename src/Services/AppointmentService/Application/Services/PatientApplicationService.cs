@@ -77,6 +77,9 @@ public sealed class PatientApplicationService(
         var patient = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct)
             ?? throw new NotFoundException("Профиль пациента не найден.");
 
+        if (!patient.IsActive)
+            throw new BusinessRuleException("Профиль пациента деактивирован.");
+
         var oldFirstName = patient.FirstName;
         var oldLastName = patient.LastName;
         var oldMiddleName = patient.MiddleName;
