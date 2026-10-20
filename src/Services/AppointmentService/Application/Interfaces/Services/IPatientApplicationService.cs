@@ -5,9 +5,9 @@ namespace AppointmentService.Application.Interfaces.Services;
 public interface IPatientApplicationService
 {
     /// <summary>
-    /// Зарегистрировать пациента или вернуть существующий профиль.
+    /// Зарегистрировать пациента.
     /// </summary>
-    public Task<PatientDto> RegisterOrGetAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct);
+    public Task<PatientDto> RegisterAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct);
     /// <summary>
     /// Найти пациента по KeycloakId.
     /// </summary>

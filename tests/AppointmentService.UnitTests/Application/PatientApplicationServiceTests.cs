@@ -77,10 +77,10 @@ public class PatientApplicationServiceTests
             DateOfBirth = new DateTime(1985, 3, 10)
         };
 
-    // RegisterOrGet
+    // Register
 
     [Fact]
-    public async Task RegisterOrGetAsync_WhenValidationFails_ThrowsValidationException()
+    public async Task RegisterAsync_WhenValidationFails_ThrowsValidationException()
     {
         // Arrange
         var failures = new[] { new ValidationFailure("LastName", "Фамилия обязательна.") };
@@ -90,42 +90,18 @@ public class PatientApplicationServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(() =>
-            _sut.RegisterOrGetAsync("patient-kc", ValidRegisterDto(), CancellationToken.None));
+            _sut.RegisterAsync("patient-kc", ValidRegisterDto(), CancellationToken.None));
     }
 
     [Fact]
-    public async Task RegisterOrGetAsync_WhenPatientExists_ReturnsExistingWithoutCreating()
-    {
-        // Arrange
-        var existing = CreatePatient();
-        _patients.Setup(r => r.GetByKeycloakIdAsync(existing.KeycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existing);
-
-        // Act
-        var result = await _sut.RegisterOrGetAsync(
-            existing.KeycloakId, ValidRegisterDto(), CancellationToken.None);
-
-        // Assert
-        Assert.Equal(existing.Id, result.Id);
-        Assert.Equal(existing.KeycloakId, result.KeycloakId);
-        _patients.Verify(
-            r => r.AddAsync(It.IsAny<Patient>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task RegisterOrGetAsync_WhenPatientNotExists_CreatesCommitsAndReturnsDto()
+    public async Task RegisterAsync_CreatesCommitsAndReturnsDto()
     {
         // Arrange
         const string keycloakId = "new-patient-kc";
         var dto = ValidRegisterDto();
-        _patients.Setup(r => r.GetByKeycloakIdAsync(keycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Patient?)null);
 
         // Act
-        var result = await _sut.RegisterOrGetAsync(keycloakId, dto, CancellationToken.None);
+        var result = await _sut.RegisterAsync(keycloakId, dto, CancellationToken.None);
 
         // Assert
         Assert.Equal(keycloakId, result.KeycloakId);
@@ -142,18 +118,16 @@ public class PatientApplicationServiceTests
     }
 
     [Fact]
-    public async Task RegisterOrGetAsync_WhenAddFails_RollsBack()
+    public async Task RegisterAsync_WhenAddFails_RollsBack()
     {
         // Arrange
         const string keycloakId = "new-patient-kc";
-        _patients.Setup(r => r.GetByKeycloakIdAsync(keycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Patient?)null);
         _patients.Setup(r => r.AddAsync(It.IsAny<Patient>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("db error"));
 
         // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _sut.RegisterOrGetAsync(keycloakId, ValidRegisterDto(), CancellationToken.None));
+            _sut.RegisterAsync(keycloakId, ValidRegisterDto(), CancellationToken.None));
 
         // Assert
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -161,14 +135,11 @@ public class PatientApplicationServiceTests
     }
 
     [Fact]
-    public async Task RegisterOrGetAsync_WhenUniqueViolationOnCommit_RollsBackAndThrows()
+    public async Task RegisterAsync_WhenUniqueViolationOnCommit_RollsBackAndThrows()
     {
         // Arrange
         const string keycloakId = "race-patient-kc";
         var dto = ValidRegisterDto();
-
-        _patients.Setup(r => r.GetByKeycloakIdAsync(keycloakId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Patient?)null);
 
         var postgresEx = new PostgresException(
             messageText: "duplicate key value violates unique constraint",
@@ -181,13 +152,13 @@ public class PatientApplicationServiceTests
 
         // Act
         var ex = await Assert.ThrowsAsync<DbUpdateException>(() =>
-            _sut.RegisterOrGetAsync(keycloakId, dto, CancellationToken.None));
+            _sut.RegisterAsync(keycloakId, dto, CancellationToken.None));
 
         // Assert
         Assert.Same(postgresEx, ex.InnerException);
         _patients.Verify(r => r.AddAsync(It.IsAny<Patient>(), It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _patients.Verify(r => r.GetByKeycloakIdAsync(keycloakId, It.IsAny<CancellationToken>()), Times.Once);
+        _patients.Verify(r => r.GetByKeycloakIdAsync(keycloakId, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // GetByKeycloakId

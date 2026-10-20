@@ -48,6 +48,17 @@ public class ScheduleSlotTests
     }
 
     [Fact]
+    public void Create_WhenStartNotInFuture_Throws()
+    {
+        var start = DateTime.UtcNow.AddHours(-1);
+
+        var ex = Assert.Throws<DomainException>(() =>
+            ScheduleSlot.Create(Guid.NewGuid(), start, start.AddMinutes(30)));
+
+        Assert.Equal("Время начала должно быть в будущем.", ex.Message);
+    }
+
+    [Fact]
     public void Create_WhenEndEqualsStart_Throws()
     {
         // Arrange
@@ -273,6 +284,17 @@ public class ScheduleSlotTests
 
         // Assert
         Assert.Equal("Редактировать можно только свободный слот.", ex.Message);
+    }
+
+    [Fact]
+    public void Update_WhenStartNotInFuture_Throws()
+    {
+        var slot = CreateValid();
+        var start = DateTime.UtcNow.AddHours(-1);
+
+        var ex = Assert.Throws<DomainException>(() => slot.Update(start, start.AddMinutes(30)));
+
+        Assert.Equal("Время начала должно быть в будущем.", ex.Message);
     }
 
     [Fact]

@@ -88,6 +88,9 @@ public sealed class ScheduleSlot
 
     private static void EnsureTimeRange(DateTime startTime, DateTime endTime)
     {
+        if (startTime <= DateTime.UtcNow)
+            throw new DomainException("Время начала должно быть в будущем.");
+
         if (endTime <= startTime)
             throw new DomainException("Конец слота должен быть позже начала.");
 

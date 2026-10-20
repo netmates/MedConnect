@@ -169,7 +169,7 @@ public static class DataSeeder
                 ct: ct);
 
             await keycloak.ResetPasswordAsync(keycloakId, p.Password, ct);
-            await patientService.RegisterOrGetAsync(keycloakId, p.Dto, ct);
+            await patientService.RegisterAsync(keycloakId, p.Dto, ct);
             logger.LogInformation("Seeded patient {Email}", p.Email);
         }
     }

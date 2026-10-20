@@ -12,7 +12,7 @@ namespace AppointmentService.API.Controllers;
 [Authorize(Roles = Roles.Patient)]
 public sealed class PatientsController(IPatientApplicationService service) : ControllerBase
 {
-    /// <summary>POST /api/patients/register — зарегистрировать или получить профиль пациента.</summary>
+    /// <summary>POST /api/patients/register — зарегистрировать пациента.</summary>
     [HttpPost("register")]
     [ProducesResponseType(typeof(PatientDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -21,7 +21,7 @@ public sealed class PatientsController(IPatientApplicationService service) : Con
     public async Task<ActionResult<PatientDto>> Register([FromBody] RegisterPatientDto dto, CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await service.RegisterOrGetAsync(keycloakId, dto, ct);
+        var result = await service.RegisterAsync(keycloakId, dto, ct);
         return Ok(result);
     }
 

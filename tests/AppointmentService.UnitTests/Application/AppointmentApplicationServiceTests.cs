@@ -83,8 +83,18 @@ public class AppointmentApplicationServiceTests
 
     private static ScheduleSlot CreatePastSlot(Guid doctorId)
     {
+        var futureStart = DateTime.UtcNow.AddHours(2);
+        var slot = ScheduleSlot.Create(doctorId, futureStart, futureStart.AddMinutes(30));
         var start = DateTime.UtcNow.AddHours(-2);
-        return ScheduleSlot.Create(doctorId, start, start.AddMinutes(30));
+        SetSlotTime(slot, start, start.AddMinutes(30));
+        return slot;
+    }
+
+    private static void SetSlotTime(ScheduleSlot slot, DateTime start, DateTime end)
+    {
+        var flags = BindingFlags.Instance | BindingFlags.Public;
+        typeof(ScheduleSlot).GetProperty(nameof(ScheduleSlot.StartTime), flags)!.SetValue(slot, start);
+        typeof(ScheduleSlot).GetProperty(nameof(ScheduleSlot.EndTime), flags)!.SetValue(slot, end);
     }
 
     private static Appointment CreateAppointmentWithDetails(

@@ -22,16 +22,11 @@ public sealed class PatientApplicationService(
     IIntegrationEventPublisher publisher,
     IHttpContextAccessor httpContextAccessor) : IPatientApplicationService
 {
-    public async Task<PatientDto> RegisterOrGetAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct)
+    public async Task<PatientDto> RegisterAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct)
     {
         var validationResult = await registerPatientValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
-
-        // Если профиль уже есть (создан через PatientProvisioningMiddleware при OAuth) — возвращаем его
-        var existing = await patientRepository.GetByKeycloakIdAsync(keycloakId, ct);
-        if (existing is not null)
-            return MapToDto(existing);
 
         await unitOfWork.BeginTransactionAsync(ct);
         try

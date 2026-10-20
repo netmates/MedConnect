@@ -459,7 +459,7 @@ public class ScheduleSlotApplicationServiceTests
             _sut.DeleteAsync(slot.Id, doctor.KeycloakId, CancellationToken.None));
 
         // Assert
-        Assert.Equal("Нельзя удалить слот: к нему привязана запись.", ex.Message);
+        Assert.Equal("Нельзя удалить слот: по нему есть отмененная запись.", ex.Message);
         _slots.Verify(r => r.DeleteAsync(It.IsAny<ScheduleSlot>(), It.IsAny<CancellationToken>()), Times.Never);
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
     }

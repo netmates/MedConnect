@@ -123,7 +123,7 @@ public sealed class ScheduleSlotApplicationService(
                 throw new BusinessRuleException("Удалить можно только свободный слот.");
 
             if (await appointmentRepository.ExistsBySlotIdAsync(slot.Id, ct))
-                throw new BusinessRuleException("Нельзя удалить слот: к нему привязана запись.");
+                throw new BusinessRuleException("Нельзя удалить слот: по нему есть отмененная запись.");
 
             await slotRepository.DeleteAsync(slot, ct);
 
