@@ -1,11 +1,12 @@
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
+using AppointmentService.Infrastructure.Http;
 using AppointmentService.Infrastructure.Keycloak;
-using MedConnect.Shared.Auth;
 using AppointmentService.Infrastructure.Messaging;
 using AppointmentService.Infrastructure.Persistence;
 using AppointmentService.Infrastructure.Repositories;
+using MedConnect.Shared.Auth;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentService.Infrastructure.Extensions;
@@ -33,6 +34,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IScheduleSlotRepository, ScheduleSlotRepository>();
         services.AddScoped<IAppointmentRepository, AppointmentRepository>();
         services.AddScoped<ISpecializationRepository, SpecializationRepository>();
+
+        // CorrelationId (X-Correlation-ID) из текущего HTTP-запроса для публикации событий
+        services.AddScoped<ICorrelationIdAccessor, HttpCorrelationIdAccessor>();
 
         // Общий кеш access-токена Keycloak Admin API (сервис — Transient через HttpClient)
         services.AddSingleton<IKeycloakTokenCache, KeycloakTokenCache>();

@@ -1,5 +1,4 @@
 using AppointmentService.Application.Auth;
-using MedConnect.Shared.Http;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;
@@ -8,8 +7,9 @@ using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
-using MedConnect.Shared.Messaging;
 using MedConnect.Shared.Events;
+using MedConnect.Shared.Http;
+using MedConnect.Shared.Messaging;
 
 namespace AppointmentService.Application.Services;
 
@@ -25,7 +25,7 @@ public sealed class DoctorApplicationService(
     IValidator<ResetPasswordDto> resetPasswordValidator,
     ILogger<DoctorApplicationService> logger,
     IIntegrationEventPublisher publisher,
-    IHttpContextAccessor httpContextAccessor) : IDoctorApplicationService
+    ICorrelationIdAccessor correlationIdAccessor) : IDoctorApplicationService
 {
     public async Task<IReadOnlyList<DoctorDto>> GetAllAsync(Guid? specializationId, CancellationToken ct)
     {
@@ -187,7 +187,7 @@ public sealed class DoctorApplicationService(
 
             if (fullNameChanged)
             {
-                var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
+                var correlationId = correlationIdAccessor.Get();
                 try
                 {
                     await publisher.PublishAsync(

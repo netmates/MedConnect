@@ -20,7 +20,7 @@ public sealed class PatientApplicationService(
     IValidator<UpdatePatientDto> updatePatientValidator,
     ILogger<PatientApplicationService> logger,
     IIntegrationEventPublisher publisher,
-    IHttpContextAccessor httpContextAccessor) : IPatientApplicationService
+    ICorrelationIdAccessor correlationIdAccessor) : IPatientApplicationService
 {
     public async Task<PatientDto> RegisterAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct)
     {
@@ -110,7 +110,7 @@ public sealed class PatientApplicationService(
 
             if (fullNameChanged)
             {
-                var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
+                var correlationId = correlationIdAccessor.Get();
                 try
                 {
                     await publisher.PublishAsync(

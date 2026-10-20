@@ -1,4 +1,3 @@
-using MedConnect.Shared.Http;
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
 using MedConnect.Shared.Auth;
@@ -23,7 +22,7 @@ public sealed class AppointmentApplicationService(
     IValidator<CreateAppointmentDto> createAppointmentValidator,
     ILogger<AppointmentApplicationService> logger,
     IIntegrationEventPublisher publisher,
-    IHttpContextAccessor httpContextAccessor) : IAppointmentApplicationService
+    ICorrelationIdAccessor correlationIdAccessor) : IAppointmentApplicationService
 {
     public async Task<IReadOnlyList<AppointmentDto>> GetByPatientAsync(
         string keycloakId,
@@ -123,7 +122,7 @@ public sealed class AppointmentApplicationService(
             "Appointment created: {AppointmentId}, PatientId={PatientId}, DoctorId={DoctorId}, SlotId={SlotId}",
             created.Id, created.PatientId, created.DoctorId, created.SlotId);
 
-        var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
+        var correlationId = correlationIdAccessor.Get();
         try
         {
             await publisher.PublishAsync(
@@ -204,7 +203,7 @@ public sealed class AppointmentApplicationService(
             "Appointment cancelled: {AppointmentId}, CancelledBy={CancelledBy}",
             appointmentId, cancelledByRole);
 
-        var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
+        var correlationId = correlationIdAccessor.Get();
         try
         {
             await publisher.PublishAsync(

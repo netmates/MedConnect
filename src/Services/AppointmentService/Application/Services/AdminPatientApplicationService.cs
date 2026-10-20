@@ -1,4 +1,3 @@
-using MedConnect.Shared.Http;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;
@@ -21,7 +20,7 @@ public sealed class AdminPatientApplicationService(
     IValidator<UpdatePatientDto> updatePatientValidator,
     ILogger<AdminPatientApplicationService> logger,
     IIntegrationEventPublisher publisher,
-    IHttpContextAccessor httpContextAccessor) : IAdminPatientApplicationService
+    ICorrelationIdAccessor correlationIdAccessor) : IAdminPatientApplicationService
 {
     public async Task<IReadOnlyList<PatientDto>> GetAllIncludingInactiveAsync(CancellationToken ct)
         => (await patientRepository.GetAllIncludingInactiveAsync(ct))
@@ -77,7 +76,7 @@ public sealed class AdminPatientApplicationService(
 
             if (fullNameChanged)
             {
-                var correlationId = httpContextAccessor.HttpContext?.Items[CorrelationIdKeys.ItemKey] as string;
+                var correlationId = correlationIdAccessor.Get();
                 try
                 {
                     await publisher.PublishAsync(
