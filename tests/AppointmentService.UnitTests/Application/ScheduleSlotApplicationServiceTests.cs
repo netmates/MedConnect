@@ -475,7 +475,7 @@ public class ScheduleSlotApplicationServiceTests
 
         // Act
         var ex = await Assert.ThrowsAsync<NotFoundException>(() =>
-            _sut.GetScheduleAsync("missing", CancellationToken.None));
+            _sut.GetScheduleAsync("missing", null, null, CancellationToken.None));
 
         // Assert
         Assert.Equal("Профиль врача не найден.", ex.Message);
@@ -489,11 +489,15 @@ public class ScheduleSlotApplicationServiceTests
         var slot = CreateFutureSlot(doctor.Id);
         _doctors.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doctor);
-        _slots.Setup(r => r.GetByDoctorIdAsync(doctor.Id, It.IsAny<CancellationToken>()))
+        _slots.Setup(r => r.GetByDoctorIdAsync(
+                doctor.Id,
+                It.IsAny<DateTime?>(),
+                It.IsAny<DateTime?>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync([slot]);
 
         // Act
-        var result = await _sut.GetScheduleAsync(doctor.KeycloakId, CancellationToken.None);
+        var result = await _sut.GetScheduleAsync(doctor.KeycloakId, null, null, CancellationToken.None);
 
         // Assert
         Assert.Single(result);
@@ -512,12 +516,16 @@ public class ScheduleSlotApplicationServiceTests
 
         // Act
         var ex = await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            _sut.GetScheduleAsync(doctor.KeycloakId, CancellationToken.None));
+            _sut.GetScheduleAsync(doctor.KeycloakId, null, null, CancellationToken.None));
 
         // Assert
         Assert.Equal("Нельзя управлять расписанием: профиль врача деактивирован.", ex.Message);
         _slots.Verify(
-            r => r.GetByDoctorIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            r => r.GetByDoctorIdAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<DateTime?>(),
+                It.IsAny<DateTime?>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

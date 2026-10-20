@@ -5,6 +5,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/Save'
 import {
   Button,
+  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { slotsApi } from '../../../api/slotsApi'
 import { Page } from '../../../components/Page'
 import {
+  appointmentPeriodRange,
   formatApiError,
   formatDateTime,
   fromLocalInputValue,
@@ -25,6 +27,7 @@ import {
   slotStatusLabel,
   toLocalInputValue,
   todayAtLocal,
+  type AppointmentPeriod,
 } from '../../../lib/format'
 import type { ScheduleSlotDto } from '../../../types/slot'
 
@@ -36,10 +39,13 @@ function defaultEnd(): string {
   return todayAtLocal(10, 0)
 }
 
+const periodAll: AppointmentPeriod = 'all'
+
 export function DoctorSchedulePage() {
   const [items, setItems] = useState<ScheduleSlotDto[]>([])
   const [startTime, setStartTime] = useState(defaultStart)
   const [endTime, setEndTime] = useState(defaultEnd)
+  const [period, setPeriod] = useState<AppointmentPeriod>(periodAll)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -47,11 +53,11 @@ export function DoctorSchedulePage() {
   const load = useCallback(async () => {
     setError(null)
     try {
-      setItems(await slotsApi.my())
+      setItems(await slotsApi.my(appointmentPeriodRange(period)))
     } catch (e) {
       setError(formatApiError(e))
     }
-  }, [])
+  }, [period])
 
   useEffect(() => {
     void load()
@@ -165,6 +171,21 @@ export function DoctorSchedulePage() {
           )}
         </Stack>
       </Stack>
+
+      <TextField
+        select
+        label="Период"
+        size="small"
+        value={period}
+        onChange={(e) => setPeriod(e.target.value as AppointmentPeriod)}
+        sx={{ minWidth: 220, maxWidth: 280 }}
+      >
+        <MenuItem value={periodAll}>Все</MenuItem>
+        <MenuItem value="today">Сегодня</MenuItem>
+        <MenuItem value="tomorrow">Завтра</MenuItem>
+        <MenuItem value="week">Неделя</MenuItem>
+        <MenuItem value="past">Прошедшие</MenuItem>
+      </TextField>
 
       <Table size="small">
         <TableHead>

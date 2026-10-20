@@ -7,7 +7,7 @@ public interface IScheduleSlotRepository : IRepository<ScheduleSlot>
     /// <summary>
     /// Получить все слоты врача.
     /// </summary>
-    public Task<IReadOnlyList<ScheduleSlot>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct = default);
+    public Task<IReadOnlyList<ScheduleSlot>> GetByDoctorIdAsync(Guid doctorId, DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
     /// <summary>
     /// Получить доступные слоты врача на конкретный день.
     /// </summary>

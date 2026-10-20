@@ -20,10 +20,13 @@ public sealed class ScheduleSlotsController(IScheduleSlotApplicationService serv
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<ScheduleSlotDto>>> GetSchedule(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<ScheduleSlotDto>>> GetSchedule(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        CancellationToken ct)
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await service.GetScheduleAsync(keycloakId, ct);
+        var result = await service.GetScheduleAsync(keycloakId, from, to, ct);
         return Ok(result);
     }
 

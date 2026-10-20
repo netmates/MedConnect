@@ -19,7 +19,7 @@ public interface IScheduleSlotApplicationService
     /// <summary>
     /// Получить полное расписание текущего врача (все статусы слотов).
     /// </summary>
-    public Task<IReadOnlyList<ScheduleSlotDto>> GetScheduleAsync(string keycloakId, CancellationToken ct);
+    public Task<IReadOnlyList<ScheduleSlotDto>> GetScheduleAsync(string keycloakId, DateTime? from, DateTime? to, CancellationToken ct);
     /// <summary>
     /// Получить свободные слоты врача на указанную дату.
     /// </summary>

@@ -8,11 +8,22 @@ namespace AppointmentService.Infrastructure.Repositories;
 
 public sealed class ScheduleSlotRepository(AppointmentDbContext context) : Repository<ScheduleSlot>(context), IScheduleSlotRepository
 {
-    public async Task<IReadOnlyList<ScheduleSlot>> GetByDoctorIdAsync(Guid doctorId, CancellationToken ct = default)
-        => await _context.ScheduleSlots
-            .Where(s => s.DoctorId == doctorId)
-            .OrderBy(s => s.StartTime)
-            .ToListAsync(ct);
+    public async Task<IReadOnlyList<ScheduleSlot>> GetByDoctorIdAsync(
+        Guid doctorId,
+        DateTime? from = null,
+        DateTime? to = null,
+        CancellationToken ct = default)
+    {
+        var query = _context.ScheduleSlots.Where(s => s.DoctorId == doctorId);
+
+        if (from.HasValue)
+            query = query.Where(s => s.StartTime >= from.Value);
+
+        if (to.HasValue)
+            query = query.Where(s => s.StartTime < to.Value);
+
+        return await query.OrderBy(s => s.StartTime).ToListAsync(ct);
+    }
 
     public async Task<IReadOnlyList<ScheduleSlot>> GetAvailableByDoctorIdAsync(Guid doctorId, DateTime date, CancellationToken ct = default)
     {

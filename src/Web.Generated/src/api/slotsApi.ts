@@ -6,7 +6,13 @@ import type {
 } from '../types/slot'
 
 export const slotsApi = {
-  my: () => apiFetch<ScheduleSlotDto[]>('/api/slots'),
+  my: (params: { from?: string; to?: string } = {}) => {
+    const search = new URLSearchParams()
+    if (params.from) search.set('from', params.from)
+    if (params.to) search.set('to', params.to)
+    const query = search.toString()
+    return apiFetch<ScheduleSlotDto[]>(`/api/slots${query ? `?${query}` : ''}`)
+  },
   available: (doctorId: string, date: string) =>
     apiFetch<ScheduleSlotDto[]>(
       `/api/slots/available?doctorId=${encodeURIComponent(doctorId)}&date=${encodeURIComponent(date)}`,
