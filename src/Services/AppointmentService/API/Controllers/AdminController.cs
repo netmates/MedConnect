@@ -195,7 +195,7 @@ public sealed class AdminController(
         return NoContent();
     }
 
-    /// <summary>POST /api/admin/patients/{id}/activate — восстановить пациента.</summary>
+    /// <summary>POST /api/admin/patients/{id}/activate — восстановить пациента (+ разблокировать в Keycloak).</summary>
     [HttpPost("patients/{id:guid}/activate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

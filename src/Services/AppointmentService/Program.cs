@@ -36,14 +36,14 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // Health checks: /health/live (процесс), /health/ready (Postgres + Keycloak)
 builder.Services.AddAppointmentHealthChecks(builder.Configuration);
 
-// ProblemDetails + маппинг необработанных исключений → HTTP-статусы (404/403/400/500)
+// ProblemDetails + маппинг необработанных исключений → HTTP-статусы (404/403/409/400/500)
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // gRPC: регистрация сервисов для MapGrpcService (внутренние вызовы от CommunicationService)
 builder.Services.AddGrpc();
 
-// HttpContext для CorrelationId (X-Correlation-ID) при публикации AppointmentCreated
+// HttpContext для CorrelationId (X-Correlation-ID) при публикации событий
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

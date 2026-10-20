@@ -15,7 +15,7 @@ public static class KeycloakNameSync
     }
 
     /// <summary>
-    /// Если ФИО изменилось — обновляет имя в Keycloak. Возвращает true, если вызов был.
+    /// Если имя или фамилия изменились — обновляет их в Keycloak. Возвращает true, если вызов был.
     /// </summary>
     public static async Task<bool> ApplyIfChangedAsync(
         IKeycloakAdminService keycloak,
@@ -35,7 +35,7 @@ public static class KeycloakNameSync
     }
 
     /// <summary>
-    /// Откатывает ФИО в Keycloak после неудачного DB-update. Ошибки compensate только логирует.
+    /// Откатывает имя и фамилию в Keycloak после неудачного DB-update. Ошибки compensate только логирует.
     /// </summary>
     public static async Task CompensateIfNeededAsync(
         IKeycloakAdminService keycloak,

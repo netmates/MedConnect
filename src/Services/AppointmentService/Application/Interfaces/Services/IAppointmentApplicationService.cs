@@ -36,11 +36,11 @@ public interface IAppointmentApplicationService
     /// </summary>
     public Task CancelAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
     /// <summary>
-    /// Завершить прием.
+    /// Завершить прием (врач этой записи).
     /// </summary>
     public Task CompleteAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
     /// <summary>
-    /// Подтвердить запись.
+    /// Подтвердить запись (врач этой записи).
     /// </summary>
     public Task ConfirmAsync(Guid appointmentId, string keycloakId, CancellationToken ct);
     /// <summary>
