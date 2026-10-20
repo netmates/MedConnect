@@ -19,17 +19,21 @@ import { Link as RouterLink } from 'react-router-dom'
 import { appointmentsApi } from '../../../api/appointmentsApi'
 import { Page } from '../../../components/Page'
 import {
+  appointmentPeriodRange,
   appointmentStatusLabel,
   formatApiError,
   formatDateTimeRange,
+  type AppointmentPeriod,
 } from '../../../lib/format'
 import type { AppointmentDto } from '../../../types/appointment'
 
 const statusAll = 'all'
+const periodAll: AppointmentPeriod = 'all'
 
 export function DoctorAppointmentsPage() {
   const [items, setItems] = useState<AppointmentDto[]>([])
   const [status, setStatus] = useState(statusAll)
+  const [period, setPeriod] = useState<AppointmentPeriod>(periodAll)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -39,12 +43,13 @@ export function DoctorAppointmentsPage() {
       setItems(
         await appointmentsApi.myAsDoctor({
           status: status === statusAll ? undefined : status,
+          ...appointmentPeriodRange(period),
         }),
       )
     } catch (e) {
       setError(formatApiError(e))
     }
-  }, [status])
+  }, [status, period])
 
   useEffect(() => {
     void load()
@@ -69,20 +74,36 @@ export function DoctorAppointmentsPage() {
       description="Подтверждение, завершение, отмена и чат с пациентом."
       error={error}
     >
-      <TextField
-        select
-        label="Статус записи"
-        size="small"
-        value={status}
-        onChange={(e) => setStatus(e.target.value)}
-        sx={{ maxWidth: 280 }}
-      >
-        <MenuItem value={statusAll}>Все</MenuItem>
-        <MenuItem value="Created">Создана</MenuItem>
-        <MenuItem value="Confirmed">Подтверждена</MenuItem>
-        <MenuItem value="Cancelled">Отменена</MenuItem>
-        <MenuItem value="Completed">Завершена</MenuItem>
-      </TextField>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <TextField
+          select
+          label="Статус записи"
+          size="small"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          sx={{ minWidth: 220, maxWidth: 280 }}
+        >
+          <MenuItem value={statusAll}>Все</MenuItem>
+          <MenuItem value="Created">Создана</MenuItem>
+          <MenuItem value="Confirmed">Подтверждена</MenuItem>
+          <MenuItem value="Cancelled">Отменена</MenuItem>
+          <MenuItem value="Completed">Завершена</MenuItem>
+        </TextField>
+        <TextField
+          select
+          label="Период"
+          size="small"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value as AppointmentPeriod)}
+          sx={{ minWidth: 220, maxWidth: 280 }}
+        >
+          <MenuItem value={periodAll}>Все</MenuItem>
+          <MenuItem value="today">Сегодня</MenuItem>
+          <MenuItem value="tomorrow">Завтра</MenuItem>
+          <MenuItem value="week">Неделя</MenuItem>
+          <MenuItem value="past">Прошедшие</MenuItem>
+        </TextField>
+      </Stack>
 
       <Table size="small">
         <TableHead>

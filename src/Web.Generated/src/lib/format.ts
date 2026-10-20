@@ -103,6 +103,39 @@ export function fromLocalInputValue(local: string): string {
   return date.toISOString()
 }
 
+export type AppointmentPeriod = 'all' | 'today' | 'tomorrow' | 'week' | 'past'
+
+function startOfLocalDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function addLocalDays(date: Date, days: number): Date {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+/** Границы периода списка записей: [from, to) в UTC. Неделя — пн–вс по локальному календарю. */
+export function appointmentPeriodRange(
+  period: AppointmentPeriod,
+  now = new Date(),
+): { from?: string; to?: string } {
+  const today = startOfLocalDay(now)
+  const tomorrow = addLocalDays(today, 1)
+
+  if (period === 'past') return { to: today.toISOString() }
+  if (period === 'today') return { from: today.toISOString(), to: tomorrow.toISOString() }
+  if (period === 'tomorrow') {
+    return { from: tomorrow.toISOString(), to: addLocalDays(tomorrow, 1).toISOString() }
+  }
+  if (period === 'week') {
+    const monday = addLocalDays(today, -((today.getDay() + 6) % 7))
+    return { from: monday.toISOString(), to: addLocalDays(monday, 7).toISOString() }
+  }
+
+  return {}
+}
+
 export function todayDateInput(): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
