@@ -38,7 +38,7 @@ public sealed class AdminController(
     public async Task<ActionResult<SpecializationDto>> CreateSpecialization([FromBody] CreateSpecializationDto dto, CancellationToken ct)
     {
         var result = await specializationService.CreateAsync(dto, ct);
-        return CreatedAtAction(nameof(GetSpecializations), result);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
     /// <summary>PUT /api/admin/specializations/{id} — обновить специализацию.</summary>
@@ -90,7 +90,7 @@ public sealed class AdminController(
     public async Task<ActionResult<DoctorDto>> CreateDoctor([FromBody] CreateDoctorDto dto, CancellationToken ct)
     {
         var result = await doctorService.CreateAsync(dto, ct);
-        return CreatedAtAction(nameof(GetDoctors), result);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
     /// <summary>PUT /api/admin/doctors/{id} — обновить профиль врача.</summary>

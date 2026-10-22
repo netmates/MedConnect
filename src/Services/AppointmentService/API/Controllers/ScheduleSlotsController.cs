@@ -59,7 +59,7 @@ public sealed class ScheduleSlotsController(IScheduleSlotApplicationService serv
     {
         var keycloakId = CurrentUser.GetKeycloakId(User);
         var result = await service.CreateAsync(dto, keycloakId, ct);
-        return CreatedAtAction(nameof(GetSchedule), result);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
     /// <summary>PUT /api/slots/{id} — обновить слот расписания (врач).</summary>

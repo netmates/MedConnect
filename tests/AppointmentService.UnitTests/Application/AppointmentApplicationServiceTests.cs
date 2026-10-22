@@ -1,16 +1,15 @@
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
-using MedConnect.Shared.Auth;
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
-using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
 using FluentValidation.Results;
-using MedConnect.Shared.Messaging;
+using MedConnect.Shared.Auth;
 using MedConnect.Shared.Events;
+using MedConnect.Shared.Messaging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Reflection;
@@ -665,6 +664,46 @@ public class AppointmentApplicationServiceTests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task CancelAsync_WhenDoctorOwner_CancelsAndFreesSlot()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var doctor = CreateDoctor();
+        var slot = CreateFutureSlot(doctor.Id);
+        slot.Book();
+        var appointment = CreateAppointmentWithDetails(patient, doctor, slot);
+
+        _appointments.Setup(r => r.GetByIdWithLockAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
+        _patients.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Patient?)null);
+        _doctors.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor);
+        _slots.Setup(r => r.GetByIdWithLockAsync(appointment.SlotId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(slot);
+
+        // Act
+        await _sut.CancelAsync(appointment.Id, doctor.KeycloakId, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(AppointmentStatus.Cancelled, appointment.Status);
+        Assert.Equal(SlotStatus.Available, slot.Status);
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _publisher.Verify(p => p.PublishAsync(
+            EventTypes.AppointmentCancelled,
+            RoutingKeys.AppointmentCancelled,
+            It.Is<AppointmentCancelledPayload>(payload =>
+                payload.AppointmentId == appointment.Id &&
+                payload.PatientId == patient.Id &&
+                payload.DoctorId == doctor.Id &&
+                payload.SlotId == slot.Id &&
+                payload.CancelledByUserId == doctor.Id &&
+                payload.CancelledByRole == ParticipantRoles.Doctor),
+            It.Is<string?>(id => id == null),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private void VerifyAppointmentCancelledNotPublished()
     {
         _publisher.Verify(p => p.PublishAsync(
@@ -744,7 +783,7 @@ public class AppointmentApplicationServiceTests
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // --- Confirm ---
+    // Confirm
 
     [Fact]
     public async Task ConfirmAsync_WhenDoctorNotFound_ThrowsNotFound()
@@ -805,5 +844,136 @@ public class AppointmentApplicationServiceTests
         Assert.Equal(AppointmentStatus.Confirmed, appointment.Status);
         _appointments.Verify(r => r.UpdateAsync(appointment, It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // ValidateAccess
+
+    [Fact]
+    public async Task ValidateAccessAsync_WhenAppointmentNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _appointments.Setup(r => r.GetByIdWithDetailsAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Appointment?)null);
+
+        // Act
+        var result = await _sut.ValidateAccessAsync(id, "patient-kc", CancellationToken.None);
+
+        // Assert
+        Assert.False(result.Allowed);
+        Assert.Equal(AppointmentAccessDenial.NotFound, result.DenialReason);
+    }
+
+    [Fact]
+    public async Task ValidateAccessAsync_WhenPatientOwner_ReturnsAllow()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var doctor = CreateDoctor();
+        var slot = CreateFutureSlot(doctor.Id);
+        var appointment = CreateAppointmentWithDetails(patient, doctor, slot);
+
+        _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
+
+        // Act
+        var result = await _sut.ValidateAccessAsync(appointment.Id, patient.KeycloakId, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.Allowed);
+        Assert.Equal(AppointmentAccessDenial.None, result.DenialReason);
+        Assert.Equal(appointment.Id, result.AppointmentId);
+        Assert.Equal(patient.Id, result.PatientId);
+        Assert.Equal(doctor.Id, result.DoctorId);
+        Assert.Equal(patient.KeycloakId, result.PatientKeycloakId);
+        Assert.Equal(doctor.KeycloakId, result.DoctorKeycloakId);
+        Assert.Equal("Иванов Иван Иванович", result.PatientName);
+        Assert.Equal("Петров Петр Петрович", result.DoctorName);
+    }
+
+    [Fact]
+    public async Task ValidateAccessAsync_WhenDoctorOwner_ReturnsAllow()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var doctor = CreateDoctor();
+        var slot = CreateFutureSlot(doctor.Id);
+        var appointment = CreateAppointmentWithDetails(patient, doctor, slot);
+
+        _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
+
+        // Act
+        var result = await _sut.ValidateAccessAsync(appointment.Id, doctor.KeycloakId, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.Allowed);
+        Assert.Equal(AppointmentAccessDenial.None, result.DenialReason);
+        Assert.Equal(appointment.Id, result.AppointmentId);
+        Assert.Equal(patient.KeycloakId, result.PatientKeycloakId);
+        Assert.Equal(doctor.KeycloakId, result.DoctorKeycloakId);
+    }
+
+    [Fact]
+    public async Task ValidateAccessAsync_WhenCallerNotOwner_ReturnsForbidden()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var doctor = CreateDoctor();
+        var slot = CreateFutureSlot(doctor.Id);
+        var appointment = CreateAppointmentWithDetails(patient, doctor, slot);
+
+        _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
+
+        // Act
+        var result = await _sut.ValidateAccessAsync(appointment.Id, "stranger-kc", CancellationToken.None);
+
+        // Assert
+        Assert.False(result.Allowed);
+        Assert.Equal(AppointmentAccessDenial.Forbidden, result.DenialReason);
+    }
+
+    [Fact]
+    public async Task ValidateAccessAsync_WhenCancelled_ReturnsClosed()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var doctor = CreateDoctor();
+        var slot = CreateFutureSlot(doctor.Id);
+        var appointment = CreateAppointmentWithDetails(patient, doctor, slot);
+        appointment.Cancel();
+
+        _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
+
+        // Act
+        var result = await _sut.ValidateAccessAsync(appointment.Id, patient.KeycloakId, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.Allowed);
+        Assert.Equal(AppointmentAccessDenial.Closed, result.DenialReason);
+    }
+
+    [Fact]
+    public async Task ValidateAccessAsync_WhenCompleted_ReturnsClosed()
+    {
+        // Arrange
+        var patient = CreatePatient();
+        var doctor = CreateDoctor();
+        var slot = CreateFutureSlot(doctor.Id);
+        var appointment = CreateAppointmentWithDetails(patient, doctor, slot);
+        appointment.Confirm();
+        appointment.Complete();
+
+        _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
+
+        // Act
+        var result = await _sut.ValidateAccessAsync(appointment.Id, doctor.KeycloakId, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.Allowed);
+        Assert.Equal(AppointmentAccessDenial.Closed, result.DenialReason);
     }
 }
