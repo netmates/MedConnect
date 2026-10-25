@@ -1,5 +1,4 @@
 using AppointmentService.Application.DTOs.Doctor;
-using AppointmentService.Domain.Entities;
 using FluentValidation;
 
 namespace AppointmentService.Application.Validators;
@@ -8,24 +7,7 @@ public sealed class CreateDoctorValidator : AbstractValidator<CreateDoctorDto>
 {
     public CreateDoctorValidator()
     {
-        RuleFor(x => x.LastName)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty()
-                .WithMessage("Фамилия обязательна.")
-            .MaximumLength(Doctor.MaxLastNameLength)
-                .WithMessage($"Фамилия не должна превышать {Doctor.MaxLastNameLength} символов.");
-
-        RuleFor(x => x.FirstName)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty()
-                .WithMessage("Имя обязательно.")
-            .MaximumLength(Doctor.MaxFirstNameLength)
-                .WithMessage($"Имя не должно превышать {Doctor.MaxFirstNameLength} символов.");
-
-        RuleFor(x => x.MiddleName)
-            .MaximumLength(Doctor.MaxMiddleNameLength)
-                .WithMessage($"Отчество не должно превышать {Doctor.MaxMiddleNameLength} символов.")
-            .When(x => !string.IsNullOrEmpty(x.MiddleName));
+        Include(new DoctorProfileValidator<CreateDoctorDto>());
 
         RuleFor(x => x.Email)
             .Cascade(CascadeMode.Stop)
@@ -37,27 +19,5 @@ public sealed class CreateDoctorValidator : AbstractValidator<CreateDoctorDto>
         RuleFor(x => x.TemporaryPassword)
             .NotEmpty()
             .WithMessage("Временный пароль обязателен.");
-
-        RuleFor(x => x.ExperienceYears)
-            .GreaterThanOrEqualTo(Doctor.MinExperienceYears)
-                .WithMessage($"Опыт не может быть меньше {Doctor.MinExperienceYears} лет.")
-            .LessThanOrEqualTo(Doctor.MaxExperienceYears)
-                .WithMessage($"Опыт не может быть больше {Doctor.MaxExperienceYears} лет.");
-
-        RuleFor(x => x.Description)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty()
-                .WithMessage("Описание обязательно.")
-            .MaximumLength(Doctor.MaxDescriptionLength)
-                .WithMessage($"Описание не должно превышать {Doctor.MaxDescriptionLength} символов.");
-
-        RuleFor(x => x.SpecializationIds)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty()
-                .WithMessage("Укажите хотя бы одну специализацию.")
-            .Must(ids => ids.All(id => id != Guid.Empty))
-                .WithMessage("Идентификатор специализации некорректный.")
-            .Must(ids => ids.Count == ids.Distinct().Count())
-                .WithMessage("Дублирующиеся специализации не допускаются.");
     }
 }

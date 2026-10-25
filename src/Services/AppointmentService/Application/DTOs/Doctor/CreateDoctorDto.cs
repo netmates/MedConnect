@@ -1,6 +1,6 @@
 namespace AppointmentService.Application.DTOs.Doctor;
 
-public sealed record CreateDoctorDto
+public sealed record CreateDoctorDto : IDoctorProfile
 {
     public string LastName { get; init; } = string.Empty;
     public string FirstName { get; init; } = string.Empty;
