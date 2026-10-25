@@ -1,4 +1,3 @@
-using MedConnect.Shared.Http;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;

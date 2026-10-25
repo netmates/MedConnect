@@ -8,7 +8,6 @@ using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
 using MedConnect.Shared.Events;
-using MedConnect.Shared.Http;
 using MedConnect.Shared.Messaging;
 
 namespace AppointmentService.Application.Services;

@@ -5,7 +5,7 @@ using MedConnect.Shared.Logging;
 using CommunicationService.Common.Messaging;
 using CommunicationService.Common.Middleware;
 using MedConnect.Shared.Http;
-using CommunicationService.Common.OpenApi;
+using MedConnect.Shared.OpenApi;
 using CommunicationService.Common.Persistence;
 using CommunicationService.Features;
 using CommunicationService.Features.Chats;
@@ -88,7 +88,7 @@ try
     // OpenAPI-документ и UI Scalar
     if (app.Environment.IsDevelopment())
     {
-        app.MapCommunicationScalar();
+        app.MapKeycloakScalar("patient1@medconnect.local");
     }
 
     app.UseAuthentication();

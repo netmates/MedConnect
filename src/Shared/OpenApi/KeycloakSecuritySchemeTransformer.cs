@@ -2,7 +2,7 @@ using MedConnect.Shared.Auth;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace AppointmentService.API.OpenApi;
+namespace MedConnect.Shared.OpenApi;
 
 /// <summary>
 /// Добавляет в OpenAPI схему OAuth2 Password (Keycloak),

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace CommunicationService.Common.OpenApi;
+namespace MedConnect.Shared.OpenApi;
 
 /// <summary>
 /// Добавляет в OpenAPI схему HTTP Bearer (JWT),

@@ -8,8 +8,7 @@ namespace CommunicationService.Common.Auth;
 
 public sealed class ChatAccessService(IMongoDatabase db, AppointmentAccessClient appointmentAccess)
 {
-    private readonly IMongoCollection<ChatDocument> _chats =
-        db.GetCollection<ChatDocument>(MongoCollections.Chats);
+    private readonly IMongoCollection<ChatDocument> _chats = db.GetCollection<ChatDocument>(MongoCollections.Chats);
 
     private static void EnsureParticipant(ChatDocument chat, string currentKeycloakId)
     {

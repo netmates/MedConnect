@@ -1,11 +1,11 @@
 using MedConnect.Shared.Auth;
 using Scalar.AspNetCore;
 
-namespace AppointmentService.API.OpenApi;
+namespace MedConnect.Shared.OpenApi;
 
 public static class ScalarExtensions
 {
-    public static void MapAppointmentScalar(this WebApplication app)
+    public static void MapKeycloakScalar(this WebApplication app, string username)
     {
         app.MapOpenApi();
         app.MapScalarApiReference(options =>
@@ -17,7 +17,7 @@ public static class ScalarExtensions
                 .AddPasswordFlow(KeycloakSecuritySchemeTransformer.SchemeId, flow =>
                 {
                     flow.ClientId = clientId;
-                    flow.Username = "admin1";
+                    flow.Username = username;
                     flow.SelectedScopes = [KeycloakSecuritySchemeTransformer.OpenIdScope];
                     flow.WithCredentialsLocation(CredentialsLocation.Body);
                 });

@@ -123,32 +123,26 @@ public sealed class KeycloakAdminService(
 
     private async Task SetUserEnabledAsync(string keycloakId, bool enabled, CancellationToken ct)
     {
-        var adminToken = await GetAdminTokenAsync(ct);
-        var userPath = $"/admin/realms/{Realm}/users/{keycloakId}";
-
-        using var getRequest = new HttpRequestMessage(HttpMethod.Get, userPath);
-        getRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-
-        using var getResponse = await httpClient.SendAsync(getRequest, ct);
-        await EnsureKeycloakSuccessAsync(getResponse, ct);
-
-        await using var stream = await getResponse.Content.ReadAsStreamAsync(ct);
-        var user = await JsonNode.ParseAsync(stream, cancellationToken: ct)
-            ?? throw new InvalidOperationException($"Пустой ответ при загрузке пользователя {keycloakId}.");
-
-        user["enabled"] = enabled;
-
-        using var putRequest = new HttpRequestMessage(HttpMethod.Put, userPath)
-        {
-            Content = new StringContent(user.ToJsonString(), Encoding.UTF8, "application/json")
-        };
-        putRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-
-        using var putResponse = await httpClient.SendAsync(putRequest, ct);
-        await EnsureKeycloakSuccessAsync(putResponse, ct);
+        await UpdateUserAsync(keycloakId, user => user["enabled"] = enabled, ct);
     }
 
     public async Task UpdateUserNameAsync(string keycloakId, string firstName, string lastName, CancellationToken ct = default)
+    {
+        await UpdateUserAsync(keycloakId, user =>
+        {
+            user["firstName"] = firstName;
+            user["lastName"] = lastName;
+        }, ct);
+
+        logger.LogInformation(
+            "Keycloak user name updated: {KeycloakId}, FirstName={FirstName}, LastName={LastName}",
+            keycloakId, firstName, lastName);
+    }
+
+    private async Task UpdateUserAsync(
+        string keycloakId,
+        Action<JsonNode> update,
+        CancellationToken ct)
     {
         var adminToken = await GetAdminTokenAsync(ct);
         var userPath = $"/admin/realms/{Realm}/users/{keycloakId}";
@@ -163,8 +157,7 @@ public sealed class KeycloakAdminService(
         var user = await JsonNode.ParseAsync(stream, cancellationToken: ct)
             ?? throw new InvalidOperationException($"Пустой ответ при загрузке пользователя {keycloakId}.");
 
-        user["firstName"] = firstName;
-        user["lastName"] = lastName;
+        update(user);
 
         using var putRequest = new HttpRequestMessage(HttpMethod.Put, userPath)
         {
@@ -174,10 +167,6 @@ public sealed class KeycloakAdminService(
 
         using var putResponse = await httpClient.SendAsync(putRequest, ct);
         await EnsureKeycloakSuccessAsync(putResponse, ct);
-
-        logger.LogInformation(
-            "Keycloak user name updated: {KeycloakId}, FirstName={FirstName}, LastName={LastName}",
-            keycloakId, firstName, lastName);
     }
 
     public async Task ResetPasswordAsync(string keycloakId, string newPassword, CancellationToken ct = default)
