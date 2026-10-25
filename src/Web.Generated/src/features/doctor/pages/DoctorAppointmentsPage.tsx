@@ -4,106 +4,36 @@ import CheckIcon from '@mui/icons-material/Check'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import {
   Button,
-  MenuItem,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material'
-import { useCallback, useEffect, useState } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { appointmentsApi } from '../../../api/appointmentsApi'
 import { Page } from '../../../components/Page'
-import {
-  appointmentPeriodRange,
-  appointmentStatusLabel,
-  formatApiError,
-  formatDateTimeRange,
-  type AppointmentPeriod,
-} from '../../../lib/format'
-import type { AppointmentDto } from '../../../types/appointment'
-
-const statusAll = 'all'
-const periodAll: AppointmentPeriod = 'all'
+import { AppointmentListFilters } from '../../appointments/AppointmentListFilters'
+import { useAppointmentList } from '../../appointments/useAppointmentList'
+import { appointmentStatusLabel, formatDateTimeRange } from '../../../lib/format'
 
 export function DoctorAppointmentsPage() {
-  const [items, setItems] = useState<AppointmentDto[]>([])
-  const [status, setStatus] = useState(statusAll)
-  const [period, setPeriod] = useState<AppointmentPeriod>(periodAll)
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-
-  const load = useCallback(async () => {
-    setError(null)
-    try {
-      setItems(
-        await appointmentsApi.myAsDoctor({
-          status: status === statusAll ? undefined : status,
-          ...appointmentPeriodRange(period),
-        }),
-      )
-    } catch (e) {
-      setError(formatApiError(e))
-    }
-  }, [status, period])
-
-  useEffect(() => {
-    void load()
-  }, [load])
-
-  async function run(action: () => Promise<void>) {
-    setBusy(true)
-    setError(null)
-    try {
-      await action()
-      await load()
-    } catch (e) {
-      setError(formatApiError(e))
-    } finally {
-      setBusy(false)
-    }
-  }
+  const list = useAppointmentList(appointmentsApi.myAsDoctor)
 
   return (
     <Page
       title="Приемы"
       description="Подтверждение, завершение, отмена и чат с пациентом."
-      error={error}
+      error={list.error}
     >
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField
-          select
-          label="Статус записи"
-          size="small"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          sx={{ minWidth: 220, maxWidth: 280 }}
-        >
-          <MenuItem value={statusAll}>Все</MenuItem>
-          <MenuItem value="Created">Создана</MenuItem>
-          <MenuItem value="Confirmed">Подтверждена</MenuItem>
-          <MenuItem value="Cancelled">Отменена</MenuItem>
-          <MenuItem value="Completed">Завершена</MenuItem>
-        </TextField>
-        <TextField
-          select
-          label="Период"
-          size="small"
-          value={period}
-          onChange={(e) => setPeriod(e.target.value as AppointmentPeriod)}
-          sx={{ minWidth: 220, maxWidth: 280 }}
-        >
-          <MenuItem value={periodAll}>Все</MenuItem>
-          <MenuItem value="today">Сегодня</MenuItem>
-          <MenuItem value="tomorrow">Завтра</MenuItem>
-          <MenuItem value="week">Неделя</MenuItem>
-          <MenuItem value="past">Прошедшие</MenuItem>
-        </TextField>
-      </Stack>
+      <AppointmentListFilters
+        status={list.status}
+        period={list.period}
+        onStatus={list.selectStatus}
+        onPeriod={list.selectPeriod}
+      />
 
       <Table size="small">
         <TableHead>
@@ -116,7 +46,7 @@ export function DoctorAppointmentsPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {items.map((item) => (
+          {list.items.map((item) => (
             <TableRow key={item.id} hover>
               <TableCell>{item.patientFullName}</TableCell>
               <TableCell>
@@ -145,8 +75,8 @@ export function DoctorAppointmentsPage() {
                         size="small"
                         variant="contained"
                         startIcon={<CheckIcon />}
-                        disabled={busy}
-                        onClick={() => void run(() => appointmentsApi.confirm(item.id))}
+                        disabled={list.busy}
+                        onClick={() => void list.run(() => appointmentsApi.confirm(item.id))}
                       >
                         Подтвердить
                       </Button>
@@ -156,8 +86,8 @@ export function DoctorAppointmentsPage() {
                         size="small"
                         variant="contained"
                         startIcon={<DoneAllIcon />}
-                        disabled={busy}
-                        onClick={() => void run(() => appointmentsApi.complete(item.id))}
+                        disabled={list.busy}
+                        onClick={() => void list.run(() => appointmentsApi.complete(item.id))}
                       >
                         Завершить
                       </Button>
@@ -166,10 +96,10 @@ export function DoctorAppointmentsPage() {
                       size="small"
                       color="error"
                       startIcon={<CancelIcon />}
-                      disabled={busy}
+                      disabled={list.busy}
                       onClick={() => {
                         if (!confirm('Отменить прием?')) return
-                        void run(() => appointmentsApi.cancel(item.id))
+                        void list.run(() => appointmentsApi.cancel(item.id))
                       }}
                     >
                       Отменить
@@ -181,7 +111,7 @@ export function DoctorAppointmentsPage() {
               </TableCell>
             </TableRow>
           ))}
-          {items.length === 0 && (
+          {list.items.length === 0 && (
             <TableRow>
               <TableCell colSpan={5}>Приемов пока нет</TableCell>
             </TableRow>
