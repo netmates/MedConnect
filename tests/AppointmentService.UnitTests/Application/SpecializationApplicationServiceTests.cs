@@ -37,14 +37,11 @@ public class SpecializationApplicationServiceTests
             NullLogger<SpecializationApplicationService>.Instance);
     }
 
-    private static Specialization CreateSpecialization(string name = "Терапия")
-        => Specialization.Create(name);
+    private static Specialization CreateSpecialization(string name = "Терапия") => Specialization.Create(name);
 
-    private static CreateSpecializationDto ValidCreateDto(string name = "Кардиология")
-        => new() { Name = name };
+    private static CreateSpecializationDto ValidCreateDto(string name = "Кардиология") => new() { Name = name };
 
-    private static UpdateSpecializationDto ValidUpdateDto(string name = "Хирургия")
-        => new() { Name = name };
+    private static UpdateSpecializationDto ValidUpdateDto(string name = "Хирургия") => new() { Name = name };
 
     // GetAll
 

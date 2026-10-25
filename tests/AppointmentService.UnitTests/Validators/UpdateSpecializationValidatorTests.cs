@@ -9,11 +9,10 @@ public class UpdateSpecializationValidatorTests
 {
     private readonly UpdateSpecializationValidator _validator = new();
 
-    private static UpdateSpecializationDto ValidDto(string? name = null)
-        => new()
-        {
-            Name = name ?? "Терапия"
-        };
+    private static UpdateSpecializationDto ValidDto(string? name = null) => new()
+    {
+        Name = name ?? "Терапия"
+    };
 
     [Fact]
     public void Validate_WithValidDto_Passes()

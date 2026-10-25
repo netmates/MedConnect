@@ -74,15 +74,14 @@ public class AdminPatientApplicationServiceTests
         typeof(ScheduleSlot).GetProperty(nameof(ScheduleSlot.EndTime), flags)!.SetValue(slot, end);
     }
 
-    private static UpdatePatientDto ValidUpdateDto()
-        => new()
-        {
-            LastName = "Сидоров",
-            FirstName = "Сидор",
-            MiddleName = "Сидорович",
-            Phone = "+79007654321",
-            DateOfBirth = new DateTime(1985, 3, 10)
-        };
+    private static UpdatePatientDto ValidUpdateDto() => new()
+    {
+        LastName = "Сидоров",
+        FirstName = "Сидор",
+        MiddleName = "Сидорович",
+        Phone = "+79007654321",
+        DateOfBirth = new DateTime(1985, 3, 10)
+    };
 
     // GetAll
 

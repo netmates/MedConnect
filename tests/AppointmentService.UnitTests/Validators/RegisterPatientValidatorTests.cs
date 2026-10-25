@@ -9,15 +9,14 @@ public class RegisterPatientValidatorTests
 {
     private readonly RegisterPatientValidator _validator = new();
 
-    private static RegisterPatientDto ValidDto()
-        => new()
-        {
-            LastName = "Иванов",
-            FirstName = "Иван",
-            MiddleName = "Иванович",
-            Phone = "+79001234567",
-            DateOfBirth = new DateTime(1990, 5, 15)
-        };
+    private static RegisterPatientDto ValidDto() => new()
+    {
+        LastName = "Иванов",
+        FirstName = "Иван",
+        MiddleName = "Иванович",
+        Phone = "+79001234567",
+        DateOfBirth = new DateTime(1990, 5, 15)
+    };
 
     [Fact]
     public void Validate_WithValidDto_Passes()

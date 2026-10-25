@@ -9,12 +9,11 @@ public class CreateAppointmentValidatorTests
 {
     private readonly CreateAppointmentValidator _validator = new();
 
-    private static CreateAppointmentDto ValidDto(string? reason = "Осмотр")
-        => new()
-        {
-            SlotId = Guid.NewGuid(),
-            Reason = reason
-        };
+    private static CreateAppointmentDto ValidDto(string? reason = "Осмотр") => new()
+    {
+        SlotId = Guid.NewGuid(),
+        Reason = reason
+    };
 
     [Fact]
     public void Validate_WithValidDto_Passes()

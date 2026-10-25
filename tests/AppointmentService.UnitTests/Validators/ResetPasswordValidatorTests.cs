@@ -10,11 +10,10 @@ public class ResetPasswordValidatorTests
 
     private readonly ResetPasswordValidator _validator = new();
 
-    private static ResetPasswordDto ValidDto(string? password = null)
-        => new()
-        {
-            NewPassword = password ?? "TempPass1!"
-        };
+    private static ResetPasswordDto ValidDto(string? password = null) => new()
+    {
+        NewPassword = password ?? "TempPass1!"
+    };
 
     [Fact]
     public void Validate_WithValidDto_Passes()

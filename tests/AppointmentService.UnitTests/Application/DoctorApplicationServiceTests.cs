@@ -99,29 +99,27 @@ public class DoctorApplicationServiceTests
         doctor.DoctorSpecializations.Add(link);
     }
 
-    private static CreateDoctorDto ValidCreateDto(params Guid[] specializationIds)
-        => new()
-        {
-            LastName = "Петров",
-            FirstName = "Петр",
-            MiddleName = "Петрович",
-            Email = "doctor@medconnect.local",
-            TemporaryPassword = "TempPass1!",
-            Description = "Терапевт",
-            ExperienceYears = 10,
-            SpecializationIds = specializationIds.ToList()
-        };
+    private static CreateDoctorDto ValidCreateDto(params Guid[] specializationIds) => new()
+    {
+        LastName = "Петров",
+        FirstName = "Петр",
+        MiddleName = "Петрович",
+        Email = "doctor@medconnect.local",
+        TemporaryPassword = "TempPass1!",
+        Description = "Терапевт",
+        ExperienceYears = 10,
+        SpecializationIds = specializationIds.ToList()
+    };
 
-    private static UpdateDoctorDto ValidUpdateDto(params Guid[] specializationIds)
-        => new()
-        {
-            LastName = "Сидоров",
-            FirstName = "Сидор",
-            MiddleName = null,
-            Description = "Хирург",
-            ExperienceYears = 15,
-            SpecializationIds = specializationIds.ToList()
-        };
+    private static UpdateDoctorDto ValidUpdateDto(params Guid[] specializationIds) => new()
+    {
+        LastName = "Сидоров",
+        FirstName = "Сидор",
+        MiddleName = null,
+        Description = "Хирург",
+        ExperienceYears = 15,
+        SpecializationIds = specializationIds.ToList()
+    };
 
     // GetAll
 

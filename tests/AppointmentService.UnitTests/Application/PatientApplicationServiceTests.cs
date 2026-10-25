@@ -56,25 +56,23 @@ public class PatientApplicationServiceTests
             "+79001234567",
             new DateTime(1990, 1, 1));
 
-    private static RegisterPatientDto ValidRegisterDto()
-        => new()
-        {
-            LastName = "Иванов",
-            FirstName = "Иван",
-            MiddleName = "Иванович",
-            Phone = "+79001234567",
-            DateOfBirth = new DateTime(1990, 1, 1)
-        };
+    private static RegisterPatientDto ValidRegisterDto() => new()
+    {
+        LastName = "Иванов",
+        FirstName = "Иван",
+        MiddleName = "Иванович",
+        Phone = "+79001234567",
+        DateOfBirth = new DateTime(1990, 1, 1)
+    };
 
-    private static UpdatePatientDto ValidUpdateDto()
-        => new()
-        {
-            LastName = "Сидоров",
-            FirstName = "Сидор",
-            MiddleName = "Сидорович",
-            Phone = "+79007654321",
-            DateOfBirth = new DateTime(1985, 3, 10)
-        };
+    private static UpdatePatientDto ValidUpdateDto() => new()
+    {
+        LastName = "Сидоров",
+        FirstName = "Сидор",
+        MiddleName = "Сидорович",
+        Phone = "+79007654321",
+        DateOfBirth = new DateTime(1985, 3, 10)
+    };
 
     // Register
 

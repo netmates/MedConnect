@@ -9,16 +9,15 @@ public class UpdateDoctorValidatorTests
 {
     private readonly UpdateDoctorValidator _validator = new();
 
-    private static UpdateDoctorDto ValidDto()
-        => new()
-        {
-            LastName = "Иванов",
-            FirstName = "Иван",
-            MiddleName = "Иванович",
-            Description = "Терапевт",
-            ExperienceYears = 10,
-            SpecializationIds = [Guid.NewGuid()]
-        };
+    private static UpdateDoctorDto ValidDto() => new()
+    {
+        LastName = "Иванов",
+        FirstName = "Иван",
+        MiddleName = "Иванович",
+        Description = "Терапевт",
+        ExperienceYears = 10,
+        SpecializationIds = [Guid.NewGuid()]
+    };
 
     [Fact]
     public void Validate_WithValidDto_Passes()

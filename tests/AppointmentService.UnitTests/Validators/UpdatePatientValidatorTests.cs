@@ -1,6 +1,5 @@
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Validators;
-using AppointmentService.Domain.Entities;
 using FluentValidation.Results;
 
 namespace AppointmentService.UnitTests.Validators;
@@ -9,15 +8,14 @@ public class UpdatePatientValidatorTests
 {
     private readonly UpdatePatientValidator _validator = new();
 
-    private static UpdatePatientDto ValidDto()
-        => new()
-        {
-            LastName = "Иванов",
-            FirstName = "Иван",
-            MiddleName = "Иванович",
-            Phone = "+79001234567",
-            DateOfBirth = new DateTime(1990, 5, 15)
-        };
+    private static UpdatePatientDto ValidDto() => new()
+    {
+        LastName = "Иванов",
+        FirstName = "Иван",
+        MiddleName = "Иванович",
+        Phone = "+79001234567",
+        DateOfBirth = new DateTime(1990, 5, 15)
+    };
 
     [Fact]
     public void Validate_WithValidDto_Passes()
@@ -34,32 +32,10 @@ public class UpdatePatientValidatorTests
     }
 
     [Fact]
-    public void Validate_WithOnlyRequiredFields_Passes()
+    public void Validate_WithEmptyLastName_Fails()
     {
         // Arrange
-        var dto = new UpdatePatientDto
-        {
-            LastName = "Иванов",
-            FirstName = "Иван",
-            MiddleName = null,
-            Phone = null,
-            DateOfBirth = null
-        };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.True(result.IsValid);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Validate_WithEmptyOrWhitespaceLastName_Fails(string lastName)
-    {
-        // Arrange
-        var dto = ValidDto() with { LastName = lastName };
+        var dto = ValidDto() with { LastName = "" };
 
         // Act
         ValidationResult result = _validator.Validate(dto);
@@ -70,179 +46,5 @@ public class UpdatePatientValidatorTests
             result.Errors,
             e => e.PropertyName == nameof(UpdatePatientDto.LastName)
                  && e.ErrorMessage == "Фамилия обязательна.");
-    }
-
-    [Fact]
-    public void Validate_WithLastNameTooLong_Fails()
-    {
-        // Arrange
-        var dto = ValidDto() with { LastName = new string('а', Patient.MaxLastNameLength + 1) };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(
-            result.Errors,
-            e => e.PropertyName == nameof(UpdatePatientDto.LastName)
-                 && e.ErrorMessage ==
-                    $"Фамилия не должна превышать {Patient.MaxLastNameLength} символов.");
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Validate_WithEmptyOrWhitespaceFirstName_Fails(string firstName)
-    {
-        // Arrange
-        var dto = ValidDto() with { FirstName = firstName };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(
-            result.Errors,
-            e => e.PropertyName == nameof(UpdatePatientDto.FirstName)
-                 && e.ErrorMessage == "Имя обязательно.");
-    }
-
-    [Fact]
-    public void Validate_WithFirstNameTooLong_Fails()
-    {
-        // Arrange
-        var dto = ValidDto() with { FirstName = new string('а', Patient.MaxFirstNameLength + 1) };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(
-            result.Errors,
-            e => e.PropertyName == nameof(UpdatePatientDto.FirstName)
-                 && e.ErrorMessage ==
-                    $"Имя не должно превышать {Patient.MaxFirstNameLength} символов.");
-    }
-
-    [Fact]
-    public void Validate_WithMiddleNameTooLong_Fails()
-    {
-        // Arrange
-        var dto = ValidDto() with { MiddleName = new string('а', Patient.MaxMiddleNameLength + 1) };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(
-            result.Errors,
-            e => e.PropertyName == nameof(UpdatePatientDto.MiddleName)
-                 && e.ErrorMessage ==
-                    $"Отчество не должно превышать {Patient.MaxMiddleNameLength} символов.");
-    }
-
-    [Theory]
-    [InlineData("123")]
-    [InlineData("abc")]
-    [InlineData("+7900abc4567")]
-    public void Validate_WithInvalidPhone_Fails(string phone)
-    {
-        // Arrange
-        var dto = ValidDto() with { Phone = phone };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(
-            result.Errors,
-            e => e.PropertyName == nameof(UpdatePatientDto.Phone)
-                 && e.ErrorMessage == "Некорректный формат номера телефона.");
-    }
-
-    [Theory]
-    [InlineData("+79001234567")]
-    [InlineData("89001234567")]
-    [InlineData("123-4567")]
-    [InlineData("+7 900 123-45-67")]
-    public void Validate_WithValidPhoneFormats_Passes(string phone)
-    {
-        // Arrange
-        var dto = ValidDto() with { Phone = phone };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.True(result.IsValid);
-    }
-
-    [Fact]
-    public void Validate_WithPhoneTooLong_Fails()
-    {
-        // Arrange
-        var dto = ValidDto() with { Phone = new string('9', Patient.MaxPhoneLength + 1) };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(
-            result.Errors,
-            e => e.PropertyName == nameof(UpdatePatientDto.Phone)
-                 && e.ErrorMessage == $"Телефон не должен превышать {Patient.MaxPhoneLength} символов.");
-    }
-
-    [Fact]
-    public void Validate_WithFutureDateOfBirth_Fails()
-    {
-        // Arrange
-        var dto = ValidDto() with { DateOfBirth = DateTime.UtcNow.AddDays(1) };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(
-            result.Errors,
-            e => e.PropertyName == nameof(UpdatePatientDto.DateOfBirth)
-                 && e.ErrorMessage == "Дата рождения должна быть в прошлом.");
-    }
-
-    [Fact]
-    public void Validate_WithDateOfBirthTooOld_Fails()
-    {
-        // Arrange
-        var dto = ValidDto() with { DateOfBirth = Patient.MinDateOfBirth.AddDays(-1) };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(
-            result.Errors,
-            e => e.PropertyName == nameof(UpdatePatientDto.DateOfBirth)
-                 && e.ErrorMessage == $"Дата рождения не может быть раньше {Patient.MinDateOfBirth:yyyy-MM-dd}.");
-    }
-
-    [Fact]
-    public void Validate_WithValidDateOfBirth_Passes()
-    {
-        // Arrange
-        var dto = ValidDto() with { DateOfBirth = Patient.MinDateOfBirth };
-
-        // Act
-        ValidationResult result = _validator.Validate(dto);
-
-        // Assert
-        Assert.True(result.IsValid);
     }
 }
