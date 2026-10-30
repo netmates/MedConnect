@@ -263,7 +263,7 @@ public class DoctorApplicationServiceTests
 
         _keycloak.Setup(k => k.CreateUserAsync(
                 dto.Email, dto.TemporaryPassword, Roles.Doctor,
-                dto.FirstName, dto.LastName, It.IsAny<CancellationToken>()))
+                dto.FirstName, dto.LastName, true, It.IsAny<CancellationToken>()))
             .ReturnsAsync(keycloakId);
         _specializations.Setup(r => r.GetByIdAsync(missingSpecId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Specialization?)null);
@@ -289,7 +289,7 @@ public class DoctorApplicationServiceTests
 
         _keycloak.Setup(k => k.CreateUserAsync(
                 dto.Email, dto.TemporaryPassword, Roles.Doctor,
-                dto.FirstName, dto.LastName, It.IsAny<CancellationToken>()))
+                dto.FirstName, dto.LastName, true, It.IsAny<CancellationToken>()))
             .ReturnsAsync(keycloakId);
         _specializations.Setup(r => r.GetByIdAsync(spec.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(spec);

@@ -12,16 +12,17 @@ namespace AppointmentService.API.Controllers;
 [Authorize(Roles = Roles.Patient)]
 public sealed class PatientsController(IPatientApplicationService service) : ControllerBase
 {
-    /// <summary>POST /api/patients/register — зарегистрировать пациента.</summary>
-    [HttpPost("register")]
+    /// <summary>POST /api/patients/sign-up — самостоятельная регистрация пациента.</summary>
+    [AllowAnonymous]
+    [HttpPost("sign-up")]
     [ProducesResponseType(typeof(PatientDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PatientDto>> Register([FromBody] RegisterPatientDto dto, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<PatientDto>> SignUp(
+        [FromBody] SignUpPatientDto dto,
+        CancellationToken ct)
     {
-        var keycloakId = CurrentUser.GetKeycloakId(User);
-        var result = await service.RegisterAsync(keycloakId, dto, ct);
+        var result = await service.SignUpAsync(dto, ct);
         return Ok(result);
     }
 

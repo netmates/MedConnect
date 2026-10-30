@@ -1,3 +1,4 @@
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
@@ -20,7 +21,7 @@ public class PatientApplicationServiceTests
     private readonly Mock<IPatientRepository> _patients = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IKeycloakAdminService> _keycloak = new();
-    private readonly Mock<IValidator<RegisterPatientDto>> _registerValidator = new();
+    private readonly Mock<IValidator<SignUpPatientDto>> _signUpValidator = new();
     private readonly Mock<IValidator<UpdatePatientDto>> _updateValidator = new();
     private readonly Mock<IIntegrationEventPublisher> _publisher = new();
     private readonly Mock<ICorrelationIdAccessor> _correlationIdAccessor = new();
@@ -29,8 +30,8 @@ public class PatientApplicationServiceTests
 
     public PatientApplicationServiceTests()
     {
-        _registerValidator
-            .Setup(v => v.ValidateAsync(It.IsAny<RegisterPatientDto>(), It.IsAny<CancellationToken>()))
+        _signUpValidator
+            .Setup(v => v.ValidateAsync(It.IsAny<SignUpPatientDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
         _updateValidator
             .Setup(v => v.ValidateAsync(It.IsAny<UpdatePatientDto>(), It.IsAny<CancellationToken>()))
@@ -40,7 +41,7 @@ public class PatientApplicationServiceTests
             _patients.Object,
             _uow.Object,
             _keycloak.Object,
-            _registerValidator.Object,
+            _signUpValidator.Object,
             _updateValidator.Object,
             NullLogger<PatientApplicationService>.Instance,
             _publisher.Object,
@@ -56,8 +57,10 @@ public class PatientApplicationServiceTests
             "+79001234567",
             new DateTime(1990, 1, 1));
 
-    private static RegisterPatientDto ValidRegisterDto() => new()
+    private static SignUpPatientDto ValidSignUpDto() => new()
     {
+        Email = "patient@medconnect.local",
+        Password = "Patient1Pass!",
         LastName = "Иванов",
         FirstName = "Иван",
         MiddleName = "Иванович",
@@ -74,31 +77,37 @@ public class PatientApplicationServiceTests
         DateOfBirth = new DateTime(1985, 3, 10)
     };
 
-    // Register
+    // SignUp
 
     [Fact]
-    public async Task RegisterAsync_WhenValidationFails_ThrowsValidationException()
+    public async Task SignUpAsync_WhenValidationFails_ThrowsValidationException()
     {
         // Arrange
         var failures = new[] { new ValidationFailure("LastName", "Фамилия обязательна.") };
-        _registerValidator
-            .Setup(v => v.ValidateAsync(It.IsAny<RegisterPatientDto>(), It.IsAny<CancellationToken>()))
+        _signUpValidator
+            .Setup(v => v.ValidateAsync(It.IsAny<SignUpPatientDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult(failures));
 
         // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(() =>
-            _sut.RegisterAsync("patient-kc", ValidRegisterDto(), CancellationToken.None));
+            _sut.SignUpAsync(ValidSignUpDto(), CancellationToken.None));
+        _keycloak.Verify(
+            k => k.CreateUserAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task RegisterAsync_CreatesCommitsAndReturnsDto()
+    public async Task SignUpAsync_CreatesUserCommitsAndReturnsDto()
     {
         // Arrange
         const string keycloakId = "new-patient-kc";
-        var dto = ValidRegisterDto();
+        var dto = ValidSignUpDto();
+        SetupCreateUser(keycloakId);
 
         // Act
-        var result = await _sut.RegisterAsync(keycloakId, dto, CancellationToken.None);
+        var result = await _sut.SignUpAsync(dto, CancellationToken.None);
 
         // Assert
         Assert.Equal(keycloakId, result.KeycloakId);
@@ -107,36 +116,47 @@ public class PatientApplicationServiceTests
         Assert.Equal(dto.MiddleName, result.MiddleName);
         Assert.Equal(dto.Phone, result.Phone);
         Assert.True(result.IsActive);
+        _keycloak.Verify(
+            k => k.CreateUserAsync(
+                dto.Email, dto.Password, Roles.Patient,
+                dto.FirstName, dto.LastName, false, It.IsAny<CancellationToken>()),
+            Times.Once);
         _patients.Verify(
             r => r.AddAsync(It.IsAny<Patient>(), It.IsAny<CancellationToken>()),
             Times.Once);
         _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _keycloak.Verify(
+            k => k.DeleteUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task RegisterAsync_WhenAddFails_RollsBack()
+    public async Task SignUpAsync_WhenAddFails_RollsBackAndDeletesKeycloakUser()
     {
         // Arrange
         const string keycloakId = "new-patient-kc";
+        SetupCreateUser(keycloakId);
         _patients.Setup(r => r.AddAsync(It.IsAny<Patient>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("db error"));
 
         // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _sut.RegisterAsync(keycloakId, ValidRegisterDto(), CancellationToken.None));
+            _sut.SignUpAsync(ValidSignUpDto(), CancellationToken.None));
 
         // Assert
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _keycloak.Verify(k => k.DeleteUserAsync(keycloakId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task RegisterAsync_WhenUniqueViolationOnCommit_RollsBackAndThrows()
+    public async Task SignUpAsync_WhenUniqueViolationOnCommit_RollsBackDeletesUserAndThrows()
     {
         // Arrange
         const string keycloakId = "race-patient-kc";
-        var dto = ValidRegisterDto();
+        var dto = ValidSignUpDto();
+        SetupCreateUser(keycloakId);
 
         var postgresEx = new PostgresException(
             messageText: "duplicate key value violates unique constraint",
@@ -149,13 +169,22 @@ public class PatientApplicationServiceTests
 
         // Act
         var ex = await Assert.ThrowsAsync<DbUpdateException>(() =>
-            _sut.RegisterAsync(keycloakId, dto, CancellationToken.None));
+            _sut.SignUpAsync(dto, CancellationToken.None));
 
         // Assert
         Assert.Same(postgresEx, ex.InnerException);
         _patients.Verify(r => r.AddAsync(It.IsAny<Patient>(), It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _patients.Verify(r => r.GetByKeycloakIdAsync(keycloakId, It.IsAny<CancellationToken>()), Times.Never);
+        _keycloak.Verify(k => k.DeleteUserAsync(keycloakId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private void SetupCreateUser(string keycloakId)
+    {
+        _keycloak
+            .Setup(k => k.CreateUserAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(keycloakId);
     }
 
     // GetByKeycloakId

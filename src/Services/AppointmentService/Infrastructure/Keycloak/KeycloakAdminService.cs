@@ -35,6 +35,7 @@ public sealed class KeycloakAdminService(
         string role,
         string firstName,
         string lastName,
+        bool temporary = true,
         CancellationToken ct = default)
     {
         var adminToken = await GetAdminTokenAsync(ct);
@@ -48,7 +49,7 @@ public sealed class KeycloakAdminService(
             lastName,
             credentials = new[]
             {
-                new { type = "password", value = temporaryPassword, temporary = true }
+                new { type = "password", value = temporaryPassword, temporary }
             }
         };
 
@@ -61,6 +62,8 @@ public sealed class KeycloakAdminService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
         using var response = await httpClient.SendAsync(request, ct);
+        if (response.StatusCode == HttpStatusCode.Conflict)
+            throw new ConflictException("Пользователь с таким email уже существует.");
         await EnsureKeycloakSuccessAsync(response, ct);
 
         var location = response.Headers.Location?.ToString()

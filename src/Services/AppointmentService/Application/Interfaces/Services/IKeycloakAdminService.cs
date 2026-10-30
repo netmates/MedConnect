@@ -11,6 +11,7 @@ public interface IKeycloakAdminService
         string role,
         string firstName,
         string lastName,
+        bool temporary = true,
         CancellationToken ct = default);
     /// <summary>
     /// Удаляет пользователя в Keycloak по KeycloakId.

@@ -5,12 +5,14 @@ using FluentValidation.Results;
 
 namespace AppointmentService.UnitTests.Validators;
 
-public class RegisterPatientValidatorTests
+public class SignUpPatientValidatorTests
 {
-    private readonly RegisterPatientValidator _validator = new();
+    private readonly SignUpPatientValidator _validator = new();
 
-    private static RegisterPatientDto ValidDto() => new()
+    private static SignUpPatientDto ValidDto() => new()
     {
+        Email = "patient@medconnect.local",
+        Password = "Patient1Pass!",
         LastName = "Иванов",
         FirstName = "Иван",
         MiddleName = "Иванович",
@@ -36,8 +38,10 @@ public class RegisterPatientValidatorTests
     public void Validate_WithOnlyRequiredFields_Passes()
     {
         // Arrange
-        var dto = new RegisterPatientDto
+        var dto = new SignUpPatientDto
         {
+            Email = "patient@medconnect.local",
+            Password = "Patient1Pass!",
             LastName = "Иванов",
             FirstName = "Иван",
             MiddleName = null,
@@ -67,7 +71,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.LastName)
+            e => e.PropertyName == nameof(SignUpPatientDto.LastName)
                  && e.ErrorMessage == "Фамилия обязательна.");
     }
 
@@ -84,7 +88,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.LastName)
+            e => e.PropertyName == nameof(SignUpPatientDto.LastName)
                  && e.ErrorMessage ==
                     $"Фамилия не должна превышать {Patient.MaxLastNameLength} символов.");
     }
@@ -104,7 +108,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.FirstName)
+            e => e.PropertyName == nameof(SignUpPatientDto.FirstName)
                  && e.ErrorMessage == "Имя обязательно.");
     }
 
@@ -121,7 +125,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.FirstName)
+            e => e.PropertyName == nameof(SignUpPatientDto.FirstName)
                  && e.ErrorMessage ==
                     $"Имя не должно превышать {Patient.MaxFirstNameLength} символов.");
     }
@@ -139,7 +143,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.MiddleName)
+            e => e.PropertyName == nameof(SignUpPatientDto.MiddleName)
                  && e.ErrorMessage ==
                     $"Отчество не должно превышать {Patient.MaxMiddleNameLength} символов.");
     }
@@ -160,7 +164,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.Phone)
+            e => e.PropertyName == nameof(SignUpPatientDto.Phone)
                  && e.ErrorMessage == "Некорректный формат номера телефона.");
     }
 
@@ -194,7 +198,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.Phone)
+            e => e.PropertyName == nameof(SignUpPatientDto.Phone)
                  && e.ErrorMessage == $"Телефон не должен превышать {Patient.MaxPhoneLength} символов.");
     }
 
@@ -211,7 +215,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.DateOfBirth)
+            e => e.PropertyName == nameof(SignUpPatientDto.DateOfBirth)
                  && e.ErrorMessage == "Дата рождения должна быть в прошлом.");
     }
 
@@ -227,7 +231,7 @@ public class RegisterPatientValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(
             result.Errors,
-            e => e.PropertyName == nameof(RegisterPatientDto.DateOfBirth)
+            e => e.PropertyName == nameof(SignUpPatientDto.DateOfBirth)
                  && e.ErrorMessage == $"Дата рождения не может быть раньше {Patient.MinDateOfBirth:yyyy-MM-dd}.");
     }
 
@@ -242,5 +246,77 @@ public class RegisterPatientValidatorTests
 
         // Assert
         Assert.True(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_WithEmptyOrWhitespaceEmail_Fails(string email)
+    {
+        // Arrange
+        var dto = ValidDto() with { Email = email };
+
+        // Act
+        ValidationResult result = _validator.Validate(dto);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(
+            result.Errors,
+            e => e.PropertyName == nameof(SignUpPatientDto.Email)
+                 && e.ErrorMessage == "Email обязателен.");
+    }
+
+    [Fact]
+    public void Validate_WithInvalidEmail_Fails()
+    {
+        // Arrange
+        var dto = ValidDto() with { Email = "not-an-email" };
+
+        // Act
+        ValidationResult result = _validator.Validate(dto);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(
+            result.Errors,
+            e => e.PropertyName == nameof(SignUpPatientDto.Email)
+                 && e.ErrorMessage == "Некорректный email.");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_WithEmptyOrWhitespacePassword_Fails(string password)
+    {
+        // Arrange
+        var dto = ValidDto() with { Password = password };
+
+        // Act
+        ValidationResult result = _validator.Validate(dto);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(
+            result.Errors,
+            e => e.PropertyName == nameof(SignUpPatientDto.Password)
+                 && e.ErrorMessage == "Пароль обязателен.");
+    }
+
+    [Fact]
+    public void Validate_WithPasswordTooShort_Fails()
+    {
+        // Arrange
+        var dto = ValidDto() with { Password = "short" };
+
+        // Act
+        ValidationResult result = _validator.Validate(dto);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(
+            result.Errors,
+            e => e.PropertyName == nameof(SignUpPatientDto.Password)
+                 && e.ErrorMessage == "Пароль должен содержать минимум 8 символов.");
     }
 }

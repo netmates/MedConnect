@@ -1,3 +1,4 @@
+using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;
@@ -6,8 +7,8 @@ using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
-using MedConnect.Shared.Messaging;
 using MedConnect.Shared.Events;
+using MedConnect.Shared.Messaging;
 
 namespace AppointmentService.Application.Services;
 
@@ -15,17 +16,26 @@ public sealed class PatientApplicationService(
     IPatientRepository patientRepository,
     IUnitOfWork unitOfWork,
     IKeycloakAdminService keycloakAdminService,
-    IValidator<RegisterPatientDto> registerPatientValidator,
+    IValidator<SignUpPatientDto> signUpPatientValidator,
     IValidator<UpdatePatientDto> updatePatientValidator,
     ILogger<PatientApplicationService> logger,
     IIntegrationEventPublisher publisher,
     ICorrelationIdAccessor correlationIdAccessor) : IPatientApplicationService
 {
-    public async Task<PatientDto> RegisterAsync(string keycloakId, RegisterPatientDto dto, CancellationToken ct)
+    public async Task<PatientDto> SignUpAsync(SignUpPatientDto dto, CancellationToken ct)
     {
-        var validationResult = await registerPatientValidator.ValidateAsync(dto, ct);
+        var validationResult = await signUpPatientValidator.ValidateAsync(dto, ct);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
+
+        var keycloakId = await keycloakAdminService.CreateUserAsync(
+            email: dto.Email.Trim(),
+            temporaryPassword: dto.Password,
+            role: Roles.Patient,
+            firstName: dto.FirstName,
+            lastName: dto.LastName,
+            temporary: false,
+            ct: ct);
 
         await unitOfWork.BeginTransactionAsync(ct);
         try
@@ -50,6 +60,19 @@ public sealed class PatientApplicationService(
         catch
         {
             await unitOfWork.RollbackAsync(CancellationToken.None);
+
+            try
+            {
+                await keycloakAdminService.DeleteUserAsync(keycloakId, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(
+                    ex,
+                    "Failed to rollback Keycloak user {KeycloakId} after patient sign-up failure",
+                    keycloakId);
+            }
+
             throw;
         }
     }

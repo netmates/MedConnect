@@ -1,7 +1,7 @@
 {
   "realm": "medconnect",
   "enabled": true,
-  "registrationAllowed": true,
+  "registrationAllowed": false,
   "accessTokenLifespan": 900,
   "ssoSessionMaxLifespan": 86400,
   "roles": {

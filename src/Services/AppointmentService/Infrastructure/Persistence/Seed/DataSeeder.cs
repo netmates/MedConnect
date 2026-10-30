@@ -1,4 +1,3 @@
-using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Interfaces.Services;
@@ -42,7 +41,7 @@ public static class DataSeeder
             await SeedDemoDoctorsAsync(db, doctorService, keycloak, logger, ct);
 
             var patientService = sp.GetRequiredService<IPatientApplicationService>();
-            await SeedDemoPatientsAsync(db, patientService, keycloak, logger, ct);
+            await SeedDemoPatientsAsync(db, patientService, logger, ct);
         }
     }
 
@@ -81,9 +80,9 @@ public static class DataSeeder
             .AsNoTracking()
             .ToDictionaryAsync(s => s.Name, s => s.Id, ct);
 
-        var doctors = new[]
+        var doctors = new CreateDoctorDto[]
         {
-            new CreateDoctorDto
+            new()
             {
                 LastName = "Иванов",
                 FirstName = "Иван",
@@ -94,7 +93,7 @@ public static class DataSeeder
                 ExperienceYears = 10,
                 SpecializationIds = [specs["Терапевт"]]
             },
-            new CreateDoctorDto
+            new()
             {
                 LastName = "Петрова",
                 FirstName = "Анна",
@@ -118,7 +117,6 @@ public static class DataSeeder
     private static async Task SeedDemoPatientsAsync(
         AppointmentDbContext db,
         IPatientApplicationService patientService,
-        IKeycloakAdminService keycloak,
         ILogger logger,
         CancellationToken ct)
     {
@@ -128,48 +126,33 @@ public static class DataSeeder
             return;
         }
 
-        var patients = new[]
+        var patients = new SignUpPatientDto[]
         {
-            new
+            new()
             {
                 Email = "patient1@medconnect.local",
                 Password = "Patient1Pass!",
-                Dto = new RegisterPatientDto
-                {
-                    LastName = "Сидоров",
-                    FirstName = "Петр",
-                    MiddleName = "Алексеевич",
-                    Phone = "+79001112233",
-                    DateOfBirth = new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Utc)
-                }
+                LastName = "Сидоров",
+                FirstName = "Петр",
+                MiddleName = "Алексеевич",
+                Phone = "+79001112233",
+                DateOfBirth = new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Utc)
             },
-            new
+            new()
             {
                 Email = "patient2@medconnect.local",
                 Password = "Patient2Pass!",
-                Dto = new RegisterPatientDto
-                {
-                    LastName = "Козлова",
-                    FirstName = "Мария",
-                    MiddleName = null,
-                    Phone = "+79005556677",
-                    DateOfBirth = new DateTime(1985, 3, 20, 0, 0, 0, DateTimeKind.Utc)
-                }
+                LastName = "Козлова",
+                FirstName = "Мария",
+                MiddleName = null,
+                Phone = "+79005556677",
+                DateOfBirth = new DateTime(1985, 3, 20, 0, 0, 0, DateTimeKind.Utc)
             }
         };
 
         foreach (var p in patients)
         {
-            var keycloakId = await keycloak.CreateUserAsync(
-                email: p.Email,
-                temporaryPassword: p.Password,
-                role: Roles.Patient,
-                firstName: p.Dto.FirstName,
-                lastName: p.Dto.LastName,
-                ct: ct);
-
-            await keycloak.ResetPasswordAsync(keycloakId, p.Password, ct);
-            await patientService.RegisterAsync(keycloakId, p.Dto, ct);
+            await patientService.SignUpAsync(p, ct);
             logger.LogInformation("Seeded patient {Email}", p.Email);
         }
     }

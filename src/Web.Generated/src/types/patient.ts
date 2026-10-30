@@ -10,6 +10,16 @@ export type PatientDto = {
   createdAt: string
 }
 
+export type SignUpPatientDto = {
+  email: string
+  password: string
+  lastName: string
+  firstName: string
+  middleName?: string | null
+  phone?: string | null
+  dateOfBirth?: string | null
+}
+
 export type UpdatePatientDto = {
   lastName: string
   firstName: string

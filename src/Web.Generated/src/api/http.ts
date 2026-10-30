@@ -10,14 +10,19 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const user = await userManager.getUser()
-  if (!user || user.expired) {
-    throw new ApiError(401, 'Требуется вход')
-  }
-
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit = {},
+  options: { anonymous?: boolean } = {},
+): Promise<T> {
   const headers = new Headers(init.headers)
-  headers.set('Authorization', `Bearer ${user.access_token}`)
+  if (!options.anonymous) {
+    const user = await userManager.getUser()
+    if (!user || user.expired) {
+      throw new ApiError(401, 'Требуется вход')
+    }
+    headers.set('Authorization', `Bearer ${user.access_token}`)
+  }
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
