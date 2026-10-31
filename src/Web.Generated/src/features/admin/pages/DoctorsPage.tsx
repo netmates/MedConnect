@@ -10,8 +10,10 @@ import {
   Button,
   Checkbox,
   Chip,
+  FormControl,
   FormControlLabel,
   FormGroup,
+  FormLabel,
   Stack,
   Table,
   TableBody,
@@ -431,10 +433,13 @@ function DoctorFields({
         value={experienceYears}
         onChange={(e) => onChange({ experienceYears: Number(e.target.value) })}
       />
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
+      <FormControl component="fieldset" required sx={{ border: 0, p: 0, m: 0 }}>
+        <FormLabel
+          component="legend"
+          sx={{ typography: 'subtitle2', color: 'text.primary', mb: 0.5 }}
+        >
           Специализации
-        </Typography>
+        </FormLabel>
         <FormGroup>
           {specs.map((spec) => (
             <FormControlLabel
@@ -452,7 +457,7 @@ function DoctorFields({
         {specs.length === 0 && (
           <Typography color="text.secondary">Сначала создайте специализации.</Typography>
         )}
-      </Box>
+      </FormControl>
     </>
   )
 }

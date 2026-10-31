@@ -39,6 +39,22 @@ function defaultEnd(): string {
   return todayAtLocal(10, 0)
 }
 
+/** Следующий слот вплотную: начало = конец созданного, длительность та же. */
+function nextAdjacentSlot(
+  startLocal: string,
+  endLocal: string,
+): { start: string; end: string } | null {
+  const start = new Date(startLocal)
+  const end = new Date(endLocal)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return null
+
+  const nextEnd = new Date(end.getTime() + (end.getTime() - start.getTime()))
+  return {
+    start: toLocalInputValue(end.toISOString()),
+    end: toLocalInputValue(nextEnd.toISOString()),
+  }
+}
+
 const periodAll: AppointmentPeriod = 'all'
 
 export function DoctorSchedulePage() {
@@ -97,9 +113,20 @@ export function DoctorSchedulePage() {
       endTime: fromLocalInputValue(endTime),
     }
     try {
-      if (editingId) await slotsApi.update(editingId, dto)
-      else await slotsApi.create(dto)
-      resetForm()
+      if (editingId) {
+        await slotsApi.update(editingId, dto)
+        resetForm()
+      } else {
+        await slotsApi.create(dto)
+        const next = nextAdjacentSlot(startTime, endTime)
+        setEditingId(null)
+        if (next) {
+          setStartTime(next.start)
+          setEndTime(next.end)
+        } else {
+          resetForm()
+        }
+      }
       await load()
     } catch (err) {
       setError(formatApiError(err))

@@ -3,7 +3,9 @@ import { Button, Stack, TextField, Typography } from '@mui/material'
 import { useEffect, useState, type FormEvent } from 'react'
 import { patientProfileApi } from '../../../api/patientProfileApi'
 import { Page } from '../../../components/Page'
+import { PhoneField } from '../../../components/PhoneField'
 import { formatApiError } from '../../../lib/format'
+import { formatRuPhoneInput, phoneOrNull } from '../../../lib/phone'
 import type { PatientDto, UpdatePatientDto } from '../../../types/patient'
 
 const emptyForm: UpdatePatientDto = {
@@ -38,7 +40,7 @@ export function PatientProfilePage() {
           lastName: me.lastName,
           firstName: me.firstName,
           middleName: me.middleName ?? '',
-          phone: me.phone ?? '',
+          phone: formatRuPhoneInput(me.phone ?? ''),
           dateOfBirth: toDateInput(me.dateOfBirth),
         })
       })
@@ -58,7 +60,7 @@ export function PatientProfilePage() {
     const payload: UpdatePatientDto = {
       ...form,
       middleName: form.middleName?.trim() || null,
-      phone: form.phone?.trim() || null,
+      phone: phoneOrNull(form.phone),
       dateOfBirth: form.dateOfBirth?.trim() || null,
     }
     try {
@@ -69,7 +71,7 @@ export function PatientProfilePage() {
         lastName: saved.lastName,
         firstName: saved.firstName,
         middleName: saved.middleName ?? '',
-        phone: saved.phone ?? '',
+        phone: formatRuPhoneInput(saved.phone ?? ''),
         dateOfBirth: toDateInput(saved.dateOfBirth),
       })
     } catch (err) {
@@ -105,10 +107,9 @@ export function PatientProfilePage() {
             value={form.middleName ?? ''}
             onChange={(e) => setForm({ ...form, middleName: e.target.value })}
           />
-          <TextField
-            label="Телефон"
+          <PhoneField
             value={form.phone ?? ''}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            onChange={(phone) => setForm({ ...form, phone })}
           />
           <TextField
             label="Дата рождения"

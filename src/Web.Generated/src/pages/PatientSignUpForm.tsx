@@ -2,7 +2,9 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import { Button, Stack, TextField, Typography } from '@mui/material'
 import { useState, type FormEvent } from 'react'
 import { patientProfileApi } from '../api/patientProfileApi'
+import { PhoneField } from '../components/PhoneField'
 import { formatApiError } from '../lib/format'
+import { phoneOrNull } from '../lib/phone'
 import type { SignUpPatientDto } from '../types/patient'
 
 const emptyForm: SignUpPatientDto = {
@@ -37,7 +39,7 @@ export function PatientSignUpForm({
       lastName: form.lastName.trim(),
       firstName: form.firstName.trim(),
       middleName: form.middleName?.trim() || null,
-      phone: form.phone?.trim() || null,
+      phone: phoneOrNull(form.phone),
       dateOfBirth: form.dateOfBirth?.trim() || null,
     }
     try {
@@ -99,10 +101,9 @@ export function PatientSignUpForm({
         value={form.middleName ?? ''}
         onChange={(e) => setForm({ ...form, middleName: e.target.value })}
       />
-      <TextField
-        label="Телефон"
+      <PhoneField
         value={form.phone ?? ''}
-        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        onChange={(phone) => setForm({ ...form, phone })}
       />
       <TextField
         label="Дата рождения"

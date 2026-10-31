@@ -13,7 +13,9 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
 import { patientsApi } from '../../../api/admin/patientsApi'
 import { Page } from '../../../components/Page'
+import { PhoneField } from '../../../components/PhoneField'
 import { formatApiError, fullName } from '../../../lib/format'
+import { formatRuPhoneInput, phoneOrNull } from '../../../lib/phone'
 import type { PatientDto, UpdatePatientDto } from '../../../types/patient'
 
 function toDateInput(value?: string | null): string {
@@ -39,7 +41,7 @@ export function PatientDetailPage() {
         lastName: data.lastName,
         firstName: data.firstName,
         middleName: data.middleName ?? '',
-        phone: data.phone ?? '',
+        phone: formatRuPhoneInput(data.phone ?? ''),
         dateOfBirth: toDateInput(data.dateOfBirth),
       })
     } catch (e) {
@@ -60,7 +62,7 @@ export function PatientDetailPage() {
       await patientsApi.update(id, {
         ...form,
         middleName: form.middleName?.trim() || null,
-        phone: form.phone?.trim() || null,
+        phone: phoneOrNull(form.phone),
         dateOfBirth: form.dateOfBirth?.trim() || null,
       })
       navigate('/admin/patients')
@@ -140,10 +142,9 @@ export function PatientDetailPage() {
           value={form.middleName ?? ''}
           onChange={(e) => setForm({ ...form, middleName: e.target.value })}
         />
-        <TextField
-          label="Телефон"
+        <PhoneField
           value={form.phone ?? ''}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          onChange={(phone) => setForm({ ...form, phone })}
         />
         <TextField
           label="Дата рождения"
