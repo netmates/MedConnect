@@ -10,6 +10,7 @@ namespace AppointmentService.Application.Services;
 
 public sealed class SpecializationApplicationService(
     ISpecializationRepository specializationRepository,
+    ISpecializationListCache specializationListCache,
     IUnitOfWork unitOfWork,
     IValidator<CreateSpecializationDto> createSpecializationValidator,
     IValidator<UpdateSpecializationDto> updateSpecializationValidator,
@@ -17,8 +18,30 @@ public sealed class SpecializationApplicationService(
 {
     public async Task<IReadOnlyList<SpecializationDto>> GetAllAsync(CancellationToken ct)
     {
+        try
+        {
+            var cached = await specializationListCache.GetAsync(ct);
+            if (cached is not null)
+                return cached;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to read specializations cache");
+        }
+
         var specializations = await specializationRepository.GetAllAsync(ct);
-        return specializations.Select(MapToDto).ToList();
+        var result =  specializations.Select(MapToDto).ToList();
+
+        try
+        {
+            await specializationListCache.SetAsync(result, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to write specializations cache");
+        }
+
+        return result;
     }
 
     public async Task<SpecializationDto> CreateAsync(CreateSpecializationDto dto, CancellationToken ct)
@@ -34,6 +57,7 @@ public sealed class SpecializationApplicationService(
             await specializationRepository.AddAsync(specialization, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropCacheAsync();
 
             logger.LogInformation(
                 "Specialization created: {SpecializationId}, Name={Name}",
@@ -64,6 +88,7 @@ public sealed class SpecializationApplicationService(
             await specializationRepository.UpdateAsync(specialization, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropCacheAsync();
 
             logger.LogInformation(
                 "Specialization updated: {SpecializationId}, Name={Name}",
@@ -93,6 +118,7 @@ public sealed class SpecializationApplicationService(
             await specializationRepository.DeleteAsync(specialization, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropCacheAsync();
         }
         catch
         {
@@ -101,6 +127,18 @@ public sealed class SpecializationApplicationService(
         }
 
         logger.LogInformation("Specialization deleted: {SpecializationId}", id);
+    }
+
+    private async Task DropCacheAsync()
+    {
+        try
+        {
+            await specializationListCache.RemoveAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to drop specializations cache");
+        }
     }
 
     private static SpecializationDto MapToDto(Specialization s) => new()

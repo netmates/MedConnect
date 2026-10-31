@@ -1,6 +1,7 @@
 using AppointmentService.Application.Interfaces;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
+using AppointmentService.Infrastructure.Caching;
 using AppointmentService.Infrastructure.Http;
 using AppointmentService.Infrastructure.Keycloak;
 using AppointmentService.Infrastructure.Messaging;
@@ -14,6 +15,7 @@ namespace AppointmentService.Infrastructure.Extensions;
 public static class ServiceCollectionExtensions
 {
     private const string PostgresConnectionStringName = "Postgres";
+    public const string RedisConnectionStringName = "Redis";
 
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
@@ -24,6 +26,18 @@ public static class ServiceCollectionExtensions
 
         // EF Core + PostgreSQL
         services.AddDbContext<AppointmentDbContext>(options => options.UseNpgsql(postgres));
+
+        var redis = configuration.GetConnectionString(RedisConnectionStringName)
+            ?? throw new InvalidOperationException($"ConnectionStrings:{RedisConnectionStringName} не задан.");
+
+        // Redis
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redis;
+            options.InstanceName = "AppointmentService:";
+        });
+        // Кеш для списка специализаций
+        services.AddSingleton<ISpecializationListCache, SpecializationListCache>();
 
         // Unit of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -48,7 +62,7 @@ public static class ServiceCollectionExtensions
                 KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.AdminApiUrl)));
         });
 
-        // RabbitMQ: publisher integration events (AppointmentCreated → medconnect.events)
+        // RabbitMQ: publisher AppointmentCreated, AppointmentCancelled, ParticipantNameUpdated → medconnect.events
         services.AddRabbitMqPublisher(configuration);
 
         return services;

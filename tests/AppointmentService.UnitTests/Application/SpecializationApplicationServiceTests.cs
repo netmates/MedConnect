@@ -14,6 +14,7 @@ namespace AppointmentService.UnitTests.Application;
 public class SpecializationApplicationServiceTests
 {
     private readonly Mock<ISpecializationRepository> _specializations = new();
+    private readonly Mock<ISpecializationListCache> _cache = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IValidator<CreateSpecializationDto>> _createValidator = new();
     private readonly Mock<IValidator<UpdateSpecializationDto>> _updateValidator = new();
@@ -28,9 +29,16 @@ public class SpecializationApplicationServiceTests
         _updateValidator
             .Setup(v => v.ValidateAsync(It.IsAny<UpdateSpecializationDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
+        _cache.Setup(c => c.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<SpecializationDto>?)null);
+        _cache.Setup(c => c.SetAsync(It.IsAny<IReadOnlyList<SpecializationDto>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _cache.Setup(c => c.RemoveAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _sut = new SpecializationApplicationService(
             _specializations.Object,
+            _cache.Object,
             _uow.Object,
             _createValidator.Object,
             _updateValidator.Object,

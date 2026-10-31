@@ -33,7 +33,7 @@ builder.Services.AddApplicationServices();
 // Infrastructure
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Health checks: /health/live (процесс), /health/ready (Postgres + Keycloak)
+// Health checks: /health/live (процесс), /health/ready (Postgres + Redis + Keycloak)
 builder.Services.AddAppointmentHealthChecks(builder.Configuration);
 
 // ProblemDetails + маппинг необработанных исключений → HTTP-статусы (404/403/409/400/500)

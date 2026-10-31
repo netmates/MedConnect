@@ -23,17 +23,20 @@ public static class HealthChecksExtensions
                 name: "self",
                 () => HealthCheckResult.Healthy("OK"),
                 tags: [LiveTag])
-
             // --- Readiness: PostgreSQL ---
             .AddDbContextCheck<AppointmentDbContext>(
                 name: "postgres",
-                tags: [ReadyTag, "db"])
-
+                tags: [ReadyTag])
+            // --- Readiness: Redis ---
+            .AddRedis(
+                configuration.GetConnectionString(ServiceCollectionExtensions.RedisConnectionStringName)!,
+                name: "redis",
+                tags: [ReadyTag])
             // --- Readiness: Keycloak ---
             .AddUrlGroup(
                 keycloakRealmUrl,
                 name: "keycloak",
-                tags: [ReadyTag, "keycloak"]);
+                tags: [ReadyTag]);
 
         return services;
     }
