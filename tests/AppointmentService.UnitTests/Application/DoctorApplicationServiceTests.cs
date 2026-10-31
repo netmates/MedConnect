@@ -2,6 +2,7 @@ using AppointmentService.Application.Auth;
 using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Application.Services;
@@ -19,6 +20,7 @@ namespace AppointmentService.UnitTests.Application;
 public class DoctorApplicationServiceTests
 {
     private readonly Mock<IDoctorRepository> _doctors = new();
+    private readonly Mock<IDoctorListCache> _doctorCache = new();
     private readonly Mock<ISpecializationRepository> _specializations = new();
     private readonly Mock<IAppointmentRepository> _appointments = new();
     private readonly Mock<IScheduleSlotRepository> _slots = new();
@@ -46,9 +48,16 @@ public class DoctorApplicationServiceTests
         _resetPasswordValidator
             .Setup(v => v.ValidateAsync(It.IsAny<ResetPasswordDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
+        _doctorCache.Setup(c => c.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<DoctorListEntry>?)null);
+        _doctorCache.Setup(c => c.SetAsync(It.IsAny<IReadOnlyList<DoctorListEntry>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _doctorCache.Setup(c => c.RemoveAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _sut = new DoctorApplicationService(
             _doctors.Object,
+            _doctorCache.Object,
             _specializations.Object,
             _appointments.Object,
             new ActiveAppointmentCancellation(_appointments.Object, _slots.Object),
@@ -140,27 +149,71 @@ public class DoctorApplicationServiceTests
         Assert.Single(result);
         Assert.Equal(doctor.Id, result[0].Id);
         _doctors.Verify(r => r.GetActiveAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _doctorCache.Verify(
+            c => c.SetAsync(It.IsAny<IReadOnlyList<DoctorListEntry>>(), It.IsAny<CancellationToken>()),
+            Times.Once);
         _doctors.Verify(
             r => r.GetBySpecializationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
     [Fact]
-    public async Task GetAllAsync_WithSpecializationId_UsesGetBySpecialization()
+    public async Task GetAllAsync_WithSpecializationId_FiltersActiveList()
+    {
+        // Arrange
+        var matchSpec = CreateSpecialization("Кардиология");
+        var otherSpec = CreateSpecialization("Хирургия");
+        var match = CreateDoctor();
+        var other = CreateDoctor("doctor-kc-2");
+        AttachSpecialization(match, matchSpec);
+        AttachSpecialization(other, otherSpec);
+        _doctors.Setup(r => r.GetActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([match, other]);
+
+        // Act
+        var result = await _sut.GetAllAsync(matchSpec.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal(match.Id, result[0].Id);
+        Assert.Contains("Кардиология", result[0].Specializations);
+        _doctors.Verify(r => r.GetActiveAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _doctors.Verify(
+            r => r.GetBySpecializationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenCacheHit_FiltersWithoutRepository()
     {
         // Arrange
         var specId = Guid.NewGuid();
-        var doctor = CreateDoctor();
-        _doctors.Setup(r => r.GetBySpecializationAsync(specId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([doctor]);
+        var matchId = Guid.NewGuid();
+        _doctorCache.Setup(c => c.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new DoctorListEntry
+                {
+                    Doctor = new DoctorDto { Id = matchId, LastName = "Петров", FirstName = "Петр" },
+                    SpecializationIds = [specId]
+                },
+                new DoctorListEntry
+                {
+                    Doctor = new DoctorDto { Id = Guid.NewGuid(), LastName = "Сидоров", FirstName = "Сидор" },
+                    SpecializationIds = [Guid.NewGuid()]
+                }
+            ]);
 
         // Act
         var result = await _sut.GetAllAsync(specId, CancellationToken.None);
 
         // Assert
         Assert.Single(result);
-        _doctors.Verify(r => r.GetBySpecializationAsync(specId, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(matchId, result[0].Id);
         _doctors.Verify(r => r.GetActiveAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _doctorCache.Verify(
+            c => c.SetAsync(It.IsAny<IReadOnlyList<DoctorListEntry>>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     // GetById

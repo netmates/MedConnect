@@ -1,4 +1,5 @@
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Infrastructure.Caching;
@@ -38,6 +39,8 @@ public static class ServiceCollectionExtensions
         });
         // Кеш для списка специализаций
         services.AddSingleton<ISpecializationListCache, SpecializationListCache>();
+        // Кеш для списка врачей
+        services.AddSingleton<IDoctorListCache, DoctorListCache>();
 
         // Unit of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();

@@ -1,6 +1,7 @@
 using AppointmentService.Application.DTOs.Specialization;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
@@ -15,6 +16,7 @@ public class SpecializationApplicationServiceTests
 {
     private readonly Mock<ISpecializationRepository> _specializations = new();
     private readonly Mock<ISpecializationListCache> _cache = new();
+    private readonly Mock<IDoctorListCache> _doctorCache = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IValidator<CreateSpecializationDto>> _createValidator = new();
     private readonly Mock<IValidator<UpdateSpecializationDto>> _updateValidator = new();
@@ -35,10 +37,13 @@ public class SpecializationApplicationServiceTests
             .Returns(Task.CompletedTask);
         _cache.Setup(c => c.RemoveAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        _doctorCache.Setup(c => c.RemoveAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _sut = new SpecializationApplicationService(
             _specializations.Object,
             _cache.Object,
+            _doctorCache.Object,
             _uow.Object,
             _createValidator.Object,
             _updateValidator.Object,
@@ -103,6 +108,8 @@ public class SpecializationApplicationServiceTests
             Times.Once);
         _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _cache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _doctorCache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -138,7 +145,7 @@ public class SpecializationApplicationServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenNotFound_ThrowsNotFoundAndRollsBack()
+    public async Task UpdateAsync_WhenNotFound_ThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -151,7 +158,31 @@ public class SpecializationApplicationServiceTests
 
         // Assert
         Assert.Equal($"Специализация {id} не найдена.", ex.Message);
-        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenNameUnchanged_ReturnsCurrentWithoutSave()
+    {
+        // Arrange
+        var specialization = CreateSpecialization("Терапия");
+        var dto = ValidUpdateDto("  Терапия  ");
+        _specializations.Setup(r => r.GetByIdAsync(specialization.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(specialization);
+
+        // Act
+        var result = await _sut.UpdateAsync(specialization.Id, dto, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("Терапия", result.Name);
+        Assert.Equal(specialization.Id, result.Id);
+        _specializations.Verify(
+            r => r.UpdateAsync(It.IsAny<Specialization>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _cache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _doctorCache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -173,6 +204,8 @@ public class SpecializationApplicationServiceTests
             r => r.UpdateAsync(specialization, It.IsAny<CancellationToken>()),
             Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _cache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _doctorCache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Delete
@@ -234,5 +267,7 @@ public class SpecializationApplicationServiceTests
             r => r.DeleteAsync(specialization, It.IsAny<CancellationToken>()),
             Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _cache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _doctorCache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

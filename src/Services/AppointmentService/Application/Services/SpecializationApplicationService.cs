@@ -1,6 +1,7 @@
 using AppointmentService.Application.DTOs.Specialization;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
@@ -11,6 +12,7 @@ namespace AppointmentService.Application.Services;
 public sealed class SpecializationApplicationService(
     ISpecializationRepository specializationRepository,
     ISpecializationListCache specializationListCache,
+    IDoctorListCache doctorListCache,
     IUnitOfWork unitOfWork,
     IValidator<CreateSpecializationDto> createSpecializationValidator,
     IValidator<UpdateSpecializationDto> updateSpecializationValidator,
@@ -30,7 +32,7 @@ public sealed class SpecializationApplicationService(
         }
 
         var specializations = await specializationRepository.GetAllAsync(ct);
-        var result =  specializations.Select(MapToDto).ToList();
+        var result = specializations.Select(MapToDto).ToList();
 
         try
         {
@@ -78,21 +80,27 @@ public sealed class SpecializationApplicationService(
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        var specialization = await specializationRepository.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException($"Специализация {id} не найдена.");
+
+        var newName = dto.Name.Trim();
+        if (string.Equals(specialization.Name, newName, StringComparison.Ordinal))
+            return MapToDto(specialization);
+
         await unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var specialization = await specializationRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException($"Специализация {id} не найдена.");
-
-            specialization.Update(name: dto.Name);
+            var oldName = specialization.Name;
+            specialization.Update(name: newName);
             await specializationRepository.UpdateAsync(specialization, ct);
 
             await unitOfWork.CommitAsync(ct);
             await DropCacheAsync();
+            await DropDoctorListCacheAsync();
 
             logger.LogInformation(
-                "Specialization updated: {SpecializationId}, Name={Name}",
-                specialization.Id, specialization.Name);
+                "Specialization updated: {SpecializationId}, OldName={OldName}, NewName={NewName}",
+                specialization.Id, oldName, newName);
 
             return MapToDto(specialization);
         }
@@ -138,6 +146,18 @@ public sealed class SpecializationApplicationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to drop specializations cache");
+        }
+    }
+
+    private async Task DropDoctorListCacheAsync()
+    {
+        try
+        {
+            await doctorListCache.RemoveAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to drop doctors cache");
         }
     }
 

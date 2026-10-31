@@ -1,7 +1,7 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using AppointmentService.Application.DTOs.Specialization;
-using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace AppointmentService.Infrastructure.Caching;

@@ -3,6 +3,7 @@ using AppointmentService.Application.DTOs.Doctor;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
@@ -14,6 +15,7 @@ namespace AppointmentService.Application.Services;
 
 public sealed class DoctorApplicationService(
     IDoctorRepository doctorRepository,
+    IDoctorListCache doctorListCache,
     ISpecializationRepository specializationRepository,
     IAppointmentRepository appointmentRepository,
     IActiveAppointmentCancellation activeAppointmentCancellation,
@@ -28,11 +30,50 @@ public sealed class DoctorApplicationService(
 {
     public async Task<IReadOnlyList<DoctorDto>> GetAllAsync(Guid? specializationId, CancellationToken ct)
     {
-        var doctors = specializationId.HasValue
-            ? await doctorRepository.GetBySpecializationAsync(specializationId.Value, ct)
-            : await doctorRepository.GetActiveAsync(ct);
-        return doctors.Select(MapToDto).ToList();
+        try
+        {
+            var cached = await doctorListCache.GetAsync(ct);
+            if (cached is not null)
+                return Filter(cached, specializationId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to read doctors cache");
+        }
+
+        var doctors = await doctorRepository.GetActiveAsync(ct);
+        var items = doctors.Select(MapToCacheEntry).ToList();
+
+        try
+        {
+            await doctorListCache.SetAsync(items, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to write doctors cache");
+        }
+
+        return Filter(items, specializationId);
     }
+
+    private static List<DoctorDto> Filter(IReadOnlyList<DoctorListEntry> items, Guid? specializationId)
+    {
+        if (specializationId is null)
+            return items.Select(item => item.Doctor).ToList();
+
+        return items
+            .Where(item => item.SpecializationIds.Contains(specializationId.Value))
+            .Select(item => item.Doctor)
+            .ToList();
+    }
+
+    private static DoctorListEntry MapToCacheEntry(Doctor doctor) => new()
+    {
+        Doctor = MapToDto(doctor),
+        SpecializationIds = doctor.DoctorSpecializations
+            .Select(link => link.SpecializationId)
+            .ToList()
+    };
 
     public async Task<DoctorDto> GetByIdAsync(Guid id, CancellationToken ct)
     {
@@ -87,6 +128,7 @@ public sealed class DoctorApplicationService(
             }
 
             await unitOfWork.CommitAsync(ct);
+            await DropCacheAsync();
 
             var createdDoctor = await doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
 
@@ -179,6 +221,7 @@ public sealed class DoctorApplicationService(
             }
 
             await unitOfWork.CommitAsync(ct);
+            await DropCacheAsync();
 
             var updateDoctor = await doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
 
@@ -256,6 +299,7 @@ public sealed class DoctorApplicationService(
             await doctorRepository.UpdateAsync(doctor, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropCacheAsync();
         }
         catch (Exception ex)
         {
@@ -301,6 +345,7 @@ public sealed class DoctorApplicationService(
             await doctorRepository.UpdateAsync(doctor, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropCacheAsync();
         }
         catch (Exception ex)
         {
@@ -345,6 +390,18 @@ public sealed class DoctorApplicationService(
         logger.LogInformation(
             "Doctor password reset: {DoctorId}, KeycloakId={KeycloakId}",
             id, doctor.KeycloakId);
+    }
+
+    private async Task DropCacheAsync()
+    {
+        try
+        {
+            await doctorListCache.RemoveAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to drop doctors cache");
+        }
     }
 
     private static DoctorDto MapToDto(Doctor d) => new()

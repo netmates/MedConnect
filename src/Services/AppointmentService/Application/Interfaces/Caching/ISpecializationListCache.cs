@@ -1,6 +1,6 @@
 using AppointmentService.Application.DTOs.Specialization;
 
-namespace AppointmentService.Application.Interfaces;
+namespace AppointmentService.Application.Interfaces.Caching;
 
 public interface ISpecializationListCache
 {
