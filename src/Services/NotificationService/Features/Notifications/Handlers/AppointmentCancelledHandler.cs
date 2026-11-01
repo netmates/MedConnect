@@ -9,10 +9,19 @@ public sealed class AppointmentCancelledHandler(INotificationSender sender)
 {
     public async Task HandleAsync(AppointmentCancelledPayload payload, CancellationToken ct)
     {
-        const string textPreview = "Пользователь отменил запись";
+        var when = payload.StartTime.ToString("dd.MM.yyyy HH:mm");
+        var cancelledByPatient = payload.CancelledByRole == ParticipantRoles.Patient;
 
-        await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient, textPreview), ct);
-        await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor, textPreview), ct);
+        var patientText = cancelledByPatient
+            ? $"Вы отменили запись к врачу {payload.DoctorName} на {when} UTC."
+            : $"Врач {payload.DoctorName} отменил запись на {when} UTC.";
+
+        var doctorText = cancelledByPatient
+            ? $"Пациент {payload.PatientName} отменил запись на {when} UTC."
+            : $"Вы отменили запись пациента {payload.PatientName} на {when} UTC.";
+
+        await sender.SendAsync(CreateMessage(payload, payload.PatientId, ParticipantRoles.Patient, patientText), ct);
+        await sender.SendAsync(CreateMessage(payload, payload.DoctorId, ParticipantRoles.Doctor, doctorText), ct);
     }
 
     private static NotificationMessage CreateMessage(

@@ -12,7 +12,7 @@
 
 ### HTTPS developer certificate (обязательно для локалки)
 
-CommunicationService ходит в AppointmentService по **HTTPS gRPC** (`https://localhost:7246`).  
+CommunicationService ходит в AppointmentService по **HTTPS gRPC** (`https://localhost:7246`).
 Без доверенного dev-сертификата локально ломаются gRPC/чат и другие HTTPS-вызовы между сервисами.
 
 Один раз на машине:
@@ -28,7 +28,7 @@ dotnet dev-certs https --trust
 dotnet dev-certs https --check --trust
 ```
 
-Должно быть: сертификат найден и **trusted**.  
+Должно быть: сертификат найден и **trusted**.
 Если Windows покажет диалог доверия — подтвердите. После смены/переустановки SDK или сертификата повторите `--trust`.
 
 ## 1. Клонирование и инфраструктура
@@ -41,15 +41,19 @@ docker compose up -d
 
 Поднимаются:
 
-| Сервис   | URL / порт                         | Назначение                                      |
-|----------|------------------------------------|-------------------------------------------------|
-| Postgres | `localhost:5432`                   | БД `medconnect` / `postgres` / `postgres`       |
-| Keycloak | http://localhost:8080              | admin / admin                                   |
-| Seq      | http://localhost:5341              | UI логов (Dev)                                  |
-| MongoDB  | `localhost:27017`                  | чаты (CommunicationService)                     |
-| RabbitMQ | `localhost:5672`, UI `:15672`      | очереди / `medconnect` / `medconnect`           |
+| Сервис        | URL / порт                         | Назначение                                 |
+|---------------|------------------------------------|--------------------------------------------|
+| Postgres      | `localhost:5432`                   | БД `medconnect` / `postgres` / `postgres`  |
+| Keycloak      | http://localhost:8080              | admin / admin                              |
+| Seq           | http://localhost:5341              | UI логов (Dev)                             |
+| MongoDB       | `localhost:27017`                  | чаты (CommunicationService)                |
+| RabbitMQ      | `localhost:5672`, UI `:15672`      | очереди / `medconnect` / `medconnect`      |
+| Redis         | `localhost:6379`                   | кеш AppointmentService, без пароля         |
+| Redis Insight | http://localhost:5540              | UI Redis                                   |
 
 Дождитесь готовности Keycloak (первый старт и импорт realm могут занять минуту).
+
+Redis Insight сам к Redis не подключается. В UI добавьте базу: host `redis`, port `6379`, без пароля. Имя `redis` — это имя сервиса в Compose; `localhost` из контейнера Insight укажет на него самого, а не на Redis. AppointmentService на хосте ходит в `localhost:6379` (`ConnectionStrings:Redis`).
 
 `docker compose up -d` поднимает только инфраструктуру. Сервисы в этом режиме запускаются из IDE (раздел 3).
 
@@ -65,9 +69,22 @@ docker compose -f docker-compose.yml -f docker-compose.services.yml up -d --buil
 | CommunicationService | http://localhost:5080    |
 | NotificationService  | http://localhost:5090    |
 
+### Скрипт запуска
+
+`scripts/start-all.ps1` поднимает инфраструктуру (`docker compose up -d`), ждет Postgres, MongoDB, RabbitMQ, Redis и realm Keycloak, затем открывает отдельные окна PowerShell для AppointmentService, CommunicationService, NotificationService и SPA. Сервисы в контейнеры не собираются: это `dotnet run` и `npm run dev` на хосте. Логи остаются в этих окнах.
+
+Перед первым запуском нужны trusted HTTPS-сертификат и `Keycloak:AdminClientSecret` (разделы выше и 2). Если их нет, скрипт только предупредит и продолжит.
+
+```powershell
+.\scripts\start-all.ps1
+.\scripts\start-all.ps1 -Stop
+```
+
+`-Stop` закрывает окна приложений и выполняет `docker compose stop`. Дополнительно: `-SkipDocker`, `-SkipSpa`, `-SkipWait`. Ожидание Keycloak — `-KeycloakTimeoutSec` (по умолчанию 180 секунд).
+
 ## 2. Secret для Admin API Keycloak (обязательно на каждой машине)
 
-Клиент `medconnect-admin-cli` используется AppointmentService для создания/блокировки пользователей.  
+Клиент `medconnect-admin-cli` используется AppointmentService для создания/блокировки пользователей.
 **Secret не хранится в git** — его задают локально после старта Keycloak.
 
 ### 2.1. Скопировать secret из Keycloak
@@ -77,7 +94,7 @@ docker compose -f docker-compose.yml -f docker-compose.services.yml up -d --buil
 3. **Clients** → `medconnect-admin-cli` → вкладка **Credentials**.
 4. Скопируйте **Client secret** (при необходимости нажмите Regenerate и снова скопируйте).
 
-У каждого разработчика свой локальный Keycloak (свой Docker volume) → **свой** secret.  
+У каждого разработчика свой локальный Keycloak (свой Docker volume) → **свой** secret.
 Общий секрет на команду не нужен и в репозиторий не коммитится.
 
 ### 2.2. Сохранить в .NET User Secrets
@@ -104,8 +121,10 @@ dotnet run
 - HTTPS: https://localhost:7246
 - OpenAPI / Scalar: `/scalar` (в Development)
 
-Миграции EF и seed применяются при старте.  
+Миграции EF и seed применяются при старте.
 В Development включен `Seed:DemoUsers` (`appsettings.Development.json`) — нужны рабочий Keycloak и корректный `AdminClientSecret`.
+
+Нужен Redis (`localhost:6379`): без него `/health/ready` не станет готовым. В кеше списки специализаций и активных врачей и свободные слоты врача на день.
 
 ### 3.2. CommunicationService
 
@@ -133,7 +152,7 @@ dotnet run
 
 ## 4. SPA (`src/Web.Generated`)
 
-Vite + React + TypeScript + **MUI** (`@mui/material`, `@mui/icons-material`).  
+Vite + React + TypeScript + **MUI** (`@mui/material`, `@mui/icons-material`).
 Вход через Keycloak (**Authorization Code + PKCE**), клиент `medconnect-app`.
 
 Роли открывают свои зоны:
@@ -207,14 +226,16 @@ dotnet test
 
 ## 7. Чеклист для нового ПК
 
-1. [ ] Установлены Docker, .NET 10 и Node.js 24
-2. [ ] `dotnet dev-certs https --trust` — сертификат **trusted** (`--check --trust` ок)
-3. [ ] `docker compose up -d`
-4. [ ] Keycloak доступен на :8080, realm `medconnect`
-5. [ ] Скопирован Client secret `medconnect-admin-cli`
-6. [ ] `dotnet user-secrets set "Keycloak:AdminClientSecret" "..."` в AppointmentService
-7. [ ] `dotnet run` в `AppointmentService`
-8. [ ] `dotnet run` в `CommunicationService`
-9. [ ] `dotnet run` в `NotificationService`
-10. [ ] `npm install` + `npm run dev` в `src/Web.Generated`
-11. [ ] (опционально) Seq UI на :5341, RabbitMQ UI на :15672
+- [ ] 1. Установлены Docker, .NET 10 и Node.js 24
+- [ ] 2. `dotnet dev-certs https --trust` — сертификат **trusted** (`--check --trust` ок)
+- [ ] 3. `docker compose up -d`
+- [ ] 4. Keycloak доступен на :8080, realm `medconnect`
+- [ ] 5. Скопирован Client secret `medconnect-admin-cli`
+- [ ] 6. `dotnet user-secrets set "Keycloak:AdminClientSecret" "..."` в AppointmentService
+- [ ] 7. `dotnet run` в `AppointmentService`
+- [ ] 8. `dotnet run` в `CommunicationService`
+- [ ] 9. `dotnet run` в `NotificationService`
+- [ ] 10. `npm install` + `npm run dev` в `src/Web.Generated`
+- [ ] 11. (опционально) Seq UI на :5341, RabbitMQ UI на :15672, Redis Insight на :5540
+
+Пункты 1, 2, 5 и 6 скрипт не выполняет. После них `.\scripts\start-all.ps1` заменяет пункты 3 и 7–10: поднимает инфраструктуру, ждет realm Keycloak (пункт 4) и запускает три сервиса и SPA. Пункт 11 скрипт не открывает.

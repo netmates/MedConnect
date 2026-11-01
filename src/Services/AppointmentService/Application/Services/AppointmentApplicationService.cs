@@ -207,6 +207,9 @@ public sealed class AppointmentApplicationService(
             "Appointment cancelled: {AppointmentId}, CancelledBy={CancelledBy}",
             appointmentId, cancelledByRole);
 
+        var cancelled = await appointmentRepository.GetByIdWithDetailsAsync(appointment.Id, ct)
+            ?? throw new NotFoundException("Запись не найдена.");
+
         var correlationId = correlationIdAccessor.Get();
         try
         {
@@ -221,7 +224,10 @@ public sealed class AppointmentApplicationService(
                     SlotId = appointment.SlotId,
                     CancelledByUserId = cancelledByUserId,
                     CancelledByRole = cancelledByRole,
-                    CancelledAt = appointment.UpdatedAt
+                    CancelledAt = appointment.UpdatedAt,
+                    StartTime = cancelled.Slot.StartTime,
+                    PatientName = FullNameFormatter.Format(cancelled.Patient.LastName, cancelled.Patient.FirstName, cancelled.Patient.MiddleName),
+                    DoctorName = FullNameFormatter.Format(cancelled.Doctor.LastName, cancelled.Doctor.FirstName, cancelled.Doctor.MiddleName)
                 },
                 correlationId,
                 ct);

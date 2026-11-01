@@ -54,12 +54,7 @@ public class NotificationHandlerTests
     public async Task AppointmentCancelled_LogsPatientAndDoctor()
     {
         // Arrange
-        var payload = new AppointmentCancelledPayload
-        {
-            AppointmentId = Guid.NewGuid(),
-            PatientId = Guid.NewGuid(),
-            DoctorId = Guid.NewGuid()
-        };
+        var payload = CreateCancelledPayload(ParticipantRoles.Patient);
         var (sender, logs) = CreateSender(NotificationChannels.Fake);
         var handler = new AppointmentCancelledHandler(sender);
 
@@ -72,9 +67,30 @@ public class NotificationHandlerTests
         {
             AssertAppointmentFields(entry, payload.AppointmentId, payload.PatientId, payload.DoctorId);
             Assert.Equal(EventTypes.AppointmentCancelled, entry.Property("EventType"));
-            Assert.Equal("Пользователь отменил запись", entry.Property("TextPreview"));
             Assert.Equal(NotificationChannels.Fake, entry.Property("Channel"));
         });
+        var patient = Assert.Single(logs.Entries, entry => Equals(entry.Property("RecipientRole"), ParticipantRoles.Patient));
+        var doctor = Assert.Single(logs.Entries, entry => Equals(entry.Property("RecipientRole"), ParticipantRoles.Doctor));
+        Assert.Equal("Вы отменили запись к врачу Петров Петр Петрович на 15.06.2030 10:00 UTC.", patient.Property("TextPreview"));
+        Assert.Equal("Пациент Иванов Иван Иванович отменил запись на 15.06.2030 10:00 UTC.", doctor.Property("TextPreview"));
+    }
+
+    [Fact]
+    public async Task AppointmentCancelled_WhenDoctorCancels_UsesDoctorTexts()
+    {
+        // Arrange
+        var payload = CreateCancelledPayload(ParticipantRoles.Doctor);
+        var (sender, logs) = CreateSender(NotificationChannels.Fake);
+        var handler = new AppointmentCancelledHandler(sender);
+
+        // Act
+        await handler.HandleAsync(payload, CancellationToken.None);
+
+        // Assert
+        var patient = Assert.Single(logs.Entries, entry => Equals(entry.Property("RecipientRole"), ParticipantRoles.Patient));
+        var doctor = Assert.Single(logs.Entries, entry => Equals(entry.Property("RecipientRole"), ParticipantRoles.Doctor));
+        Assert.Equal("Врач Петров Петр Петрович отменил запись на 15.06.2030 10:00 UTC.", patient.Property("TextPreview"));
+        Assert.Equal("Вы отменили запись пациента Иванов Иван Иванович на 15.06.2030 10:00 UTC.", doctor.Property("TextPreview"));
     }
 
     [Fact]
@@ -123,6 +139,18 @@ public class NotificationHandlerTests
 
         return (sender, logs);
     }
+
+    private static AppointmentCancelledPayload CreateCancelledPayload(string cancelledByRole) =>
+        new()
+        {
+            AppointmentId = Guid.NewGuid(),
+            PatientId = Guid.NewGuid(),
+            DoctorId = Guid.NewGuid(),
+            CancelledByRole = cancelledByRole,
+            StartTime = new DateTime(2030, 6, 15, 10, 0, 0, DateTimeKind.Utc),
+            PatientName = "Иванов Иван Иванович",
+            DoctorName = "Петров Петр Петрович"
+        };
 
     private static AppointmentCreatedPayload CreatedPayload() =>
         new()

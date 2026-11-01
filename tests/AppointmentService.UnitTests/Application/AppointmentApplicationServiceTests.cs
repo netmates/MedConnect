@@ -655,6 +655,8 @@ public class AppointmentApplicationServiceTests
             .ReturnsAsync(patient);
         _slots.Setup(r => r.GetByIdWithLockAsync(appointment.SlotId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(slot);
+        _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
 
         // Act
         await _sut.CancelAsync(appointment.Id, patient.KeycloakId, CancellationToken.None);
@@ -672,7 +674,10 @@ public class AppointmentApplicationServiceTests
                 payload.DoctorId == doctor.Id &&
                 payload.SlotId == slot.Id &&
                 payload.CancelledByUserId == patient.Id &&
-                payload.CancelledByRole == ParticipantRoles.Patient),
+                payload.CancelledByRole == ParticipantRoles.Patient &&
+                payload.StartTime == slot.StartTime &&
+                payload.PatientName == "Иванов Иван Иванович" &&
+                payload.DoctorName == "Петров Петр Петрович"),
             It.Is<string?>(id => id == null),
             It.IsAny<CancellationToken>()), Times.Once);
         _slotCache.Verify(
@@ -698,6 +703,8 @@ public class AppointmentApplicationServiceTests
             .ReturnsAsync(doctor);
         _slots.Setup(r => r.GetByIdWithLockAsync(appointment.SlotId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(slot);
+        _appointments.Setup(r => r.GetByIdWithDetailsAsync(appointment.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appointment);
 
         // Act
         await _sut.CancelAsync(appointment.Id, doctor.KeycloakId, CancellationToken.None);
@@ -715,7 +722,10 @@ public class AppointmentApplicationServiceTests
                 payload.DoctorId == doctor.Id &&
                 payload.SlotId == slot.Id &&
                 payload.CancelledByUserId == doctor.Id &&
-                payload.CancelledByRole == ParticipantRoles.Doctor),
+                payload.CancelledByRole == ParticipantRoles.Doctor &&
+                payload.StartTime == slot.StartTime &&
+                payload.PatientName == "Иванов Иван Иванович" &&
+                payload.DoctorName == "Петров Петр Петрович"),
             It.Is<string?>(id => id == null),
             It.IsAny<CancellationToken>()), Times.Once);
         _slotCache.Verify(

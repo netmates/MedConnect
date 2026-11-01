@@ -9,4 +9,7 @@ public sealed class AppointmentCancelledPayload
     public Guid CancelledByUserId { get; init; }
     public string CancelledByRole { get; init; } = string.Empty;
     public DateTime CancelledAt { get; init; }
+    public DateTime StartTime { get; init; }
+    public string PatientName { get; init; } = string.Empty;
+    public string DoctorName { get; init; } = string.Empty;
 }
