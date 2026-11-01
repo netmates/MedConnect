@@ -10,10 +10,6 @@ public interface IDoctorApplicationService
     /// </summary>
     public Task<IReadOnlyList<DoctorDto>> GetAllAsync(Guid? specializationId, CancellationToken ct);
     /// <summary>
-    /// Получить врача вместе с его специализациями.
-    /// </summary>
-    public Task<DoctorDto> GetByIdAsync(Guid id, CancellationToken ct);
-    /// <summary>
     /// Получить всех врачей (включая деактивированных) с загруженными специализациями.
     /// </summary>
     public Task<IReadOnlyList<DoctorDto>> GetAllIncludingInactiveAsync(CancellationToken ct);

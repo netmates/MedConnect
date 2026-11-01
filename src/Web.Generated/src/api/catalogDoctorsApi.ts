@@ -8,5 +8,4 @@ export const catalogDoctorsApi = {
       : ''
     return apiFetch<DoctorDto[]>(`/api/doctors${query}`)
   },
-  get: (id: string) => apiFetch<DoctorDto>(`/api/doctors/${id}`),
 }

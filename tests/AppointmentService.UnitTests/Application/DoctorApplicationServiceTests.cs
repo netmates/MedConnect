@@ -21,7 +21,6 @@ public class DoctorApplicationServiceTests
 {
     private readonly Mock<IDoctorRepository> _doctors = new();
     private readonly Mock<IDoctorListCache> _doctorCache = new();
-    private readonly Mock<IDoctorCardCache> _doctorCardCache = new();
     private readonly Mock<IDoctorAvailableSlotCache> _slotCache = new();
     private readonly Mock<ISpecializationRepository> _specializations = new();
     private readonly Mock<IAppointmentRepository> _appointments = new();
@@ -56,12 +55,6 @@ public class DoctorApplicationServiceTests
             .Returns(Task.CompletedTask);
         _doctorCache.Setup(c => c.RemoveAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _doctorCardCache.Setup(c => c.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((DoctorDto?)null);
-        _doctorCardCache.Setup(c => c.SetAsync(It.IsAny<DoctorDto>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        _doctorCardCache.Setup(c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
         _slotCache.Setup(c => c.RemoveAsync(
                 It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -69,7 +62,6 @@ public class DoctorApplicationServiceTests
         _sut = new DoctorApplicationService(
             _doctors.Object,
             _doctorCache.Object,
-            _doctorCardCache.Object,
             _slotCache.Object,
             _specializations.Object,
             _appointments.Object,
@@ -165,9 +157,6 @@ public class DoctorApplicationServiceTests
         _doctorCache.Verify(
             c => c.SetAsync(It.IsAny<IReadOnlyList<DoctorListEntry>>(), It.IsAny<CancellationToken>()),
             Times.Once);
-        _doctors.Verify(
-            r => r.GetBySpecializationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 
     [Fact]
@@ -191,9 +180,6 @@ public class DoctorApplicationServiceTests
         Assert.Equal(match.Id, result[0].Id);
         Assert.Contains("Кардиология", result[0].Specializations);
         _doctors.Verify(r => r.GetActiveAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _doctors.Verify(
-            r => r.GetBySpecializationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 
     [Fact]
@@ -226,98 +212,6 @@ public class DoctorApplicationServiceTests
         _doctors.Verify(r => r.GetActiveAsync(It.IsAny<CancellationToken>()), Times.Never);
         _doctorCache.Verify(
             c => c.SetAsync(It.IsAny<IReadOnlyList<DoctorListEntry>>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-    }
-
-    // GetById
-
-    [Fact]
-    public async Task GetByIdAsync_WhenNotFound_ThrowsNotFound()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        _doctors.Setup(r => r.GetWithSpecializationsAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Doctor?)null);
-
-        // Act
-        var ex = await Assert.ThrowsAsync<NotFoundException>(() =>
-            _sut.GetByIdAsync(id, CancellationToken.None));
-
-        // Assert
-        Assert.Equal($"Врач {id} не найден.", ex.Message);
-        _doctorCardCache.Verify(
-            c => c.SetAsync(It.IsAny<DoctorDto>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_WhenInactive_ThrowsNotFound()
-    {
-        // Arrange
-        var doctor = CreateDoctor();
-        doctor.Deactivate();
-        _doctors.Setup(r => r.GetWithSpecializationsAsync(doctor.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(doctor);
-
-        // Act
-        var ex = await Assert.ThrowsAsync<NotFoundException>(() =>
-            _sut.GetByIdAsync(doctor.Id, CancellationToken.None));
-
-        // Assert
-        Assert.Equal($"Врач {doctor.Id} не найден.", ex.Message);
-        _doctorCardCache.Verify(
-            c => c.SetAsync(It.IsAny<DoctorDto>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_WhenActive_ReturnsDtoWithSpecializations()
-    {
-        // Arrange
-        var doctor = CreateDoctor();
-        var spec = CreateSpecialization("Кардиология");
-        AttachSpecialization(doctor, spec);
-        _doctors.Setup(r => r.GetWithSpecializationsAsync(doctor.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(doctor);
-
-        // Act
-        var result = await _sut.GetByIdAsync(doctor.Id, CancellationToken.None);
-
-        // Assert
-        Assert.Equal(doctor.Id, result.Id);
-        Assert.True(result.IsActive);
-        Assert.Contains("Кардиология", result.Specializations);
-        _doctorCardCache.Verify(
-            c => c.SetAsync(It.Is<DoctorDto>(dto => dto.Id == doctor.Id), It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_WhenCacheHit_ReturnsWithoutRepository()
-    {
-        // Arrange
-        var doctorId = Guid.NewGuid();
-        _doctorCardCache.Setup(c => c.GetAsync(doctorId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DoctorDto
-            {
-                Id = doctorId,
-                LastName = "Петров",
-                FirstName = "Петр",
-                IsActive = true,
-                Specializations = ["Кардиология"]
-            });
-
-        // Act
-        var result = await _sut.GetByIdAsync(doctorId, CancellationToken.None);
-
-        // Assert
-        Assert.Equal(doctorId, result.Id);
-        Assert.Contains("Кардиология", result.Specializations);
-        _doctors.Verify(
-            r => r.GetWithSpecializationsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        _doctorCardCache.Verify(
-            c => c.SetAsync(It.IsAny<DoctorDto>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

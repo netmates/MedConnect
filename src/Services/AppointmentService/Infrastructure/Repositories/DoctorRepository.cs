@@ -7,13 +7,6 @@ namespace AppointmentService.Infrastructure.Repositories;
 
 public sealed class DoctorRepository(AppointmentDbContext context) : Repository<Doctor>(context), IDoctorRepository
 {
-    public async Task<IReadOnlyList<Doctor>> GetBySpecializationAsync(Guid specializationId, CancellationToken ct = default)
-        => await _context.Doctors
-            .Include(d => d.DoctorSpecializations)
-                .ThenInclude(ds => ds.Specialization)
-            .Where(d => d.DoctorSpecializations.Any(ds => ds.SpecializationId == specializationId) && d.IsActive)
-            .ToListAsync(ct);
-
     public async Task<IReadOnlyList<Doctor>> GetActiveAsync(CancellationToken ct = default)
         => await _context.Doctors
             .Include(d => d.DoctorSpecializations)

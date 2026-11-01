@@ -18,14 +18,4 @@ public sealed class DoctorsController(IDoctorApplicationService service) : Contr
         var result = await service.GetAllAsync(specializationId, ct);
         return Ok(result);
     }
-
-    /// <summary>GET /api/doctors/{id} — профиль активного врача с его специализациями.</summary>
-    [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(DoctorDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<DoctorDto>> GetById(Guid id, CancellationToken ct)
-    {
-        var result = await service.GetByIdAsync(id, ct);
-        return Ok(result);
-    }
 }

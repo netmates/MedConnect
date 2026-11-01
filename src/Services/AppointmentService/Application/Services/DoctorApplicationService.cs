@@ -16,7 +16,6 @@ namespace AppointmentService.Application.Services;
 public sealed class DoctorApplicationService(
     IDoctorRepository doctorRepository,
     IDoctorListCache doctorListCache,
-    IDoctorCardCache doctorCardCache,
     IDoctorAvailableSlotCache doctorAvailableSlotCache,
     ISpecializationRepository specializationRepository,
     IAppointmentRepository appointmentRepository,
@@ -76,39 +75,6 @@ public sealed class DoctorApplicationService(
             .Select(link => link.SpecializationId)
             .ToList()
     };
-
-    public async Task<DoctorDto> GetByIdAsync(Guid id, CancellationToken ct)
-    {
-        try
-        {
-            var cached = await doctorCardCache.GetAsync(id, ct);
-            if (cached is not null)
-                return cached;
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to read doctor cache");
-        }
-
-        var doctor = await doctorRepository.GetWithSpecializationsAsync(id, ct)
-            ?? throw new NotFoundException($"Врач {id} не найден.");
-
-        if (!doctor.IsActive)
-            throw new NotFoundException($"Врач {id} не найден.");
-
-        var result = MapToDto(doctor);
-
-        try
-        {
-            await doctorCardCache.SetAsync(result, ct);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to write doctor cache");
-        }
-
-        return result;
-    }
 
     public async Task<IReadOnlyList<DoctorDto>> GetAllIncludingInactiveAsync(CancellationToken ct)
     {
@@ -246,7 +212,6 @@ public sealed class DoctorApplicationService(
 
             await unitOfWork.CommitAsync(ct);
             await DropCacheAsync();
-            await DropCardCacheAsync(id);
 
             var updateDoctor = await doctorRepository.GetWithSpecializationsAsync(doctor.Id, ct);
 
@@ -325,7 +290,6 @@ public sealed class DoctorApplicationService(
 
             await unitOfWork.CommitAsync(ct);
             await DropCacheAsync();
-            await DropCardCacheAsync(id);
             await DropFreedSlotCacheAsync(cancellation.FreedSlots);
         }
         catch (Exception ex)
@@ -428,18 +392,6 @@ public sealed class DoctorApplicationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to drop doctors cache");
-        }
-    }
-
-    private async Task DropCardCacheAsync(Guid doctorId)
-    {
-        try
-        {
-            await doctorCardCache.RemoveAsync(doctorId, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to drop doctor cache. DoctorId={DoctorId}", doctorId);
         }
     }
 

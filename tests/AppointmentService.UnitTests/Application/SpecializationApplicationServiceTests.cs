@@ -16,9 +16,7 @@ public class SpecializationApplicationServiceTests
 {
     private readonly Mock<ISpecializationRepository> _specializations = new();
     private readonly Mock<ISpecializationListCache> _cache = new();
-    private readonly Mock<IDoctorRepository> _doctors = new();
     private readonly Mock<IDoctorListCache> _doctorCache = new();
-    private readonly Mock<IDoctorCardCache> _doctorCardCache = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IValidator<CreateSpecializationDto>> _createValidator = new();
     private readonly Mock<IValidator<UpdateSpecializationDto>> _updateValidator = new();
@@ -41,17 +39,11 @@ public class SpecializationApplicationServiceTests
             .Returns(Task.CompletedTask);
         _doctorCache.Setup(c => c.RemoveAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _doctors.Setup(r => r.GetBySpecializationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
-        _doctorCardCache.Setup(c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
 
         _sut = new SpecializationApplicationService(
             _specializations.Object,
             _cache.Object,
-            _doctors.Object,
             _doctorCache.Object,
-            _doctorCardCache.Object,
             _uow.Object,
             _createValidator.Object,
             _updateValidator.Object,
@@ -118,12 +110,6 @@ public class SpecializationApplicationServiceTests
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _cache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Once);
         _doctorCache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _doctors.Verify(
-            r => r.GetBySpecializationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        _doctorCardCache.Verify(
-            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 
     [Fact]
@@ -197,12 +183,6 @@ public class SpecializationApplicationServiceTests
         _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
         _cache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Never);
         _doctorCache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _doctors.Verify(
-            r => r.GetBySpecializationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        _doctorCardCache.Verify(
-            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 
     [Fact]
@@ -226,36 +206,6 @@ public class SpecializationApplicationServiceTests
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _cache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Once);
         _doctorCache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _doctors.Verify(
-            r => r.GetBySpecializationAsync(specialization.Id, It.IsAny<CancellationToken>()),
-            Times.Once);
-        _doctorCardCache.Verify(
-            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_WhenRenamed_DropsCardsOfLinkedDoctors()
-    {
-        // Arrange
-        var specialization = CreateSpecialization("Терапия");
-        var first = Doctor.Create("doctor-1", "Петров", "Петр", null, "Терапевт", 10);
-        var second = Doctor.Create("doctor-2", "Сидоров", "Сидор", null, "Хирург", 5);
-        _specializations.Setup(r => r.GetByIdAsync(specialization.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(specialization);
-        _doctors.Setup(r => r.GetBySpecializationAsync(specialization.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([first, second]);
-
-        // Act
-        await _sut.UpdateAsync(specialization.Id, ValidUpdateDto("Хирургия"), CancellationToken.None);
-
-        // Assert
-        _doctorCardCache.Verify(
-            c => c.RemoveAsync(first.Id, It.IsAny<CancellationToken>()),
-            Times.Once);
-        _doctorCardCache.Verify(
-            c => c.RemoveAsync(second.Id, It.IsAny<CancellationToken>()),
-            Times.Once);
     }
 
     // Delete
@@ -319,11 +269,5 @@ public class SpecializationApplicationServiceTests
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _cache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Once);
         _doctorCache.Verify(c => c.RemoveAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _doctors.Verify(
-            r => r.GetBySpecializationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        _doctorCardCache.Verify(
-            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 }

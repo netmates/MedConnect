@@ -12,9 +12,7 @@ namespace AppointmentService.Application.Services;
 public sealed class SpecializationApplicationService(
     ISpecializationRepository specializationRepository,
     ISpecializationListCache specializationListCache,
-    IDoctorRepository doctorRepository,
     IDoctorListCache doctorListCache,
-    IDoctorCardCache doctorCardCache,
     IUnitOfWork unitOfWork,
     IValidator<CreateSpecializationDto> createSpecializationValidator,
     IValidator<UpdateSpecializationDto> updateSpecializationValidator,
@@ -99,7 +97,6 @@ public sealed class SpecializationApplicationService(
             await unitOfWork.CommitAsync(ct);
             await DropCacheAsync();
             await DropDoctorListCacheAsync();
-            await DropDoctorCardsCacheAsync(specialization.Id);
 
             logger.LogInformation(
                 "Specialization updated: {SpecializationId}, OldName={OldName}, NewName={NewName}",
@@ -161,38 +158,6 @@ public sealed class SpecializationApplicationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to drop doctors cache");
-        }
-    }
-
-    private async Task DropDoctorCardsCacheAsync(Guid specializationId)
-    {
-        IReadOnlyList<Doctor> doctors;
-        try
-        {
-            doctors = await doctorRepository.GetBySpecializationAsync(specializationId, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(
-                ex,
-                "Failed to read doctors for card cache drop. SpecializationId={SpecializationId}",
-                specializationId);
-            return;
-        }
-
-        foreach (var doctor in doctors)
-        {
-            try
-            {
-                await doctorCardCache.RemoveAsync(doctor.Id, CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(
-                    ex,
-                    "Failed to drop doctor cache. DoctorId={DoctorId}",
-                    doctor.Id);
-            }
         }
     }
 
