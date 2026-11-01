@@ -23,7 +23,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { doctorsApi } from '../../../api/admin/doctorsApi'
 import { specializationsApi } from '../../../api/admin/specializationsApi'
 import { Page } from '../../../components/Page'
@@ -58,12 +58,7 @@ export function DoctorsPage() {
   const load = useCallback(async () => {
     setError(null)
     try {
-      const [doctors, specializations] = await Promise.all([
-        doctorsApi.list(),
-        specializationsApi.list(),
-      ])
-      setItems(doctors)
-      setSpecs(specializations)
+      setItems(await doctorsApi.list())
     } catch (e) {
       setError(formatApiError(e))
     }
@@ -73,33 +68,53 @@ export function DoctorsPage() {
     void load()
   }, [load])
 
-  const specNameToId = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const s of specs) map.set(s.name, s.id)
-    return map
-  }, [specs])
-
-  function openCreate() {
-    setMode('create')
-    setSelected(null)
-    setCreateForm({ ...emptyCreate, specializationIds: [] })
+  async function loadSpecs() {
+    const specializations = await specializationsApi.list()
+    setSpecs(specializations)
+    return specializations
   }
 
-  function openEdit(doctor: DoctorDto) {
-    const ids = doctor.specializations
-      .map((name) => specNameToId.get(name))
-      .filter((id): id is string => Boolean(id))
+  async function openCreate() {
+    setBusy(true)
+    setError(null)
+    try {
+      await loadSpecs()
+      setSelected(null)
+      setCreateForm({ ...emptyCreate, specializationIds: [] })
+      setMode('create')
+    } catch (e) {
+      setError(formatApiError(e))
+    } finally {
+      setBusy(false)
+    }
+  }
 
-    setSelected(doctor)
-    setEditForm({
-      lastName: doctor.lastName,
-      firstName: doctor.firstName,
-      middleName: doctor.middleName ?? '',
-      description: doctor.description,
-      experienceYears: doctor.experienceYears,
-      specializationIds: ids,
-    })
-    setMode('edit')
+  async function openEdit(doctor: DoctorDto) {
+    setBusy(true)
+    setError(null)
+    try {
+      const specializations = await loadSpecs()
+      const ids = doctor.specializations
+        .flatMap((name) => {
+          const id = specializations.find((spec) => spec.name === name)?.id
+          return id ? [id] : []
+        })
+
+      setSelected(doctor)
+      setEditForm({
+        lastName: doctor.lastName,
+        firstName: doctor.firstName,
+        middleName: doctor.middleName ?? '',
+        description: doctor.description,
+        experienceYears: doctor.experienceYears,
+        specializationIds: ids,
+      })
+      setMode('edit')
+    } catch (e) {
+      setError(formatApiError(e))
+    } finally {
+      setBusy(false)
+    }
   }
 
   function openPassword(doctor: DoctorDto) {
@@ -189,7 +204,7 @@ export function DoctorsPage() {
         <Button
           variant="contained"
           startIcon={<PersonAddIcon />}
-          onClick={openCreate}
+          onClick={() => void openCreate()}
           disabled={busy}
         >
           Создать врача
@@ -339,7 +354,7 @@ export function DoctorsPage() {
                     size="small"
                     startIcon={<EditIcon />}
                     disabled={busy}
-                    onClick={() => openEdit(doctor)}
+                    onClick={() => void openEdit(doctor)}
                   >
                     Изменить
                   </Button>
