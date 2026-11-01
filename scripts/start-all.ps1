@@ -4,8 +4,8 @@
     Starts MedConnect infrastructure and local app services.
 
 .DESCRIPTION
-    1. docker compose up -d  (Postgres, Keycloak, Seq, MongoDB, RabbitMQ)
-    2. Waits until Keycloak realm is ready
+    1. docker compose up -d  (Postgres, Keycloak, Seq, MongoDB, RabbitMQ, Redis, Redis Insight)
+    2. Waits until Postgres, MongoDB, RabbitMQ, Redis, and the Keycloak realm are ready
     3. Starts AppointmentService, CommunicationService, NotificationService, and SPA in separate windows
 
 .EXAMPLE
@@ -79,6 +79,19 @@ function Save-TrackedPids {
     $Entries | ConvertTo-Json | Set-Content -Path $PidsFile -Encoding UTF8
 }
 
+function Get-ChildProcessIds {
+    param([int]$ParentId)
+
+    $ids = @()
+    $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $ParentId" -ErrorAction SilentlyContinue)
+    foreach ($child in $children) {
+        $ids += [int]$child.ProcessId
+        $ids += @(Get-ChildProcessIds -ParentId $child.ProcessId)
+    }
+
+    return $ids
+}
+
 function Stop-TrackedApps {
     $entries = Get-TrackedPids
     foreach ($entry in $entries) {
@@ -93,10 +106,13 @@ function Stop-TrackedApps {
         }
 
         Write-Host "    Stopping $($entry.Name) (PID $procId)..."
-        Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
+        $descendants = @(Get-ChildProcessIds -ParentId $procId)
+        [array]::Reverse($descendants)
+        foreach ($id in $descendants) {
+            Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
+        }
 
-        Get-CimInstance Win32_Process -Filter "ParentProcessId = $procId" -ErrorAction SilentlyContinue |
-            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
     }
 
     if (Test-Path $PidsFile) {
@@ -262,6 +278,7 @@ if (-not $SkipWait -and -not $SkipDocker) {
     Wait-TcpPort -TargetHost "127.0.0.1" -Port 5432 -TimeoutSec 60 -Label "Postgres"
     Wait-TcpPort -TargetHost "127.0.0.1" -Port 27017 -TimeoutSec 60 -Label "MongoDB"
     Wait-TcpPort -TargetHost "127.0.0.1" -Port 5672 -TimeoutSec 90 -Label "RabbitMQ"
+    Wait-TcpPort -TargetHost "127.0.0.1" -Port 6379 -TimeoutSec 30 -Label "Redis"
     Wait-Http -Url "http://localhost:8080/realms/medconnect" -TimeoutSec $KeycloakTimeoutSec -Label "Keycloak realm"
 }
 
@@ -302,6 +319,8 @@ Write-Host "  Keycloak              http://localhost:8080"
 Write-Host "  Seq                   http://localhost:5341"
 Write-Host "  MongoDB               localhost:27017"
 Write-Host "  RabbitMQ              localhost:5672  UI http://localhost:15672"
+Write-Host "  Redis                 localhost:6379"
+Write-Host "  Redis Insight         http://localhost:5540"
 Write-Host "  AppointmentService    http://localhost:5067  https://localhost:7246"
 Write-Host "  CommunicationService  http://localhost:5080  https://localhost:7280"
 Write-Host "  NotificationService   http://localhost:5090  https://localhost:7290"
