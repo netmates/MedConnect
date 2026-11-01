@@ -1,15 +1,16 @@
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
-using MedConnect.Shared.Auth;
 using AppointmentService.Application.Helpers;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
-using MedConnect.Shared.Messaging;
+using MedConnect.Shared.Auth;
 using MedConnect.Shared.Events;
+using MedConnect.Shared.Messaging;
 
 namespace AppointmentService.Application.Services;
 
@@ -18,6 +19,7 @@ public sealed class AppointmentApplicationService(
     IScheduleSlotRepository slotRepository,
     IPatientRepository patientRepository,
     IDoctorRepository doctorRepository,
+    IDoctorAvailableSlotCache doctorAvailableSlotCache,
     IUnitOfWork unitOfWork,
     IValidator<CreateAppointmentDto> createAppointmentValidator,
     ILogger<AppointmentApplicationService> logger,
@@ -108,6 +110,7 @@ public sealed class AppointmentApplicationService(
             await appointmentRepository.AddAsync(appointment, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropSlotCacheAsync(slot.DoctorId, slot.StartTime);
         }
         catch
         {
@@ -192,6 +195,7 @@ public sealed class AppointmentApplicationService(
             await slotRepository.UpdateAsync(slot, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropSlotCacheAsync(slot.DoctorId, slot.StartTime);
         }
         catch
         {
@@ -337,6 +341,21 @@ public sealed class AppointmentApplicationService(
             appointment.Doctor.KeycloakId,
             FullNameFormatter.Format(appointment.Patient.LastName, appointment.Patient.FirstName, appointment.Patient.MiddleName),
             FullNameFormatter.Format(appointment.Doctor.LastName, appointment.Doctor.FirstName, appointment.Doctor.MiddleName));
+    }
+
+    private async Task DropSlotCacheAsync(Guid doctorId, DateTime slotStart)
+    {
+        try
+        {
+            await doctorAvailableSlotCache.RemoveAsync(doctorId, slotStart, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Failed to drop doctor slots cache. DoctorId={DoctorId}, Day={Day:yyyy-MM-dd}",
+                doctorId, slotStart);
+        }
     }
 
     private static AppointmentDto MapToDto(Appointment a) => new()

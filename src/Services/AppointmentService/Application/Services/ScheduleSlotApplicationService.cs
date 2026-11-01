@@ -1,12 +1,13 @@
 using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Application.Exceptions;
-using MedConnect.Shared.Auth;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
 using FluentValidation;
+using MedConnect.Shared.Auth;
 
 namespace AppointmentService.Application.Services;
 
@@ -14,6 +15,7 @@ public sealed class ScheduleSlotApplicationService(
     IAppointmentRepository appointmentRepository,
     IScheduleSlotRepository slotRepository,
     IDoctorRepository doctorRepository,
+    IDoctorAvailableSlotCache doctorAvailableSlotCache,
     IUnitOfWork unitOfWork,
     IValidator<CreateScheduleSlotDto> createSlotValidator,
     IValidator<UpdateScheduleSlotDto> updateSlotValidator,
@@ -42,6 +44,7 @@ public sealed class ScheduleSlotApplicationService(
             await slotRepository.AddAsync(slot, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropSlotCacheAsync(doctor.Id, slot.StartTime);
 
             logger.LogInformation(
                 "Schedule slot created: {SlotId}, DoctorId={DoctorId}, Start={StartTime:o}, End={EndTime:o}",
@@ -84,10 +87,18 @@ public sealed class ScheduleSlotApplicationService(
             if (hasOverlap)
                 throw new BusinessRuleException("Слот пересекается с существующим расписанием.");
 
+            var oldStart = slot.StartTime;
             slot.Update(dto.StartTime, dto.EndTime);
             await slotRepository.UpdateAsync(slot, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropSlotCacheAsync(doctor.Id, oldStart);
+            if (oldStart.Year != slot.StartTime.Year
+                || oldStart.Month != slot.StartTime.Month
+                || oldStart.Day != slot.StartTime.Day)
+            {
+                await DropSlotCacheAsync(doctor.Id, slot.StartTime);
+            }
 
             logger.LogInformation(
                 "Schedule slot updated: {SlotId}, DoctorId={DoctorId}, Start={StartTime:o}, End={EndTime:o}",
@@ -128,6 +139,7 @@ public sealed class ScheduleSlotApplicationService(
             await slotRepository.DeleteAsync(slot, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropSlotCacheAsync(doctor.Id, slot.StartTime);
         }
         catch
         {
@@ -164,8 +176,51 @@ public sealed class ScheduleSlotApplicationService(
         if (!doctor.IsActive)
             throw new NotFoundException("Врач не найден.");
 
+        try
+        {
+            var cached = await doctorAvailableSlotCache.GetAsync(doctorId, date, ct);
+            if (cached is not null)
+                return WithoutPast(cached);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to read doctor slots cache");
+        }
+
         var slots = await slotRepository.GetAvailableByDoctorIdAsync(doctorId, date, ct);
-        return slots.Select(MapToDto).ToList();
+        var result = slots.Select(MapToDto).ToList();
+
+        try
+        {
+            await doctorAvailableSlotCache.SetAsync(doctorId, date, result, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to write doctor slots cache");
+        }
+
+        return result;
+    }
+
+    private static List<ScheduleSlotDto> WithoutPast(IReadOnlyList<ScheduleSlotDto> slots)
+    {
+        var now = DateTime.UtcNow;
+        return slots.Where(slot => slot.StartTime > now).ToList();
+    }
+
+    private async Task DropSlotCacheAsync(Guid doctorId, DateTime slotStart)
+    {
+        try
+        {
+            await doctorAvailableSlotCache.RemoveAsync(doctorId, slotStart, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Failed to drop doctor slots cache. DoctorId={DoctorId}, Day={Day:yyyy-MM-dd}",
+                doctorId, slotStart);
+        }
     }
 
     private static ScheduleSlotDto MapToDto(ScheduleSlot s) => new()

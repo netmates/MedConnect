@@ -2,12 +2,13 @@ using AppointmentService.Application.DTOs.Patient;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Helpers;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Interfaces.Services;
 using AppointmentService.Domain.Entities;
 using FluentValidation;
-using MedConnect.Shared.Messaging;
 using MedConnect.Shared.Events;
+using MedConnect.Shared.Messaging;
 
 namespace AppointmentService.Application.Services;
 
@@ -15,6 +16,7 @@ public sealed class AdminPatientApplicationService(
     IPatientRepository patientRepository,
     IAppointmentRepository appointmentRepository,
     IActiveAppointmentCancellation activeAppointmentCancellation,
+    IDoctorAvailableSlotCache doctorAvailableSlotCache,
     IUnitOfWork unitOfWork,
     IKeycloakAdminService keycloakAdminService,
     IValidator<UpdatePatientDto> updatePatientValidator,
@@ -135,17 +137,18 @@ public sealed class AdminPatientApplicationService(
         var keycloakId = patient.KeycloakId;
         await keycloakAdminService.DisableUserAsync(keycloakId, ct);
 
-        int cancelledCount;
+        AppointmentCancellationResult cancellation;
         await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             var activeAppointments = await appointmentRepository.GetActiveByPatientIdAsync(patient.Id, ct);
-            cancelledCount = await activeAppointmentCancellation.CancelAsync(activeAppointments, ct);
+            cancellation = await activeAppointmentCancellation.CancelAsync(activeAppointments, ct);
 
             patient.Deactivate();
             await patientRepository.UpdateAsync(patient, ct);
 
             await unitOfWork.CommitAsync(ct);
+            await DropFreedSlotCacheAsync(cancellation.FreedSlots);
         }
         catch (Exception ex)
         {
@@ -173,7 +176,7 @@ public sealed class AdminPatientApplicationService(
 
         logger.LogInformation(
             "Patient deactivated: {PatientId}, KeycloakId={KeycloakId}, CancelledAppointments={Count}",
-            id, keycloakId, cancelledCount);
+            id, keycloakId, cancellation.CancelledCount);
     }
 
     public async Task ActivateAsync(Guid id, CancellationToken ct)
@@ -219,6 +222,24 @@ public sealed class AdminPatientApplicationService(
         logger.LogInformation(
             "Patient activated: {PatientId}, KeycloakId={KeycloakId}",
             id, keycloakId);
+    }
+
+    private async Task DropFreedSlotCacheAsync(IReadOnlyList<FreedDoctorSlot> slots)
+    {
+        foreach (var slot in slots)
+        {
+            try
+            {
+                await doctorAvailableSlotCache.RemoveAsync(slot.DoctorId, slot.StartTime, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(
+                    ex,
+                    "Failed to drop doctor slots cache. DoctorId={DoctorId}, Day={Day:yyyy-MM-dd}",
+                    slot.DoctorId, slot.StartTime);
+            }
+        }
     }
 
     private static PatientDto MapToDto(Patient p) => new()

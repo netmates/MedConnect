@@ -43,6 +43,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDoctorListCache, DoctorListCache>();
         // Кеш для карточки врача
         services.AddSingleton<IDoctorCardCache, DoctorCardCache>();
+        // Кеш для свободных слотов врача
+        services.AddSingleton<IDoctorAvailableSlotCache, DoctorAvailableSlotCache>();
 
         // Unit of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();

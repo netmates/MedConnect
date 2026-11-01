@@ -10,9 +10,10 @@ public sealed class ActiveAppointmentCancellation(
     IAppointmentRepository appointmentRepository,
     IScheduleSlotRepository slotRepository) : IActiveAppointmentCancellation
 {
-    public async Task<int> CancelAsync(IReadOnlyList<Appointment> appointments, CancellationToken ct)
+    public async Task<AppointmentCancellationResult> CancelAsync(IReadOnlyList<Appointment> appointments, CancellationToken ct)
     {
         var cancelled = 0;
+        var freed = new List<FreedDoctorSlot>();
         var now = DateTime.UtcNow;
 
         foreach (var item in appointments)
@@ -35,9 +36,22 @@ public sealed class ActiveAppointmentCancellation(
             {
                 slot.ReleaseAfterCancellation(now);
                 await slotRepository.UpdateAsync(slot, ct);
+
+                if (slot.Status == SlotStatus.Available)
+                {
+                    freed.Add(new FreedDoctorSlot
+                    {
+                        DoctorId = slot.DoctorId,
+                        StartTime = slot.StartTime
+                    });
+                }
             }
         }
 
-        return cancelled;
+        return new AppointmentCancellationResult
+        {
+            CancelledCount = cancelled,
+            FreedSlots = freed
+        };
     }
 }

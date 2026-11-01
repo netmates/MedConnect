@@ -17,6 +17,7 @@ public sealed class DoctorApplicationService(
     IDoctorRepository doctorRepository,
     IDoctorListCache doctorListCache,
     IDoctorCardCache doctorCardCache,
+    IDoctorAvailableSlotCache doctorAvailableSlotCache,
     ISpecializationRepository specializationRepository,
     IAppointmentRepository appointmentRepository,
     IActiveAppointmentCancellation activeAppointmentCancellation,
@@ -312,12 +313,12 @@ public sealed class DoctorApplicationService(
         var keycloakId = doctor.KeycloakId;
         await keycloakAdminService.DisableUserAsync(keycloakId, ct);
 
-        int cancelledCount;
+        AppointmentCancellationResult cancellation;
         await unitOfWork.BeginTransactionAsync(ct);
         try
         {
             var activeAppointments = await appointmentRepository.GetActiveByDoctorIdAsync(doctor.Id, ct);
-            cancelledCount = await activeAppointmentCancellation.CancelAsync(activeAppointments, ct);
+            cancellation = await activeAppointmentCancellation.CancelAsync(activeAppointments, ct);
 
             doctor.Deactivate();
             await doctorRepository.UpdateAsync(doctor, ct);
@@ -325,6 +326,7 @@ public sealed class DoctorApplicationService(
             await unitOfWork.CommitAsync(ct);
             await DropCacheAsync();
             await DropCardCacheAsync(id);
+            await DropFreedSlotCacheAsync(cancellation.FreedSlots);
         }
         catch (Exception ex)
         {
@@ -352,7 +354,7 @@ public sealed class DoctorApplicationService(
 
         logger.LogInformation(
             "Doctor deactivated: {DoctorId}, KeycloakId={KeycloakId}, CancelledAppointments={Count}",
-            id, keycloakId, cancelledCount);
+            id, keycloakId, cancellation.CancelledCount);
     }
 
     public async Task ActivateAsync(Guid id, CancellationToken ct)
@@ -438,6 +440,24 @@ public sealed class DoctorApplicationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to drop doctor cache. DoctorId={DoctorId}", doctorId);
+        }
+    }
+
+    private async Task DropFreedSlotCacheAsync(IReadOnlyList<FreedDoctorSlot> slots)
+    {
+        foreach (var slot in slots)
+        {
+            try
+            {
+                await doctorAvailableSlotCache.RemoveAsync(slot.DoctorId, slot.StartTime, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(
+                    ex,
+                    "Failed to drop doctor slots cache. DoctorId={DoctorId}, Day={Day:yyyy-MM-dd}",
+                    slot.DoctorId, slot.StartTime);
+            }
         }
     }
 

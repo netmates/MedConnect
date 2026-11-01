@@ -22,6 +22,7 @@ public class DoctorApplicationServiceTests
     private readonly Mock<IDoctorRepository> _doctors = new();
     private readonly Mock<IDoctorListCache> _doctorCache = new();
     private readonly Mock<IDoctorCardCache> _doctorCardCache = new();
+    private readonly Mock<IDoctorAvailableSlotCache> _slotCache = new();
     private readonly Mock<ISpecializationRepository> _specializations = new();
     private readonly Mock<IAppointmentRepository> _appointments = new();
     private readonly Mock<IScheduleSlotRepository> _slots = new();
@@ -61,11 +62,15 @@ public class DoctorApplicationServiceTests
             .Returns(Task.CompletedTask);
         _doctorCardCache.Setup(c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        _slotCache.Setup(c => c.RemoveAsync(
+                It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _sut = new DoctorApplicationService(
             _doctors.Object,
             _doctorCache.Object,
             _doctorCardCache.Object,
+            _slotCache.Object,
             _specializations.Object,
             _appointments.Object,
             new ActiveAppointmentCancellation(_appointments.Object, _slots.Object),
@@ -626,6 +631,9 @@ public class DoctorApplicationServiceTests
         _keycloak.Verify(
             k => k.DisableUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
+        _slotCache.Verify(
+            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -647,6 +655,9 @@ public class DoctorApplicationServiceTests
         _keycloak.Verify(
             k => k.DisableUserAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()),
             Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -678,6 +689,9 @@ public class DoctorApplicationServiceTests
         _keycloak.Verify(
             k => k.DisableUserAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()),
             Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(doctor.Id, slot.StartTime, CancellationToken.None),
+            Times.Once);
     }
 
     [Fact]
@@ -703,6 +717,9 @@ public class DoctorApplicationServiceTests
         _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _slotCache.Verify(
+            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -737,6 +754,9 @@ public class DoctorApplicationServiceTests
         _keycloak.Verify(
             k => k.DisableUserAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()),
             Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     // Activate
@@ -780,6 +800,9 @@ public class DoctorApplicationServiceTests
         _keycloak.Verify(
             k => k.EnableUserAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()),
             Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     // ResetPassword

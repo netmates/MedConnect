@@ -1,6 +1,7 @@
 using AppointmentService.Application.DTOs.Appointment;
 using AppointmentService.Application.Exceptions;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
@@ -22,6 +23,7 @@ public class AppointmentApplicationServiceTests
     private readonly Mock<IScheduleSlotRepository> _slots = new();
     private readonly Mock<IPatientRepository> _patients = new();
     private readonly Mock<IDoctorRepository> _doctors = new();
+    private readonly Mock<IDoctorAvailableSlotCache> _slotCache = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IValidator<CreateAppointmentDto>> _createValidator = new();
     private readonly Mock<IIntegrationEventPublisher> _publisher = new();
@@ -56,11 +58,16 @@ public class AppointmentApplicationServiceTests
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        _slotCache.Setup(c => c.RemoveAsync(
+                It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         _sut = new AppointmentApplicationService(
             _appointments.Object,
             _slots.Object,
             _patients.Object,
             _doctors.Object,
+            _slotCache.Object,
             _uow.Object,
             _createValidator.Object,
             NullLogger<AppointmentApplicationService>.Instance,
@@ -539,6 +546,9 @@ public class AppointmentApplicationServiceTests
         _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _slots.Verify(r => r.UpdateAsync(slot, It.IsAny<CancellationToken>()), Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(slot.DoctorId, slot.StartTime, CancellationToken.None),
+            Times.Once);
         _publisher.Verify(p => p.PublishAsync(
             EventTypes.AppointmentCreated,
             RoutingKeys.AppointmentCreated,
@@ -624,6 +634,9 @@ public class AppointmentApplicationServiceTests
         // Assert
         Assert.Equal("Нельзя отменить запись в прошлом.", ex.Message);
         VerifyAppointmentCancelledNotPublished();
+        _slotCache.Verify(
+            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -662,6 +675,9 @@ public class AppointmentApplicationServiceTests
                 payload.CancelledByRole == ParticipantRoles.Patient),
             It.Is<string?>(id => id == null),
             It.IsAny<CancellationToken>()), Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(slot.DoctorId, slot.StartTime, CancellationToken.None),
+            Times.Once);
     }
 
     [Fact]
@@ -702,6 +718,9 @@ public class AppointmentApplicationServiceTests
                 payload.CancelledByRole == ParticipantRoles.Doctor),
             It.Is<string?>(id => id == null),
             It.IsAny<CancellationToken>()), Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(slot.DoctorId, slot.StartTime, CancellationToken.None),
+            Times.Once);
     }
 
     private void VerifyAppointmentCancelledNotPublished()
@@ -781,6 +800,9 @@ public class AppointmentApplicationServiceTests
         Assert.Equal(AppointmentStatus.Completed, appointment.Status);
         Assert.Equal(SlotStatus.Consumed, slot.Status);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     // Confirm

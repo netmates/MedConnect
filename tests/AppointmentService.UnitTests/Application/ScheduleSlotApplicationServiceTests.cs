@@ -2,6 +2,7 @@ using AppointmentService.Application.DTOs.ScheduleSlot;
 using AppointmentService.Application.Exceptions;
 using MedConnect.Shared.Auth;
 using AppointmentService.Application.Interfaces;
+using AppointmentService.Application.Interfaces.Caching;
 using AppointmentService.Application.Interfaces.Repositories;
 using AppointmentService.Application.Services;
 using AppointmentService.Domain.Entities;
@@ -18,6 +19,7 @@ public class ScheduleSlotApplicationServiceTests
     private readonly Mock<IAppointmentRepository> _appointments = new();
     private readonly Mock<IScheduleSlotRepository> _slots = new();
     private readonly Mock<IDoctorRepository> _doctors = new();
+    private readonly Mock<IDoctorAvailableSlotCache> _slotCache = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IValidator<CreateScheduleSlotDto>> _createValidator = new();
     private readonly Mock<IValidator<UpdateScheduleSlotDto>> _updateValidator = new();
@@ -35,11 +37,24 @@ public class ScheduleSlotApplicationServiceTests
         _updateValidator
             .Setup(v => v.ValidateAsync(It.IsAny<UpdateScheduleSlotDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
+        _slotCache.Setup(c => c.GetAsync(
+                It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<ScheduleSlotDto>?)null);
+        _slotCache.Setup(c => c.SetAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<IReadOnlyList<ScheduleSlotDto>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _slotCache.Setup(c => c.RemoveAsync(
+                It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _sut = new ScheduleSlotApplicationService(
             _appointments.Object,
             _slots.Object,
             _doctors.Object,
+            _slotCache.Object,
             _uow.Object,
             _createValidator.Object,
             _updateValidator.Object,
@@ -163,6 +178,9 @@ public class ScheduleSlotApplicationServiceTests
         Assert.Equal(SlotStatus.Available.ToString(), result.Status);
         _slots.Verify(r => r.AddAsync(It.IsAny<ScheduleSlot>(), It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(doctor.Id, dto.StartTime, CancellationToken.None),
+            Times.Once);
     }
 
     // Update
@@ -305,6 +323,7 @@ public class ScheduleSlotApplicationServiceTests
         // Arrange
         var doctor = CreateDoctor();
         var slot = CreateFutureSlot(doctor.Id);
+        var oldStart = slot.StartTime;
         var dto = ValidUpdateDto();
         _doctors.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(doctor);
@@ -322,6 +341,40 @@ public class ScheduleSlotApplicationServiceTests
         Assert.Equal(dto.EndTime, result.EndTime);
         _slots.Verify(r => r.UpdateAsync(slot, It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(doctor.Id, oldStart, CancellationToken.None),
+            Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(doctor.Id, dto.StartTime, It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenDayChanges_DropsBothDays()
+    {
+        // Arrange
+        var doctor = CreateDoctor();
+        var slot = CreateFutureSlot(doctor.Id);
+        var oldStart = slot.StartTime;
+        var dto = ValidUpdateDto(FutureStart.AddDays(1));
+        _doctors.Setup(r => r.GetByKeycloakIdAsync(doctor.KeycloakId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor);
+        _slots.Setup(r => r.GetByIdWithLockAsync(slot.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(slot);
+        _slots.Setup(r => r.HasOverlappingSlotAsync(
+                doctor.Id, dto.StartTime, dto.EndTime, slot.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        await _sut.UpdateAsync(slot.Id, dto, doctor.KeycloakId, CancellationToken.None);
+
+        // Assert
+        _slotCache.Verify(
+            c => c.RemoveAsync(doctor.Id, oldStart, CancellationToken.None),
+            Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(doctor.Id, dto.StartTime, CancellationToken.None),
+            Times.Once);
     }
 
     // Delete
@@ -439,6 +492,9 @@ public class ScheduleSlotApplicationServiceTests
         // Assert
         _slots.Verify(r => r.DeleteAsync(slot, It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _slotCache.Verify(
+            c => c.RemoveAsync(doctor.Id, slot.StartTime, CancellationToken.None),
+            Times.Once);
     }
 
     [Fact]
@@ -546,6 +602,9 @@ public class ScheduleSlotApplicationServiceTests
 
         // Assert
         Assert.Equal("Врач не найден.", ex.Message);
+        _slotCache.Verify(
+            c => c.GetAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -567,6 +626,51 @@ public class ScheduleSlotApplicationServiceTests
         Assert.Single(result);
         Assert.Equal(slot.Id, result[0].Id);
         Assert.Equal(doctor.Id, result[0].DoctorId);
+        _slotCache.Verify(
+            c => c.SetAsync(
+                doctor.Id,
+                date,
+                It.Is<IReadOnlyList<ScheduleSlotDto>>(items => items.Count == 1 && items[0].Id == slot.Id),
+                CancellationToken.None),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAvailableAsync_WhenCacheHit_ReturnsCachedAndSkipsRepository()
+    {
+        // Arrange
+        var doctor = CreateDoctor();
+        var date = FutureStart.Date;
+        var cached = new ScheduleSlotDto
+        {
+            Id = Guid.NewGuid(),
+            DoctorId = doctor.Id,
+            StartTime = FutureStart,
+            EndTime = FutureStart.AddMinutes(30),
+            Status = SlotStatus.Available.ToString()
+        };
+        _doctors.Setup(r => r.GetByIdAsync(doctor.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(doctor);
+        _slotCache.Setup(c => c.GetAsync(doctor.Id, date, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ScheduleSlotDto> { cached });
+
+        // Act
+        var result = await _sut.GetAvailableAsync(doctor.Id, date, CancellationToken.None);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal(cached.Id, result[0].Id);
+        _slots.Verify(
+            r => r.GetAvailableByDoctorIdAsync(
+                It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _slotCache.Verify(
+            c => c.SetAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<IReadOnlyList<ScheduleSlotDto>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -588,6 +692,9 @@ public class ScheduleSlotApplicationServiceTests
         _slots.Verify(
             r => r.GetAvailableByDoctorIdAsync(
                 It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _slotCache.Verify(
+            c => c.GetAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 }
