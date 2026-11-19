@@ -96,13 +96,13 @@ kubectl get nodes
 
 Контекст должен быть `docker-desktop`, узел — `Ready`.
 
-Секрет клиента `medconnect-admin-cli` для кластера лежит в `deploy/k8s/secret.yaml`. Файла в git нет. Скопируйте пример и вставьте тот же secret, что уже сохранен в user-secrets (раздел 2). Если оставить `replace-with-admin-cli-secret`, сервис записей запустится, но не сможет создавать пользователей в Keycloak.
+Секрет клиента `medconnect-admin-cli` для кластера лежит в `deploy/k8s/secret.yaml`. Файла в git нет. Скопируйте пример и вставьте тот же secret, что уже сохранен в user-secrets (раздел 2).
 
 ```powershell
 copy deploy\k8s\secret.example.yaml deploy\k8s\secret.yaml
 ```
 
-Образы сервисов собираются локально из корня репозитория. Кластер их не скачивает (`imagePullPolicy: Never`). Повторите сборку после изменения кода. Безымянные старые образы (`<none>`) и кэш сборок можно удалять. Теги `:dev`, пока на них есть поды, не удаляйте.
+Образы сервисов собираются локально из корня репозитория. Кластер их не скачивает (`imagePullPolicy: Never`). Повторите сборку после изменения кода.
 
 ```powershell
 docker build -f src/Services/AppointmentService/Dockerfile -t medconnect/appointment-service:dev .
@@ -113,7 +113,7 @@ docker build -f src/Services/ApiGateway/Dockerfile -t medconnect/api-gateway:dev
 
 Перед запуском остановите Compose, если он держит Postgres, MongoDB или Keycloak: `docker compose stop`.
 
-Скрипт `scripts/start-k8s.ps1` применяет манифесты (`kubectl apply -k deploy`), ждет готовности подов и открывает отдельные окна: проброс портов Keycloak (`8080`), Seq (`5341`), AppointmentService (`5067`), CommunicationService (`5080`), NotificationService (`5090`), ApiGateway (`5070`) и SPA. Браузер сам не открывается. Страница приложения — http://localhost:3000, логи — http://localhost:5341. Vite с этой страницы ходит в ApiGateway на http://localhost:5070. В кластере шлюз отправляет `/api/chats` на `http://communication-service:8080/`, остальные `/api` на `http://appointment-service:8080/`. gRPC между сервисами остается внутри кластера (`http://appointment-service:8081`) и наружу не пробрасывается. Сервисы пишут в Seq по адресу `http://seq:80`.
+Скрипт `scripts/start-k8s.ps1` применяет манифесты (`kubectl apply -k deploy`), ждет готовности подов и открывает отдельные окна: проброс портов Keycloak (`8080`), Seq (`5341`), AppointmentService (`5067`), CommunicationService (`5080`), NotificationService (`5090`), ApiGateway (`5070`) и SPA. Страница приложения — http://localhost:3000, логи — http://localhost:5341. Vite с этой страницы ходит в ApiGateway на http://localhost:5070. В кластере шлюз отправляет `/api/chats` на `http://communication-service:8080/`, остальные `/api` на `http://appointment-service:8080/`. gRPC между сервисами остается внутри кластера (`http://appointment-service:8081`) и наружу не пробрасывается. Сервисы пишут в Seq по адресу `http://seq:80`.
 
 Первая строка в том же окне — `==> Checking prerequisites`. Окна проброса и SPA появляются только когда все поды `Ready`. Пока скрипт ждет, состояние смотрите так:
 
@@ -143,8 +143,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-k8s.ps1 -Sto
 ```powershell
 kubectl delete -k deploy
 ```
-
-Системные контейнеры самого кластера (`kube-apiserver`, `etcd` и другие) этой командой не останавливаются. Они гаснут, когда Kubernetes выключают в настройках Docker Desktop.
 
 ## 2. Secret для Admin API Keycloak (обязательно на каждой машине)
 
