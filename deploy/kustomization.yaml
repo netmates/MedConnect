@@ -13,6 +13,7 @@ resources:
   - k8s/appointment-service.yaml
   - k8s/communication-service.yaml
   - k8s/notification-service.yaml
+  - k8s/api-gateway.yaml
 configMapGenerator:
   - name: keycloak-realm
     namespace: medconnect

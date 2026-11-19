@@ -57,7 +57,7 @@ Redis Insight сам к Redis не подключается. В UI добавь�
 
 `docker compose up -d` поднимает только инфраструктуру. Сервисы в этом режиме запускаются из IDE (раздел 3).
 
-Инфраструктура и все три сервиса:
+Инфраструктура и сервисы приложений:
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.services.yml up -d --build
@@ -65,13 +65,14 @@ docker compose -f docker-compose.yml -f docker-compose.services.yml up -d --buil
 
 | Сервис               | URL                      |
 |----------------------|--------------------------|
+| ApiGateway           | http://localhost:5070    |
 | AppointmentService   | http://localhost:5067    |
 | CommunicationService | http://localhost:5080    |
 | NotificationService  | http://localhost:5090    |
 
 ### Скрипт запуска
 
-`scripts/start-all.ps1` поднимает инфраструктуру (`docker compose up -d`), ждет Postgres, MongoDB, RabbitMQ, Redis и realm Keycloak, затем открывает отдельные окна PowerShell для AppointmentService, CommunicationService, NotificationService и SPA. Сервисы в контейнеры не собираются: это `dotnet run` и `npm run dev` на хосте. Логи остаются в этих окнах.
+`scripts/start-all.ps1` поднимает инфраструктуру (`docker compose up -d`), ждет Postgres, MongoDB, RabbitMQ, Redis и realm Keycloak, затем открывает отдельные окна PowerShell для AppointmentService, CommunicationService, NotificationService, ApiGateway и SPA. Сервисы в контейнеры не собираются: это `dotnet run` и `npm run dev` на хосте. Логи остаются в этих окнах.
 
 Перед первым запуском нужны trusted HTTPS-сертификат и `Keycloak:AdminClientSecret` (разделы выше и 2). Если их нет, скрипт только предупредит и продолжит.
 
@@ -101,17 +102,18 @@ kubectl get nodes
 copy deploy\k8s\secret.example.yaml deploy\k8s\secret.yaml
 ```
 
-Образы трех сервисов собираются локально из корня репозитория. Кластер их не скачивает (`imagePullPolicy: Never`). Повторите сборку после изменения кода. Безымянные старые образы (`<none>`) и кэш сборок можно удалять. Теги `:dev`, пока на них есть поды, не удаляйте.
+Образы сервисов собираются локально из корня репозитория. Кластер их не скачивает (`imagePullPolicy: Never`). Повторите сборку после изменения кода. Безымянные старые образы (`<none>`) и кэш сборок можно удалять. Теги `:dev`, пока на них есть поды, не удаляйте.
 
 ```powershell
 docker build -f src/Services/AppointmentService/Dockerfile -t medconnect/appointment-service:dev .
 docker build -f src/Services/CommunicationService/Dockerfile -t medconnect/communication-service:dev .
 docker build -f src/Services/NotificationService/Dockerfile -t medconnect/notification-service:dev .
+docker build -f src/Services/ApiGateway/Dockerfile -t medconnect/api-gateway:dev .
 ```
 
 Перед запуском остановите Compose, если он держит Postgres, MongoDB или Keycloak: `docker compose stop`.
 
-Скрипт `scripts/start-k8s.ps1` применяет манифесты (`kubectl apply -k deploy`), ждет готовности подов и открывает отдельные окна: проброс портов Keycloak (`8080`), Seq (`5341`), AppointmentService (`5067`), CommunicationService (`5080`), NotificationService (`5090`) и SPA. Браузер сам не открывается. Страница приложения — http://localhost:3000, логи — http://localhost:5341. gRPC между сервисами остается внутри кластера (`http://appointment-service:8081`) и наружу не пробрасывается. Сервисы пишут в Seq по адресу `http://seq:80`.
+Скрипт `scripts/start-k8s.ps1` применяет манифесты (`kubectl apply -k deploy`), ждет готовности подов и открывает отдельные окна: проброс портов Keycloak (`8080`), Seq (`5341`), AppointmentService (`5067`), CommunicationService (`5080`), NotificationService (`5090`), ApiGateway (`5070`) и SPA. Браузер сам не открывается. Страница приложения — http://localhost:3000, логи — http://localhost:5341. Vite с этой страницы ходит в ApiGateway на http://localhost:5070. В кластере шлюз отправляет `/api/chats` на `http://communication-service:8080/`, остальные `/api` на `http://appointment-service:8080/`. gRPC между сервисами остается внутри кластера (`http://appointment-service:8081`) и наружу не пробрасывается. Сервисы пишут в Seq по адресу `http://seq:80`.
 
 Первая строка в том же окне — `==> Checking prerequisites`. Окна проброса и SPA появляются только когда все поды `Ready`. Пока скрипт ждет, состояние смотрите так:
 
@@ -212,6 +214,17 @@ dotnet run
 
 Слушает очереди RabbitMQ. HTTP-проверки: `/health/live` и `/health/ready`.
 
+### 3.4. ApiGateway
+
+```powershell
+cd src/Services/ApiGateway
+dotnet run
+```
+
+- HTTP: http://localhost:5070
+
+Прокси к AppointmentService (`http://localhost:5067`) и CommunicationService (`http://localhost:5080`). Проверка живости: `/health/live`.
+
 ## 4. SPA (`src/Web.Generated`)
 
 Vite + React + TypeScript + **MUI** (`@mui/material`, `@mui/icons-material`).
@@ -235,10 +248,9 @@ UI: http://localhost:3000 (порт в `vite.config.ts`, совпадает с `
 
 Прокси Vite:
 
-- `/api/chats` → CommunicationService `:5080`
-- `/api` → AppointmentService `:5067`
+- `/api/chats` и остальные `/api` → ApiGateway `:5070`
 
-Нужны запущенные Keycloak, AppointmentService и (для чата) CommunicationService.
+Нужны запущенные Keycloak, ApiGateway и AppointmentService. Для чата нужен CommunicationService.
 
 ### Тестовые пользователи
 
@@ -297,9 +309,10 @@ dotnet test
 - [ ] 7. `dotnet run` в `AppointmentService`
 - [ ] 8. `dotnet run` в `CommunicationService`
 - [ ] 9. `dotnet run` в `NotificationService`
-- [ ] 10. `npm install` + `npm run dev` в `src/Web.Generated`
-- [ ] 11. (опционально) Seq UI на :5341, RabbitMQ UI на :15672, Redis Insight на :5540
+- [ ] 10. `dotnet run` в `ApiGateway`
+- [ ] 11. `npm install` + `npm run dev` в `src/Web.Generated`
+- [ ] 12. (опционально) Seq UI на :5341, RabbitMQ UI на :15672, Redis Insight на :5540
 
-Пункты 1, 2, 5 и 6 скрипт `start-all.ps1` не выполняет. После них он заменяет пункты 3 и 7–10: поднимает инфраструктуру, ждет realm Keycloak (пункт 4) и запускает три сервиса и SPA. Пункт 11 скрипт не открывает.
+Пункты 1, 2, 5 и 6 скрипт `start-all.ps1` не выполняет. После них он заменяет пункты 3 и 7–11: поднимает инфраструктуру, ждет realm Keycloak (пункт 4) и запускает сервисы, ApiGateway и SPA. Пункт 12 скрипт не открывает.
 
-Запуск через Kubernetes вместо пунктов 3 и 7–10 описан в разделе «Запуск в Kubernetes». Compose при этом должен быть остановлен.
+Запуск через Kubernetes вместо пунктов 3 и 7–11 описан в разделе «Запуск в Kubernetes». Compose при этом должен быть остановлен.

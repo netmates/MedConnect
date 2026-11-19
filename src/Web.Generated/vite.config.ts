@@ -6,15 +6,15 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      // CommunicationService (чат + SignalR hub)
+      // ApiGateway: чат и SignalR
       '/api/chats': {
-        target: 'http://localhost:5080',
+        target: 'http://localhost:5070',
         changeOrigin: true,
         ws: true,
       },
-      // AppointmentService
+      // ApiGateway: остальные запросы /api
       '/api': {
-        target: 'http://localhost:5067',
+        target: 'http://localhost:5070',
         changeOrigin: true,
       },
     },

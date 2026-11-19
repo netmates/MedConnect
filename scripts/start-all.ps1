@@ -6,7 +6,7 @@
 .DESCRIPTION
     1. docker compose up -d  (Postgres, Keycloak, Seq, MongoDB, RabbitMQ, Redis, Redis Insight)
     2. Waits until Postgres, MongoDB, RabbitMQ, Redis, and the Keycloak realm are ready
-    3. Starts AppointmentService, CommunicationService, NotificationService, and SPA in separate windows
+    3. Starts AppointmentService, CommunicationService, NotificationService, ApiGateway, and SPA in separate windows
 
 .EXAMPLE
     .\scripts\start-all.ps1
@@ -40,6 +40,7 @@ $PidsFile = Join-Path $env:TEMP "medconnect-dev.pids.json"
 $AppointmentDir = Join-Path $Root "src\Services\AppointmentService"
 $CommunicationDir = Join-Path $Root "src\Services\CommunicationService"
 $NotificationDir = Join-Path $Root "src\Services\NotificationService"
+$GatewayDir = Join-Path $Root "src\Services\ApiGateway"
 $WebDir = Join-Path $Root "src\Web.Generated"
 
 function Write-Step {
@@ -304,6 +305,12 @@ $started += Start-AppWindow -Name "NotificationService" -WorkingDirectory $Notif
     "dotnet run --no-launch-profile --urls 'https://localhost:7290;http://localhost:5090'"
 ) -join " "
 
+Write-Step "Starting ApiGateway"
+$started += Start-AppWindow -Name "ApiGateway" -WorkingDirectory $GatewayDir -Command @(
+    "`$env:ASPNETCORE_ENVIRONMENT = 'Development';",
+    "dotnet run --no-launch-profile --urls 'http://localhost:5070'"
+) -join " "
+
     if (-not $SkipSpa) {
         Write-Step "Starting SPA"
         Write-Ok "npm install will sync dependencies before Vite starts"
@@ -324,6 +331,7 @@ Write-Host "  Redis Insight         http://localhost:5540"
 Write-Host "  AppointmentService    http://localhost:5067  https://localhost:7246"
 Write-Host "  CommunicationService  http://localhost:5080  https://localhost:7280"
 Write-Host "  NotificationService   http://localhost:5090  https://localhost:7290"
+Write-Host "  ApiGateway            http://localhost:5070"
 if (-not $SkipSpa) {
     Write-Host "  SPA                   http://localhost:3000"
 }

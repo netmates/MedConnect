@@ -7,7 +7,7 @@
     1. Refuses to start when Compose is using Postgres, MongoDB, or Keycloak volumes
     2. kubectl apply -k deploy
     3. Waits until every pod in namespace medconnect is Ready
-    4. Port-forwards Keycloak, Seq, AppointmentService, CommunicationService, and NotificationService
+    4. Port-forwards Keycloak, Seq, AppointmentService, CommunicationService, NotificationService, and ApiGateway
     5. Starts the SPA in a separate window
 
 .EXAMPLE
@@ -221,7 +221,8 @@ $forwards = @(
     @{ Name = "Seq"; Target = "svc/seq"; Ports = "5341:80" },
     @{ Name = "AppointmentService"; Target = "svc/appointment-service"; Ports = "5067:8080" },
     @{ Name = "CommunicationService"; Target = "svc/communication-service"; Ports = "5080:8080" },
-    @{ Name = "NotificationService"; Target = "svc/notification-service"; Ports = "5090:8080" }
+    @{ Name = "NotificationService"; Target = "svc/notification-service"; Ports = "5090:8080" },
+    @{ Name = "ApiGateway"; Target = "svc/api-gateway"; Ports = "5070:8080" }
 )
 
 foreach ($forward in $forwards) {
@@ -243,6 +244,7 @@ Write-Host "  Seq                   http://localhost:5341"
 Write-Host "  AppointmentService    http://localhost:5067"
 Write-Host "  CommunicationService  http://localhost:5080"
 Write-Host "  NotificationService   http://localhost:5090"
+Write-Host "  ApiGateway            http://localhost:5070"
 if (-not $SkipSpa) {
     Write-Host "  SPA                   http://localhost:3000"
 }

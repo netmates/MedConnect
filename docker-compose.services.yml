@@ -103,3 +103,29 @@ services:
       retries: 12
       start_period: 20s
     restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/Services/ApiGateway/Dockerfile
+    ports:
+      - "5070:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Seq__ServerUrl: http://seq:80
+      ReverseProxy__Clusters__appointment__Destinations__local__Address: http://appointment-service:8080/
+      ReverseProxy__Clusters__communication__Destinations__local__Address: http://communication-service:8080/
+    depends_on:
+      appointment-service:
+        condition: service_healthy
+      communication-service:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /health/live HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
