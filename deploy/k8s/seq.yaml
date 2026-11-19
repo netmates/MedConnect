@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seq-data
+  namespace: medconnect
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seq
+  namespace: medconnect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seq
+  template:
+    metadata:
+      labels:
+        app: seq
+    spec:
+      containers:
+        - name: seq
+          image: datalust/seq:2026.1
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: SEQ_FIRSTRUN_NOAUTHENTICATION
+              value: "true"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: seq-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: seq
+  namespace: medconnect
+spec:
+  selector:
+    app: seq
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

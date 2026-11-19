@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: medconnect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: medconnect/notification-service:dev
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: Seq__ServerUrl
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: SEQ_URL
+            - name: RabbitMQ__Host
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: RABBITMQ_HOST
+            - name: RabbitMQ__Port
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: RABBITMQ_PORT
+            - name: RabbitMQ__Username
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: RABBITMQ_USERNAME
+            - name: RabbitMQ__Password
+              valueFrom:
+                secretKeyRef:
+                  name: medconnect-secret
+                  key: rabbitmq-password
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: medconnect
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

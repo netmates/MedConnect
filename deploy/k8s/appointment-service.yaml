@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+  namespace: medconnect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appointment-service
+  template:
+    metadata:
+      labels:
+        app: appointment-service
+    spec:
+      containers:
+        - name: appointment-service
+          image: medconnect/appointment-service:dev
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 8081
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: Seq__ServerUrl
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: SEQ_URL
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medconnect-secret
+                  key: postgres-password
+            - name: ConnectionStrings__Postgres
+              value: Host=$(POSTGRES_HOST);Port=5432;Database=medconnect;Username=postgres;Password=$(POSTGRES_PASSWORD)
+            - name: ConnectionStrings__Redis
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: REDIS_CONNECTION
+            - name: RabbitMQ__Host
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: RABBITMQ_HOST
+            - name: RabbitMQ__Port
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: RABBITMQ_PORT
+            - name: RabbitMQ__Username
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: RABBITMQ_USERNAME
+            - name: RabbitMQ__Password
+              valueFrom:
+                secretKeyRef:
+                  name: medconnect-secret
+                  key: rabbitmq-password
+            - name: Keycloak__Authority
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: KEYCLOAK_AUTHORITY
+            - name: Keycloak__AdminApiUrl
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: KEYCLOAK_ADMIN_URL
+            - name: Keycloak__RequireHttpsMetadata
+              value: "false"
+            - name: Keycloak__AdminClientSecret
+              valueFrom:
+                secretKeyRef:
+                  name: medconnect-secret
+                  key: keycloak-admin-client-secret
+            - name: Seed__DemoUsers
+              value: "false"
+            - name: Kestrel__Endpoints__Http__Url
+              value: http://+:8080
+            - name: Kestrel__Endpoints__Http__Protocols
+              value: Http1
+            - name: Kestrel__Endpoints__Grpc__Url
+              value: http://+:8081
+            - name: Kestrel__Endpoints__Grpc__Protocols
+              value: Http2
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-service
+  namespace: medconnect
+spec:
+  selector:
+    app: appointment-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: grpc
+      port: 8081
+      targetPort: grpc

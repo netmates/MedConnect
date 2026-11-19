@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: medconnect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.7.3
+          args: ["start-dev", "--import-realm"]
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9000
+          env:
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: admin
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: medconnect-secret
+                  key: keycloak-admin-password
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_HOSTNAME
+              value: http://localhost:8080
+            - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+              value: "true"
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: management
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: management
+          volumeMounts:
+            - name: data
+              mountPath: /opt/keycloak/data
+            - name: realm
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: data
+          hostPath:
+            path: /var/lib/docker/volumes/medconnect_keycloak_data/_data
+            type: Directory
+        - name: realm
+          configMap:
+            name: keycloak-realm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: medconnect
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

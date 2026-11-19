@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - k8s/namespace.yaml
+  - k8s/configmap.yaml
+  - k8s/secret.yaml
+  - k8s/postgres.yaml
+  - k8s/mongo.yaml
+  - k8s/rabbitmq.yaml
+  - k8s/redis.yaml
+  - k8s/seq.yaml
+  - k8s/keycloak.yaml
+  - k8s/appointment-service.yaml
+  - k8s/communication-service.yaml
+  - k8s/notification-service.yaml
+configMapGenerator:
+  - name: keycloak-realm
+    namespace: medconnect
+    files:
+      - realm-export.json=keycloak/realm-export.json

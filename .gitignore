@@ -484,6 +484,7 @@ $RECYCLE.BIN/
 appsettings.Local.json
 secrets.json
 **/secrets.json
+deploy/k8s/secret.yaml
 
 # User secrets
 **/.microsoft/usersecrets/

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medconnect-config
+  namespace: medconnect
+data:
+  ASPNETCORE_ENVIRONMENT: Development
+  POSTGRES_HOST: postgres
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USERNAME: medconnect
+  MONGO_CONNECTION: mongodb://mongo:27017
+  REDIS_CONNECTION: redis:6379
+  KEYCLOAK_AUTHORITY: http://keycloak:8080/realms/medconnect
+  KEYCLOAK_ADMIN_URL: http://keycloak:8080
+  GRPC_APPOINTMENT_ADDRESS: http://appointment-service:8081
+  SEQ_URL: http://seq:80
