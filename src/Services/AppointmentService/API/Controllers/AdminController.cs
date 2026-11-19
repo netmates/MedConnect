@@ -18,17 +18,6 @@ public sealed class AdminController(
 {
     // ── Специализации ────────────────────────────────────────────────────────
 
-    /// <summary>GET /api/admin/specializations — список всех специализаций.</summary>
-    [HttpGet("specializations")]
-    [ProducesResponseType(typeof(IReadOnlyList<SpecializationDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IReadOnlyList<SpecializationDto>>> GetSpecializations(CancellationToken ct)
-    {
-        var result = await specializationService.GetAllAsync(ct);
-        return Ok(result);
-    }
-
     /// <summary>POST /api/admin/specializations — создать специализацию.</summary>
     [HttpPost("specializations")]
     [ProducesResponseType(typeof(SpecializationDto), StatusCodes.Status201Created)]

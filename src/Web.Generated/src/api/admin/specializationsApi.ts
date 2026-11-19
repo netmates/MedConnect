@@ -8,7 +8,7 @@ import type {
 const base = '/api/admin/specializations'
 
 export const specializationsApi = {
-  list: () => apiFetch<SpecializationDto[]>(base),
+  list: () => apiFetch<SpecializationDto[]>('/api/specializations'),
   create: (dto: CreateSpecializationDto) =>
     apiFetch<SpecializationDto>(base, { method: 'POST', body: JSON.stringify(dto) }),
   update: (id: string, dto: UpdateSpecializationDto) =>
