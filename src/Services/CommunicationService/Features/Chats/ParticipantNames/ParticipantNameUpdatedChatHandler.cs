@@ -1,5 +1,4 @@
 using MedConnect.Shared.Consuming;
-using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 
 namespace CommunicationService.Features.Chats.ParticipantNames;
@@ -19,18 +18,15 @@ public sealed class ParticipantNameUpdatedChatHandler(
             return;
         }
 
-        await MongoConsumerRetry.ExecuteAsync(async ct =>
-        {
-            using var scope = scopeFactory.CreateScope();
-            var updater = scope.ServiceProvider.GetRequiredService<UpdateChatParticipantNamesService>();
+        using var scope = scopeFactory.CreateScope();
+        var updater = scope.ServiceProvider.GetRequiredService<UpdateChatParticipantNamesService>();
 
-            var modified = string.Equals(payload.Role, ParticipantRoles.Patient, StringComparison.Ordinal)
-                ? await updater.UpdatePatientNameAsync(payload.ParticipantId, payload.FullName, ct)
-                : await updater.UpdateDoctorNameAsync(payload.ParticipantId, payload.FullName, ct);
+        var modified = string.Equals(payload.Role, ParticipantRoles.Patient, StringComparison.Ordinal)
+            ? await updater.UpdatePatientNameAsync(payload.ParticipantId, payload.FullName, ct)
+            : await updater.UpdateDoctorNameAsync(payload.ParticipantId, payload.FullName, ct);
 
-            logger.LogInformation(
-                "ParticipantNameUpdated processed. Role={Role}, ParticipantId={ParticipantId}, ModifiedChats={ModifiedChats}",
-                payload.Role, payload.ParticipantId, modified);
-        }, logger, ct);
+        logger.LogInformation(
+            "ParticipantNameUpdated processed. Role={Role}, ParticipantId={ParticipantId}, ModifiedChats={ModifiedChats}",
+            payload.Role, payload.ParticipantId, modified);
     }
 }

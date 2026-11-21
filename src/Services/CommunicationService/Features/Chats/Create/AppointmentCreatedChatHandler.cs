@@ -1,5 +1,4 @@
 using MedConnect.Shared.Consuming;
-using CommunicationService.Common.Persistence;
 using MedConnect.Shared.Events;
 
 namespace CommunicationService.Features.Chats.Create;
@@ -8,24 +7,23 @@ public sealed class AppointmentCreatedChatHandler(
     IServiceScopeFactory scopeFactory,
     ILogger<AppointmentCreatedChatHandler> logger) : IIntegrationEventHandler<AppointmentCreatedPayload>
 {
-    public Task HandleAsync(AppointmentCreatedPayload payload, CancellationToken ct) =>
-        MongoConsumerRetry.ExecuteAsync(async ct =>
-        {
-            using var scope = scopeFactory.CreateScope();
-            var ensureChat = scope.ServiceProvider.GetRequiredService<EnsureChatService>();
+    public async Task HandleAsync(AppointmentCreatedPayload payload, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var ensureChat = scope.ServiceProvider.GetRequiredService<EnsureChatService>();
 
-            var (_, created) = await ensureChat.EnsureAsync(
-                payload.AppointmentId,
-                payload.PatientId,
-                payload.DoctorId,
-                payload.PatientKeycloakId,
-                payload.DoctorKeycloakId,
-                payload.PatientName,
-                payload.DoctorName,
-                ct);
+        var (_, created) = await ensureChat.EnsureAsync(
+            payload.AppointmentId,
+            payload.PatientId,
+            payload.DoctorId,
+            payload.PatientKeycloakId,
+            payload.DoctorKeycloakId,
+            payload.PatientName,
+            payload.DoctorName,
+            ct);
 
-            logger.LogInformation(
-                "AppointmentCreated processed. AppointmentId={AppointmentId}, ChatCreated={ChatCreated}",
-                payload.AppointmentId, created);
-        }, logger, ct);
+        logger.LogInformation(
+            "AppointmentCreated processed. AppointmentId={AppointmentId}, ChatCreated={ChatCreated}",
+            payload.AppointmentId, created);
+    }
 }
