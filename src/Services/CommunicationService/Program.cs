@@ -1,4 +1,7 @@
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using CommunicationService.Common.Auth;
+using CommunicationService.Common.DependencyInjection;
 using CommunicationService.Common.Grpc;
 using CommunicationService.Common.Health;
 using MedConnect.Shared.Logging;
@@ -20,6 +23,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Serilog вместо стандартного провайдера логирования (конфиг из appsettings + enrichers)
 builder.Host.AddMedConnectSerilog("CommunicationService");
 
+// Autofac: хендлеры интеграционных событий и декоратор повтора Mongo
+builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
+builder.Host.ConfigureContainer<ContainerBuilder>(container =>
+    container.RegisterModule<CommunicationAutofacModule>());
+
 builder.Services.AddAuthorization();
 
 // JWT через Keycloak (Authority, Audience, MapInboundClaims=false, роли из realm_access → claim role)
@@ -35,7 +43,7 @@ builder.Services.AddOpenApi(options =>
 // FluentValidation: IValidator<> из сборки
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// Chats: CreateChat / GetChatHistory, EnsureChatService, consumer AppointmentCreated и ParticipantNameUpdated
+// Chats: CreateChat / GetChatHistory и scoped-сервисы, которые вызывают consumer-хендлеры
 builder.Services.AddChatFeatures();
 
 // SendMessage: отправить сообщение в чат
