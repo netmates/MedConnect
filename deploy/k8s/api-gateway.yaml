@@ -31,6 +31,13 @@ spec:
                 configMapKeyRef:
                   name: medconnect-config
                   key: SEQ_URL
+            - name: Keycloak__Authority
+              valueFrom:
+                configMapKeyRef:
+                  name: medconnect-config
+                  key: KEYCLOAK_AUTHORITY
+            - name: Keycloak__RequireHttpsMetadata
+              value: "false"
             - name: ReverseProxy__Clusters__appointment__Destinations__local__Address
               value: http://appointment-service:8080/
             - name: ReverseProxy__Clusters__communication__Destinations__local__Address

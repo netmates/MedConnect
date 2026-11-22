@@ -113,6 +113,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Seq__ServerUrl: http://seq:80
+      Keycloak__Authority: http://keycloak:8080/realms/medconnect
+      Keycloak__RequireHttpsMetadata: "false"
       ReverseProxy__Clusters__appointment__Destinations__local__Address: http://appointment-service:8080/
       ReverseProxy__Clusters__communication__Destinations__local__Address: http://communication-service:8080/
     depends_on:

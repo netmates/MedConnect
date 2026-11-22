@@ -2,6 +2,7 @@ using CommunicationService.Common.SignalR;
 using MedConnect.Shared.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace CommunicationService.Common.Auth;
 
@@ -20,13 +21,13 @@ public static class AuthenticationExtensions
             {
                 options.Authority = KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Authority));
                 options.Audience = KeycloakConfiguration.GetRequired(configuration, nameof(KeycloakOptions.Audience));
-                options.RequireHttpsMetadata = configuration.GetValue($"{KeycloakOptions.SectionName}:RequireHttpsMetadata", true);
+                options.RequireHttpsMetadata = configuration.GetValue($"{KeycloakOptions.SectionName}:{nameof(KeycloakOptions.RequireHttpsMetadata)}", true);
                 options.MapInboundClaims = false;
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     RoleClaimType = "role",
-                    NameClaimType = "preferred_username"
+                    NameClaimType = JwtRegisteredClaimNames.PreferredUsername
                 };
 
                 options.Events = new JwtBearerEvents

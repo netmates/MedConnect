@@ -223,6 +223,8 @@ dotnet run
 
 Прокси к AppointmentService (`http://localhost:5067`) и CommunicationService (`http://localhost:5080`). Проверка живости: `/health/live`.
 
+Шлюз проверяет подпись, издателя, аудиторию и срок JWT. Роли и доступ к записи по-прежнему проверяют сервисы. `POST /api/patients/sign-up` проходит без токена.
+
 ## 4. SPA (`src/Web.Generated`)
 
 Vite + React + TypeScript + **MUI** (`@mui/material`, `@mui/icons-material`).

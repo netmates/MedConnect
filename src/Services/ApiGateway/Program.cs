@@ -7,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Serilog вместо стандартного провайдера логирования (конфиг из appsettings + enrichers)
 builder.Host.AddMedConnectSerilog("ApiGateway");
 
+// JWT Keycloak: подпись, издатель, аудитория и срок; роли проверяют сервисы
+builder.Services.AddGatewayJwtAuthentication(builder.Configuration);
+
 // YARP: маршруты и кластеры из секции ReverseProxy
 // /api/chats -> CommunicationService, остальные /api -> AppointmentService
 builder.Services.AddReverseProxy()
@@ -19,9 +22,9 @@ try
     // /health/live: процесс жив. Путь не под /api, токен не требуется
     app.MapGet("/health/live", () => Results.Ok());
 
-    // /api без токена -> 401. Без проверки подписи JWT.
+    // /api с неверным или просроченным токеном -> 401.
     // Исключения: POST /api/patients/sign-up и SignalR /api/chats/hub с access_token в query
-    app.UseMiddleware<TokenPresenceMiddleware>();
+    app.UseMiddleware<TokenValidationMiddleware>();
 
     // Проксирование по маршрутам YARP
     app.MapReverseProxy();
