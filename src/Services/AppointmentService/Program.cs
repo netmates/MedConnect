@@ -2,7 +2,7 @@ using AppointmentService.API.Middleware;
 using MedConnect.Shared.Http;
 using MedConnect.Shared.OpenApi;
 using AppointmentService.API.Grpc;
-using AppointmentService.Application.Extensions;
+using AppointmentService.Common.DependencyInjection;
 using AppointmentService.Infrastructure.Extensions;
 using MedConnect.Shared.Logging;
 using AppointmentService.Infrastructure.Persistence;
@@ -27,11 +27,8 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<KeycloakSecuritySchemeTransformer>();
 });
 
-// Application
-builder.Services.AddApplicationServices();
-
-// Infrastructure
-builder.Services.AddInfrastructure(builder.Configuration);
+// Application-сервисы и репозитории через Scrutor, инфраструктура — явно
+new AppointmentModule().Register(builder.Services, builder.Configuration);
 
 // Health checks: /health/live (процесс), /health/ready (Postgres + Redis + Keycloak)
 builder.Services.AddAppointmentHealthChecks(builder.Configuration);

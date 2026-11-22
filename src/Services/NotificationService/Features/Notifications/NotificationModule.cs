@@ -1,8 +1,8 @@
 using MedConnect.Shared.Consuming;
-using MedConnect.Shared.Events;
 using NotificationService.Common.DependencyInjection;
 using NotificationService.Features.Notifications.Handlers;
 using NotificationService.Features.Notifications.Senders;
+using Scrutor;
 
 namespace NotificationService.Features.Notifications;
 
@@ -21,8 +21,14 @@ public sealed class NotificationModule : IServiceModule
         services.AddKeyedSingleton<INotificationSender, SmsNotificationSender>(NotificationChannels.Sms);
         services.AddSingleton<INotificationSender, ConfiguredNotificationSender>();
 
-        services.AddSingleton<IIntegrationEventHandler<AppointmentCreatedPayload>, AppointmentCreatedHandler>();
-        services.AddSingleton<IIntegrationEventHandler<AppointmentCancelledPayload>, AppointmentCancelledHandler>();
-        services.AddSingleton<IIntegrationEventHandler<MessageCreatedPayload>, MessageCreatedHandler>();
+        services.Scan(scan => scan
+            .FromAssemblyOf<AppointmentCreatedHandler>()
+            .AddClasses(classes => classes
+                .InNamespaceOf<AppointmentCreatedHandler>()
+                .AssignableTo(typeof(IIntegrationEventHandler<>)))
+            .AsImplementedInterfaces()
+            .WithSingletonLifetime());
+
+        services.Decorate(typeof(IIntegrationEventHandler<>), typeof(LoggingIntegrationEventHandler<>));
     }
 }

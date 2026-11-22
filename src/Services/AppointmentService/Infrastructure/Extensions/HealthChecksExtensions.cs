@@ -1,4 +1,5 @@
 using MedConnect.Shared.Auth;
+using AppointmentService.Common.DependencyInjection;
 using AppointmentService.Infrastructure.Persistence;
 using MedConnect.Shared.Health;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -29,7 +30,7 @@ public static class HealthChecksExtensions
                 tags: [ReadyTag])
             // --- Readiness: Redis ---
             .AddRedis(
-                configuration.GetConnectionString(ServiceCollectionExtensions.RedisConnectionStringName)!,
+                configuration.GetConnectionString(AppointmentModule.RedisConnectionStringName)!,
                 name: "redis",
                 tags: [ReadyTag])
             // --- Readiness: Keycloak ---
