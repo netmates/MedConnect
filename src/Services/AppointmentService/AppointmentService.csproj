@@ -23,7 +23,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.15" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.15" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.13.1" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.4" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.21.0" />
     <PackageReference Include="Scrutor" Version="7.0.0" />
@@ -32,14 +32,14 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Protobuf Include="..\..\Shared\Protos\appointment_access.proto" GrpcServices="Server" Link="Protos\appointment_access.proto" />
-	<Compile Include="..\..\Shared\Events\**\*.cs" Link="Events\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Messaging\**\*.cs" Link="Messaging\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Auth\**\*.cs" Link="Auth\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Http\**\*.cs" Link="Http\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Health\**\*.cs" Link="Health\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Logging\**\*.cs" Link="Logging\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\OpenApi\**\*.cs" Link="OpenApi\%(Filename)%(Extension)" />
+    <Protobuf Include="..\..\Shared\Protos\appointment_access.proto" GrpcServices="Server" Link="Protos\appointment_access.proto" />
+    <Compile Include="..\..\Shared\Events\**\*.cs" Link="Events\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Messaging\**\*.cs" Link="Messaging\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Auth\**\*.cs" Link="Auth\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Http\**\*.cs" Link="Http\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Health\**\*.cs" Link="Health\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Logging\**\*.cs" Link="Logging\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\OpenApi\**\*.cs" Link="OpenApi\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

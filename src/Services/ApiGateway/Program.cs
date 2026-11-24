@@ -23,7 +23,7 @@ try
     app.MapGet("/health/live", () => Results.Ok());
 
     // /api с неверным или просроченным токеном -> 401.
-    // Исключения: POST /api/patients/sign-up и SignalR /api/chats/hub с access_token в query
+    // Исключение: POST /api/patients/sign-up проходит без токена
     app.UseMiddleware<TokenValidationMiddleware>();
 
     // Проксирование по маршрутам YARP

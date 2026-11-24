@@ -23,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Serilog вместо стандартного провайдера логирования (конфиг из appsettings + enrichers)
 builder.Host.AddMedConnectSerilog("CommunicationService");
 
-// Autofac: хендлеры интеграционных событий и декоратор повтора Mongo
+// Autofac: обработчики интеграционных событий и декоратор повтора Mongo
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Host.ConfigureContainer<ContainerBuilder>(container =>
     container.RegisterModule<CommunicationAutofacModule>());
@@ -43,7 +43,7 @@ builder.Services.AddOpenApi(options =>
 // FluentValidation: IValidator<> из сборки
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// Chats: CreateChat / GetChatHistory и scoped-сервисы, которые вызывают consumer-хендлеры
+// Chats: CreateChat / GetChatHistory и scoped-сервисы, которые вызывают обработчики очереди
 builder.Services.AddChatFeatures();
 
 // SendMessage: отправить сообщение в чат

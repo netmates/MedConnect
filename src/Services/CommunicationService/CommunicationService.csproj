@@ -21,7 +21,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.13.1" />
-    <PackageReference Include="MongoDB.Driver" Version="3.14.0" />
+    <PackageReference Include="MongoDB.Driver" Version="3.14.1" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.21.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
@@ -29,15 +29,15 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Protobuf Include="..\..\Shared\Protos\appointment_access.proto" GrpcServices="Client" Link="Protos\appointment_access.proto" />
-	<Compile Include="..\..\Shared\Events\**\*.cs" Link="Events\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Messaging\**\*.cs" Link="Messaging\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Auth\**\*.cs" Link="Auth\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Http\**\*.cs" Link="Http\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Health\**\*.cs" Link="Health\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Logging\**\*.cs" Link="Logging\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\OpenApi\**\*.cs" Link="OpenApi\%(Filename)%(Extension)" />
-	<Compile Include="..\..\Shared\Consuming\**\*.cs" Link="Consuming\%(Filename)%(Extension)" />
+    <Protobuf Include="..\..\Shared\Protos\appointment_access.proto" GrpcServices="Client" Link="Protos\appointment_access.proto" />
+    <Compile Include="..\..\Shared\Events\**\*.cs" Link="Events\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Messaging\**\*.cs" Link="Messaging\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Auth\**\*.cs" Link="Auth\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Http\**\*.cs" Link="Http\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Health\**\*.cs" Link="Health\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Logging\**\*.cs" Link="Logging\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\OpenApi\**\*.cs" Link="OpenApi\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Shared\Consuming\**\*.cs" Link="Consuming\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>
